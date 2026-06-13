@@ -1,22 +1,43 @@
-"use client";
+'use client';
 
 import {
   AlertTriangle,
-  CheckCircle2,
+  CheckCircle,
   FlaskConical,
   Leaf,
   ShieldAlert,
   ChevronDown,
   ChevronUp,
-} from "lucide-react";
-import { useState } from "react";
+  Calendar,
+  Tag,
+  Activity,
+} from 'lucide-react';
+import { useState } from 'react';
+import TimelineComponent from '@/components/Timeline';
+
+interface TimelineStage {
+  stage: string;
+  title: string;
+  actions: string[];
+  products: string[];
+  milestone: string;
+}
 
 interface Product {
   name: string;
+  sku?: string;
+  catalog_name?: string;
   type: string;
   application_rate: string;
   timing: string;
   notes: string;
+}
+
+interface SoilProfileInfo {
+  label: string;
+  notes: string;
+  fertFrequency: string;
+  drainageClass: string;
 }
 
 interface Analysis {
@@ -33,9 +54,11 @@ interface Analysis {
     products: Product[];
     cultural_practices: string[];
   };
+  timeline?: TimelineStage[];
   prevention: string[];
   follow_up: string;
   professional_needed: boolean;
+  _soil_profile?: SoilProfileInfo;
   raw?: string;
   parse_error?: boolean;
 }
@@ -45,19 +68,25 @@ interface AnalysisProps {
 }
 
 const SEVERITY_COLOR: Record<string, string> = {
-  critical: "text-red-400 bg-red-900/30",
-  moderate: "text-straw-300 bg-straw-400/20",
-  mild: "text-field-300 bg-field-800/40",
-  none: "text-field-400 bg-field-900/40",
+  critical: 'text-red-400 bg-red-900/30',
+  moderate: 'text-straw-300 bg-straw-400/20',
+  mild: 'text-field-300 bg-field-800/40',
+  none: 'text-field-400 bg-field-900/40',
 };
 
 const PRODUCT_BADGE: Record<string, string> = {
-  herbicide: "bg-rust-500/20 text-rust-300",
-  fungicide: "bg-purple-900/40 text-purple-300",
-  pesticide: "bg-orange-900/40 text-orange-300",
-  fertilizer: "bg-field-800/60 text-field-300",
-  amendment: "bg-straw-400/20 text-straw-300",
-  organic: "bg-emerald-900/40 text-emerald-300",
+  herbicide: 'bg-rust-500/20 text-rust-300',
+  fungicide: 'bg-purple-900/40 text-purple-300',
+  pesticide: 'bg-orange-900/40 text-orange-300',
+  fertilizer: 'bg-field-800/60 text-field-300',
+  amendment: 'bg-straw-400/20 text-straw-300',
+  organic: 'bg-emerald-900/40 text-emerald-300',
+};
+
+const DRAINAGE_BADGE: Record<string, string> = {
+  rapid: 'text-sky-300 bg-sky-900/30',
+  moderate: 'text-field-300 bg-field-800/40',
+  slow: 'text-straw-300 bg-straw-400/20',
 };
 
 function Section({
@@ -120,7 +149,7 @@ export default function AnalysisResults({ analysis }: AnalysisProps) {
         </div>
       )}
 
-      {/* ID + Severity */}
+      {/* Issue ID + Severity */}
       <div className="rounded-2xl bg-soil-800 border border-field-800/50 p-4 space-y-2">
         <div className="flex items-start justify-between gap-2">
           <h2 className="text-field-100 font-display text-lg leading-tight">
@@ -158,11 +187,33 @@ export default function AnalysisResults({ analysis }: AnalysisProps) {
         )}
       </div>
 
+      {/* Soil Profile */}
+      {analysis._soil_profile && (
+        <div className="rounded-xl bg-soil-800/60 border border-field-800/40 px-4 py-3 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <p className="text-field-400 text-xs font-medium uppercase tracking-wide">
+              Soil Profile — {analysis._soil_profile.label}
+            </p>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full capitalize ${
+                DRAINAGE_BADGE[analysis._soil_profile.drainageClass] ?? 'text-field-400'
+              }`}
+            >
+              {analysis._soil_profile.drainageClass} drainage
+            </span>
+          </div>
+          <p className="text-field-400 text-xs">{analysis._soil_profile.notes}</p>
+          <p className="text-field-500 text-xs">
+            💊 Fertilizer schedule: {analysis._soil_profile.fertFrequency}
+          </p>
+        </div>
+      )}
+
       {/* Immediate actions */}
       {analysis.treatment?.immediate_actions?.length > 0 && (
         <Section
           title="Immediate Actions"
-          icon={<CheckCircle2 size={15} className="text-field-400" />}
+          icon={<CheckCircle size={15} className="text-field-400" />}
         >
           <ul className="space-y-1.5">
             {analysis.treatment.immediate_actions.map((a, i) => (
@@ -175,7 +226,7 @@ export default function AnalysisResults({ analysis }: AnalysisProps) {
         </Section>
       )}
 
-      {/* Products */}
+      {/* Recommended Products */}
       {analysis.treatment?.products?.length > 0 && (
         <Section
           title="Recommended Products"
@@ -191,12 +242,24 @@ export default function AnalysisResults({ analysis }: AnalysisProps) {
                   <span className="text-field-100 text-sm font-medium">{p.name}</span>
                   <span
                     className={`text-xs px-2 py-0.5 rounded-full ${
-                      PRODUCT_BADGE[p.type] ?? "bg-soil-700 text-field-300"
+                      PRODUCT_BADGE[p.type] ?? 'bg-soil-700 text-field-300'
                     }`}
                   >
                     {p.type}
                   </span>
                 </div>
+
+                {/* SKU badge — shown when catalog product matched */}
+                {p.sku && (
+                  <div className="flex items-center gap-1.5">
+                    <Tag size={11} className="text-straw-500" />
+                    <span className="text-xs text-straw-300 font-mono">SKU: {p.sku}</span>
+                    {p.catalog_name && p.catalog_name !== p.name && (
+                      <span className="text-xs text-field-600">({p.catalog_name})</span>
+                    )}
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-x-3 gap-y-1">
                   <div>
                     <p className="text-field-600 text-xs uppercase tracking-wide">Rate</p>
@@ -215,6 +278,16 @@ export default function AnalysisResults({ analysis }: AnalysisProps) {
               </div>
             ))}
           </div>
+        </Section>
+      )}
+
+      {/* Treatment Timeline */}
+      {analysis.timeline && analysis.timeline.length > 0 && (
+        <Section
+          title="Treatment Timeline"
+          icon={<Calendar size={15} className="text-field-400" />}
+        >
+          <TimelineComponent timeline={analysis.timeline} />
         </Section>
       )}
 
@@ -255,7 +328,10 @@ export default function AnalysisResults({ analysis }: AnalysisProps) {
       {/* Follow-up */}
       {analysis.follow_up && (
         <div className="rounded-xl bg-soil-800/60 border border-field-800/40 px-4 py-3">
-          <p className="text-field-500 text-xs uppercase tracking-wide mb-1">Follow-up</p>
+          <div className="flex items-center gap-2 mb-1">
+            <Activity size={13} className="text-field-500" />
+            <p className="text-field-500 text-xs uppercase tracking-wide">Follow-up</p>
+          </div>
           <p className="text-field-300 text-sm">{analysis.follow_up}</p>
         </div>
       )}

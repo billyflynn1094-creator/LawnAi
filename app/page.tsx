@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from "react";
-import CameraCapture from "@/components/Camera";
-import LocationBadge from "@/components/LocationBadge";
-import AnalysisResults from "@/components/Analysis";
-import { Sprout, RotateCcw } from "lucide-react";
+import { useState, useEffect, useCallback } from 'react';
+import CameraCapture from '@/components/Camera';
+import LocationBadge from '@/components/LocationBadge';
+import AnalysisResults from '@/components/Analysis';
+import { Sprout, RotateCcw } from 'lucide-react';
 
 interface LocationData {
   lat: number;
@@ -16,16 +16,17 @@ interface LocationData {
   weather?: { temp_f: number; humidity: number; condition: string };
 }
 
-type AppState = "idle" | "analyzing" | "results" | "error";
+type AppState = 'idle' | 'analyzing' | 'results' | 'error';
 
 export default function Home() {
   const [locationData, setLocationData] = useState<LocationData | null>(null);
   const [locationLoading, setLocationLoading] = useState(true);
   const [locationError, setLocationError] = useState<string | null>(null);
 
-  const [appState, setAppState] = useState<AppState>("idle");
+  const [appState, setAppState] = useState<AppState>('idle');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [analysis, setAnalysis] = useState<any>(null);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchLocation = useCallback(() => {
@@ -33,7 +34,7 @@ export default function Home() {
     setLocationError(null);
 
     if (!navigator.geolocation) {
-      setLocationError("Geolocation not supported by your browser.");
+      setLocationError('Geolocation not supported by your browser.');
       setLocationLoading(false);
       return;
     }
@@ -43,19 +44,18 @@ export default function Home() {
         const { latitude: lat, longitude: lng } = pos.coords;
         try {
           const res = await fetch(`/api/location?lat=${lat}&lng=${lng}`);
-          if (!res.ok) throw new Error("Location enrichment failed");
+          if (!res.ok) throw new Error('Location enrichment failed');
           const data = await res.json();
           setLocationData(data);
         } catch {
-          // Fallback: use raw coords without enrichment
           setLocationData({ lat, lng });
         } finally {
           setLocationLoading(false);
         }
       },
       (err) => {
-        console.warn("Geolocation error:", err);
-        setLocationError("Location access denied.");
+        console.warn('Geolocation error:', err);
+        setLocationError('Location access denied.');
         setLocationLoading(false);
       },
       { timeout: 10000, enableHighAccuracy: true }
@@ -67,14 +67,15 @@ export default function Home() {
   }, [fetchLocation]);
 
   const handleCapture = async (base64: string) => {
-    setAppState("analyzing");
+    setCapturedImage(base64);
+    setAppState('analyzing');
     setAnalysis(null);
     setErrorMessage(null);
 
     try {
-      const res = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           image: base64,
           location: locationData ?? { lat: 0, lng: 0 },
@@ -83,27 +84,29 @@ export default function Home() {
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error ?? "Analysis failed");
+        throw new Error(err.error ?? 'Analysis failed');
       }
 
       const data = await res.json();
       setAnalysis(data.analysis);
-      setAppState("results");
-      // Scroll results into view on mobile
+      setAppState('results');
+
+      // Smooth scroll to results
       setTimeout(() => {
-        document.getElementById("results")?.scrollIntoView({ behavior: "smooth" });
+        document.getElementById('results')?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
     } catch (err) {
       setErrorMessage(
-        err instanceof Error ? err.message : "Something went wrong. Please try again."
+        err instanceof Error ? err.message : 'Something went wrong. Please try again.'
       );
-      setAppState("error");
+      setAppState('error');
     }
   };
 
   const reset = () => {
-    setAppState("idle");
+    setAppState('idle');
     setAnalysis(null);
+    setCapturedImage(null);
     setErrorMessage(null);
   };
 
@@ -118,7 +121,7 @@ export default function Home() {
               Lawn<span className="text-field-400">AI</span>
             </span>
           </div>
-          {appState === "results" && (
+          {appState === 'results' && (
             <button
               onClick={reset}
               className="flex items-center gap-1.5 text-field-400 hover:text-field-200 text-sm transition"
@@ -138,16 +141,16 @@ export default function Home() {
           onRetry={fetchLocation}
         />
 
-        {/* Camera */}
-        {appState !== "results" && (
+        {/* ── IDLE / ANALYZING state: show live camera ── */}
+        {appState !== 'results' && (
           <CameraCapture
             onCapture={handleCapture}
-            isAnalyzing={appState === "analyzing"}
+            isAnalyzing={appState === 'analyzing'}
           />
         )}
 
-        {/* Hero prompt — idle state */}
-        {appState === "idle" && (
+        {/* Hero prompt — idle only */}
+        {appState === 'idle' && (
           <div className="text-center py-2 space-y-1">
             <p className="text-field-300 text-sm">
               Point your camera at any lawn issue — weeds, disease, bare patches,
@@ -156,8 +159,8 @@ export default function Home() {
           </div>
         )}
 
-        {/* Error */}
-        {appState === "error" && (
+        {/* Error state */}
+        {appState === 'error' && (
           <div className="rounded-xl bg-red-900/30 border border-red-700/40 p-4 text-center space-y-3">
             <p className="text-red-300 text-sm">{errorMessage}</p>
             <button
@@ -169,10 +172,34 @@ export default function Home() {
           </div>
         )}
 
-        {/* Results */}
-        {appState === "results" && (
+        {/* ── RESULTS state: photo thumbnail + analysis directly below ── */}
+        {appState === 'results' && (
           <div id="results" className="space-y-4">
-            {/* Thumbnail */}
+            {/* Captured photo — compact thumbnail pinned above results */}
+            {capturedImage && (
+              <div className="relative rounded-2xl overflow-hidden bg-soil-900 shadow-xl">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={capturedImage}
+                  alt="Analyzed lawn"
+                  className="w-full h-48 object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-soil-900/70 to-transparent" />
+                <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                  <span className="text-field-200 text-xs font-medium bg-soil-900/60 px-2.5 py-1 rounded-full backdrop-blur-sm">
+                    📸 Analyzed photo
+                  </span>
+                  <button
+                    onClick={reset}
+                    className="flex items-center gap-1.5 text-field-300 hover:text-field-100 text-xs bg-soil-900/60 px-2.5 py-1 rounded-full backdrop-blur-sm transition"
+                  >
+                    <RotateCcw size={12} /> New scan
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Analysis results — immediately below the photo */}
             <AnalysisResults analysis={analysis} />
           </div>
         )}

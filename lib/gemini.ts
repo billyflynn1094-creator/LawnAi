@@ -7,9 +7,9 @@ if (!process.env.GEMINI_API_KEY) {
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export const geminiFlash = genAI.getGenerativeModel({
-  model: "gemini-2.0-flash-exp",
+  model: "gemini-2.0-flash",
   generationConfig: {
-    temperature: 0.4,       // Lower = more consistent, factual responses
+    temperature: 0.4,
     topP: 0.9,
     maxOutputTokens: 2048,
   },

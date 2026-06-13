@@ -6,13 +6,16 @@ if (!process.env.GEMINI_API_KEY) {
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// gemini-2.5-flash: latest model, confirmed working
+// gemini-2.5-flash with expanded token budget.
+// The full schema (timeline + catalog + soil profile) needs ~3-5k tokens output;
+// 2048 was truncating the response mid-JSON causing the parse_error fallback.
 export const geminiFlash = genAI.getGenerativeModel({
   model: "gemini-2.5-flash",
   generationConfig: {
     temperature: 0.4,
     topP: 0.9,
-    maxOutputTokens: 2048,
+    maxOutputTokens: 8192,
+    responseMimeType: "application/json",
   },
 });
 

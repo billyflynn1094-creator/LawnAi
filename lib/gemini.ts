@@ -6,8 +6,9 @@ if (!process.env.GEMINI_API_KEY) {
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+// gemini-1.5-flash: generous free tier (1500 req/day), excellent vision + reasoning
 export const geminiFlash = genAI.getGenerativeModel({
-  model: "gemini-2.0-flash",
+  model: "gemini-1.5-flash",
   generationConfig: {
     temperature: 0.4,
     topP: 0.9,

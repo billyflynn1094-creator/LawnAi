@@ -1,6 +1,14 @@
 "use client";
 
-import { MapPin, Thermometer, Droplets, Loader2, AlertCircle, Layers } from "lucide-react";
+import {
+  MapPin,
+  Thermometer,
+  Droplets,
+  Loader2,
+  AlertCircle,
+  Layers,
+  CloudRain,
+} from "lucide-react";
 
 interface LocationData {
   lat: number;
@@ -12,6 +20,7 @@ interface LocationData {
   weather?: { temp_f: number; humidity: number; condition: string };
   soil_temp_surface_f?: number;
   soil_temp_6cm_f?: number;
+  rainfall?: { recent_in: number; normal_in: number; pct_of_normal: number };
 }
 
 interface LocationBadgeProps {
@@ -50,56 +59,82 @@ export default function LocationBadge({
 
   if (!location) return null;
 
+  const rain = location.rainfall;
+  const rainDiff = rain ? rain.pct_of_normal - 100 : 0;
+  const rainColor =
+    rain && rain.pct_of_normal >= 120
+      ? "bg-blue-900/40 text-blue-300"
+      : rain && rain.pct_of_normal < 80
+      ? "bg-straw-400/20 text-straw-300"
+      : "bg-soil-800 text-field-200";
+
   return (
     <div className="flex flex-wrap gap-2">
-      {/* Place */}
-      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-soil-800 text-field-200 text-xs">
-        <MapPin size={12} className="text-field-400 shrink-0" />
-        <span>
-          {location.city
-            ? `${location.city}, ${location.state}`
-            : `${location.lat.toFixed(3)}, ${location.lng.toFixed(3)}`}
-        </span>
-      </div>
+      {/* Town name only — no lat/lng fallback */}
+      {location.city && (
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-soil-800 text-field-200 text-xs">
+          <MapPin size={12} className="text-field-400 shrink-0" />
+          <span>
+            {location.state
+              ? `${location.city}, ${location.state}`
+              : location.city}
+          </span>
+        </div>
+      )}
 
-      {/* Hardiness zone */}
+      {/* USDA Hardiness zone */}
       {location.hardiness_zone && location.hardiness_zone !== "Unknown" && (
         <div className="px-3 py-1.5 rounded-xl bg-soil-800 text-field-200 text-xs">
           Zone {location.hardiness_zone}
         </div>
       )}
 
-      {/* Soil type */}
+      {/* Geologic / USDA soil series name */}
       {location.soilType && location.soilType !== "Unknown" && (
-        <div className="px-3 py-1.5 rounded-xl bg-soil-800 text-field-200 text-xs max-w-[180px] truncate">
-          🌱 {location.soilType}
+        <div className="px-3 py-1.5 rounded-xl bg-soil-800 text-field-200 text-xs max-w-[220px] truncate">
+          🪨 {location.soilType}
         </div>
       )}
 
-      {/* Air weather */}
+      {/* Air temperature */}
       {location.weather && (
-        <>
-          <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-soil-800 text-field-200 text-xs">
-            <Thermometer size={12} className="text-straw-300 shrink-0" />
-            <span>{location.weather.temp_f}°F</span>
-          </div>
-          <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-soil-800 text-field-200 text-xs">
-            <Droplets size={12} className="text-blue-400 shrink-0" />
-            <span>{location.weather.humidity}%</span>
-          </div>
-        </>
+        <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-soil-800 text-field-200 text-xs">
+          <Thermometer size={12} className="text-straw-300 shrink-0" />
+          <span>{location.weather.temp_f}°F air</span>
+        </div>
       )}
 
-      {/* Soil temperature */}
+      {/* Soil temp — immediately after air temp */}
       {location.soil_temp_surface_f != null && (
         <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-soil-800 text-field-200 text-xs">
           <Layers size={12} className="text-straw-400 shrink-0" />
           <span>
-            Soil {location.soil_temp_surface_f}°F
+            {location.soil_temp_surface_f}°F soil
             {location.soil_temp_6cm_f != null &&
             location.soil_temp_6cm_f !== location.soil_temp_surface_f
               ? ` / ${location.soil_temp_6cm_f}°F @ 6cm`
               : ""}
+          </span>
+        </div>
+      )}
+
+      {/* Humidity */}
+      {location.weather && (
+        <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-soil-800 text-field-200 text-xs">
+          <Droplets size={12} className="text-blue-400 shrink-0" />
+          <span>{location.weather.humidity}% RH</span>
+        </div>
+      )}
+
+      {/* 30-day rainfall vs prior-year average */}
+      {rain && (
+        <div className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs ${rainColor}`}>
+          <CloudRain size={12} className="shrink-0" />
+          <span>
+            {rain.recent_in}in
+            {rain.normal_in > 0 && (
+              <> ({rainDiff >= 0 ? "+" : ""}{rainDiff}% vs avg)</>)
+            }
           </span>
         </div>
       )}

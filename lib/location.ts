@@ -282,7 +282,7 @@ export async function getRainfallData(
     if (!recentRes.ok) return undefined;
 
     const sum = (arr: (number | null)[]): number =>
-      (arr ?? []).reduce((s, v) => s + (v ?? 0), 0);
+      (arr ?? []).reduce<number>((s, v) => s + (v ?? 0), 0);
 
     const recentData = await recentRes.json();
     const recent_in = Math.round(sum(recentData?.daily?.precipitation_sum) * 10) / 10;

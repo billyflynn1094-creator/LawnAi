@@ -19,6 +19,7 @@ export interface AuditData {
   property_address?: string;
   tech_name?: string;
   date: string;
+  zones?: { id: number; type: string }[];
   controller_brand?: string;
   controller_model?: string;
   zone_count?: number;

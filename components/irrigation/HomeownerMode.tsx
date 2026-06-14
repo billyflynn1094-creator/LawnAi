@@ -1,1 +1,193 @@
-InVzZSBjbGllbnQiOwoKaW1wb3J0IHsgdXNlU3RhdGUsIHVzZVJlZiwgdXNlQ2FsbGJhY2sgfSBmcm9tICJyZWFjdCI7CmltcG9ydCB7IFVzZXIsIE1pYywgTWljT2ZmLCBTZW5kLCBNZXNzYWdlU3F1YXJlIH0gZnJvbSAibHVjaWRlLXJlYWN0IjsKCmludGVyZmFjZSBDb252ZXJzYXRpb25FbnRyeSB7CiAgcm9sZTogInVzZXIiIHwgInRlY2giOwogIHRleHQ6IHN0cmluZzsKICB0aW1lc3RhbXA6IHN0cmluZzsKICBrZXlfcG9pbnRzPzogc3RyaW5nW107CiAgY29zdF9jb250ZXh0Pzogc3RyaW5nIHwgbnVsbDsKICBmb2xsb3dfdXBfb2ZmZXI/OiBzdHJpbmc7Cn0KCmV4cG9ydCBkZWZhdWx0IGZ1bmN0aW9uIEhvbWVvd25lck1vZGUoKSB7CiAgY29uc3QgW3F1ZXN0aW9uLCBzZXRRdWVzdGlvbl0gPSB1c2VTdGF0ZSgiIik7CiAgY29uc3QgW3N5c3RlbUNvbnRleHQsIHNldFN5c3RlbUNvbnRleHRdID0gdXNlU3RhdGUoIiIpOwogIGNvbnN0IFtjb252ZXJzYXRpb24sIHNldENvbnZlcnNhdGlvbl0gPSB1c2VTdGF0ZTxDb252ZXJzYXRpb25FbnRyeVtdPihbXSk7CiAgY29uc3QgW2xvYWRpbmcsIHNldExvYWRpbmddID0gdXNlU3RhdGUoZmFsc2UpOwogIGNvbnN0IFtsaXN0ZW5pbmcsIHNldExpc3RlbmluZ10gPSB1c2VTdGF0ZShmYWxzZSk7CiAgY29uc3QgcmVjb2duaXRpb25SZWYgPSB1c2VSZWY8U3BlZWNoUmVjb2duaXRpb24gfCBudWxsPihudWxsKTsKCiAgY29uc3Qgc3RhcnRMaXN0ZW5pbmcgPSB1c2VDYWxsYmFjaygoKSA9PiB7CiAgICBjb25zdCBTcGVlY2hSZWNvZ25pdGlvbiA9CiAgICAgICh3aW5kb3cgYXMgdHlwZW9mIHdpbmRvdyAmIHsgU3BlZWNoUmVjb2duaXRpb24/OiB0eXBlb2Ygd2luZG93LlNwZWVjaFJlY29nbml0aW9uOyB3ZWJraXRTcGVlY2hSZWNvZ25pdGlvbj86IHR5cGVvZiB3aW5kb3cuU3BlZWNoUmVjb2duaXRpb24gfSkuU3BlZWNoUmVjb2duaXRpb24gfHwKICAgICAgKHdpbmRvdyBhcyB0eXBlb2Ygd2luZG93ICYgeyB3ZWJraXRTcGVlY2hSZWNvZ25pdGlvbj86IHR5cGVvZiB3aW5kb3cuU3BlZWNoUmVjb2duaXRpb24gfSkud2Via2l0U3BlZWNoUmVjb2duaXRpb247CgogICAgaWYgKCFTcGVlY2hSZWNvZ25pdGlvbikgewogICAgICBhbGVydCgiU3BlZWNoIHJlY29nbml0aW9uIGlzIG5vdCBzdXBwb3J0ZWQgaW4gdGhpcyBicm93c2VyLiBUcnkgQ2hyb21lLiIpOwogICAgICByZXR1cm47CiAgICB9CiAgICBjb25zdCByZWNvZ25pdGlvbiA9IG5ldyBTcGVlY2hSZWNvZ25pdGlvbigpOwogICAgcmVjb2duaXRpb24uY29udGludW91cyA9IGZhbHNlOwogICAgcmVjb2duaXRpb24uaW50ZXJpbVJlc3VsdHMgPSBmYWxzZTsKICAgIHJlY29nbml0aW9uLmxhbmcgPSAiZW4tVVMiOwogICAgcmVjb2duaXRpb24ub25yZXN1bHQgPSAoZXZlbnQ6IFNwZWVjaFJlY29nbml0aW9uRXZlbnQpID0+IHsKICAgICAgY29uc3QgdHJhbnNjcmlwdCA9IGV2ZW50LnJlc3VsdHNbMF1bMF0udHJhbnNjcmlwdDsKICAgICAgc2V0UXVlc3Rpb24ocHJldiA9PiBwcmV2ID8gcHJldiArICIgIiArIHRyYW5zY3JpcHQgOiB0cmFuc2NyaXB0KTsKICAgIH07CiAgICByZWNvZ25pdGlvbi5vbmVuZCA9ICgpID0+IHNldExpc3RlbmluZyhmYWxzZSk7CiAgICByZWNvZ25pdGlvbi5vbmVycm9yID0gKCkgPT4gc2V0TGlzdGVuaW5nKGZhbHNlKTsKICAgIHJlY29nbml0aW9uUmVmLmN1cnJlbnQgPSByZWNvZ25pdGlvbjsKICAgIHJlY29nbml0aW9uLnN0YXJ0KCk7CiAgICBzZXRMaXN0ZW5pbmcodHJ1ZSk7CiAgfSwgW10pOwoKICBjb25zdCBzdG9wTGlzdGVuaW5nID0gdXNlQ2FsbGJhY2soKCkgPT4gewogICAgcmVjb2duaXRpb25SZWYuY3VycmVudD8uc3RvcCgpOwogICAgc2V0TGlzdGVuaW5nKGZhbHNlKTsKICB9LCBbXSk7CgogIGNvbnN0IHNlbmRRdWVzdGlvbiA9IGFzeW5jICgpID0+IHsKICAgIGlmICghcXVlc3Rpb24udHJpbSgpKSByZXR1cm47CiAgICBjb25zdCBxID0gcXVlc3Rpb24udHJpbSgpOwogICAgc2V0UXVlc3Rpb24oIiIpOwogICAgc2V0TG9hZGluZyh0cnVlKTsKCiAgICBjb25zdCB1c2VyRW50cnk6IENvbnZlcnNhdGlvbkVudHJ5ID0gewogICAgICByb2xlOiAidXNlciIsCiAgICAgIHRleHQ6IHEsCiAgICAgIHRpbWVzdGFtcDogbmV3IERhdGUoKS50b0xvY2FsZVRpbWVTdHJpbmcoW10sIHsgaG91cjogIjItZGlnaXQiLCBtaW51dGU6ICIyLWRpZ2l0IiB9KSwKICAgIH07CiAgICBzZXRDb252ZXJzYXRpb24ocHJldiA9PiBbLi4ucHJldiwgdXNlckVudHJ5XSk7CgogICAgdHJ5IHsKICAgICAgY29uc3QgcmVzID0gYXdhaXQgZmV0Y2goIi9hcGkvaXJyaWdhdGlvbi12b2ljZSIsIHsKICAgICAgICBtZXRob2Q6ICJQT1NUIiwKICAgICAgICBoZWFkZXJzOiB7ICJDb250ZW50LVR5cGUiOiAiYXBwbGljYXRpb24vanNvbiIgfSwKICAgICAgICBib2R5OiBKU09OLnN0cmluZ2lmeSh7IHF1ZXN0aW9uOiBxLCBzeXN0ZW1Db250ZXh0IH0pLAogICAgICB9KTsKICAgICAgY29uc3QgZGF0YSA9IGF3YWl0IHJlcy5qc29uKCk7CiAgICAgIGNvbnN0IGEgPSBkYXRhLmFuYWx5c2lzOwogICAgICBjb25zdCB0ZWNoRW50cnk6IENvbnZlcnNhdGlvbkVudHJ5ID0gewogICAgICAgIHJvbGU6ICJ0ZWNoIiwKICAgICAgICB0ZXh0OiBhLnRlY2huaWNpYW5fcmVzcG9uc2UgfHwgIk5vIHJlc3BvbnNlIGdlbmVyYXRlZC4iLAogICAgICAgIHRpbWVzdGFtcDogbmV3IERhdGUoKS50b0xvY2FsZVRpbWVTdHJpbmcoW10sIHsgaG91cjogIjItZGlnaXQiLCBtaW51dGU6ICIyLWRpZ2l0IiB9KSwKICAgICAgICBrZXlfcG9pbnRzOiBhLmtleV9wb2ludHMsCiAgICAgICAgY29zdF9jb250ZXh0OiBhLmNvc3RfY29udGV4dCwKICAgICAgICBmb2xsb3dfdXBfb2ZmZXI6IGEuZm9sbG93X3VwX29mZmVyLAogICAgICB9OwogICAgICBzZXRDb252ZXJzYXRpb24ocHJldiA9PiBbLi4ucHJldiwgdGVjaEVudHJ5XSk7CiAgICB9IGNhdGNoIHsKICAgICAgc2V0Q29udmVyc2F0aW9uKHByZXYgPT4gWy4uLnByZXYsIHsKICAgICAgICByb2xlOiAidGVjaCIsCiAgICAgICAgdGV4dDogIlVuYWJsZSB0byBnZW5lcmF0ZSByZXNwb25zZS4gUGxlYXNlIHRyeSBhZ2Fpbi4iLAogICAgICAgIHRpbWVzdGFtcDogbmV3IERhdGUoKS50b0xvY2FsZVRpbWVTdHJpbmcoW10sIHsgaG91cjogIjItZGlnaXQiLCBtaW51dGU6ICIyLWRpZ2l0IiB9KSwKICAgICAgfV0pOwogICAgfSBmaW5hbGx5IHsKICAgICAgc2V0TG9hZGluZyhmYWxzZSk7CiAgICB9CiAgfTsKCiAgcmV0dXJuICgKICAgIDxkaXYgY2xhc3NOYW1lPSJzcGFjZS15LTQiPgogICAgICB7LyogQ29udGV4dCBpbnB1dCAqL30KICAgICAgPGRpdj4KICAgICAgICA8bGFiZWwgY2xhc3NOYW1lPSJ0ZXh0LWdyYXktNDAwIHRleHQteHMgdXBwZXJjYXNlIHRyYWNraW5nLXdpZGUgYmxvY2sgbWItMSI+U3lzdGVtIENvbnRleHQgKG9wdGlvbmFsKTwvbGFiZWw+CiAgICAgICAgPGlucHV0CiAgICAgICAgICB0eXBlPSJ0ZXh0IgogICAgICAgICAgdmFsdWU9e3N5c3RlbUNvbnRleHR9CiAgICAgICAgICBvbkNoYW5nZT17ZSA9PiBzZXRTeXN0ZW1Db250ZXh0KGUudGFyZ2V0LnZhbHVlKX0KICAgICAgICAgIHBsYWNlaG9sZGVyPSJlLmcuIEh1bnRlciBQcm8tQywgOCB6b25lcywgMjAxMCBpbnN0YWxsLCBjbGF5IHNvaWwsIE5KIgogICAgICAgICAgY2xhc3NOYW1lPSJ3LWZ1bGwgYmctd2hpdGUvNSBib3JkZXIgYm9yZGVyLXdoaXRlLzEwIHJvdW5kZWQtbGcgcHgtMyBweS0yIHRleHQtd2hpdGUgdGV4dC1zbSBmb2N1czpvdXRsaW5lLW5vbmUgZm9jdXM6Ym9yZGVyLWVtZXJhbGQtNTAwLzUwIgogICAgICAgIC8+CiAgICAgIDwvZGl2PgoKICAgICAgey8qIENvbnZlcnNhdGlvbiAqL30KICAgICAgPGRpdiBjbGFzc05hbWU9Im1pbi1oLTQ4IG1heC1oLTk2IG92ZXJmbG93LXktYXV0byBzcGFjZS15LTMgcHItMSI+CiAgICAgICAge2NvbnZlcnNhdGlvbi5sZW5ndGggPT09IDAgPyAoCiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZmxleCBmbGV4LWNvbCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgcHktMTIgdGV4dC1ncmF5LTYwMCI+CiAgICAgICAgICAgIDxVc2VyIGNsYXNzTmFtZT0idy0xMCBoLTEwIG1iLTMgb3BhY2l0eS0zMCIgLz4KICAgICAgICAgICAgPHAgY2xhc3NOYW1lPSJ0ZXh0LXNtIj5Ib21lb3duZXIgcXVlc3Rpb25zIGFwcGVhciBoZXJlPC9wPgogICAgICAgICAgICA8cCBjbGFzc05hbWU9InRleHQteHMgbXQtMSI+VGFwIHRoZSBtaWMgb3IgdHlwZSBhIHF1ZXN0aW9uIGJlbG93PC9wPgogICAgICAgICAgPC9kaXY+CiAgICAgICAgKSA6ICgKICAgICAgICAgIGNvbnZlcnNhdGlvbi5tYXAoKGVudHJ5LCBpKSA9PiAoCiAgICAgICAgICAgIDxkaXYga2V5PXtpfSBjbGFzc05hbWU9e2BmbGV4ICR7ZW50cnkucm9sZSA9PT0gInVzZXIiID8gImp1c3RpZnktZW5kIiA6ICJqdXN0aWZ5LXN0YXJ0In1gfT4KICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT17YG1heC13LXNtIHJvdW5kZWQtMnhsIHB4LTQgcHktMyB0ZXh0LXNtICR7CiAgICAgICAgICAgICAgICBlbnRyeS5yb2xlID09PSAidXNlciIKICAgICAgICAgICAgICAgICAgPyAiYmctZW1lcmFsZC04MDAvNDAgYm9yZGVyIGJvcmRlci1lbWVyYWxkLTcwMC8zMCB0ZXh0LXdoaXRlIgogICAgICAgICAgICAgICAgICA6ICJiZy13aGl0ZS81IGJvcmRlciBib3JkZXItd2hpdGUvMTAgdGV4dC1ncmF5LTIwMCIKICAgICAgICAgICAgICB9YH0+CiAgICAgICAgICAgICAgICA8cD57ZW50cnkudGV4dH08L3A+CiAgICAgICAgICAgICAgICB7ZW50cnkua2V5X3BvaW50cyAmJiBlbnRyeS5rZXlfcG9pbnRzLmxlbmd0aCA+IDAgJiYgKAogICAgICAgICAgICAgICAgICA8dWwgY2xhc3NOYW1lPSJtdC0yIHNwYWNlLXktMC41Ij4KICAgICAgICAgICAgICAgICAgICB7ZW50cnkua2V5X3BvaW50cy5tYXAoKGtwLCBqKSA9PiAoCiAgICAgICAgICAgICAgICAgICAgICA8bGkga2V5PXtqfSBjbGFzc05hbWU9InRleHQteHMgdGV4dC1lbWVyYWxkLTMwMCBmbGV4IGl0ZW1zLXN0YXJ0IGdhcC0xLjUiPgogICAgICAgICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9Im10LTAuNSI+4oCiPC9zcGFuPntrcH0KICAgICAgICAgICAgICAgICAgICAgIDwvbGk+CiAgICAgICAgICAgICAgICAgICAgKSl9CiAgICAgICAgICAgICAgICAgIDwvdWw+CiAgICAgICAgICAgICAgICApfQogICAgICAgICAgICAgICAge2VudHJ5LmNvc3RfY29udGV4dCAmJiAoCiAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT0idGV4dC14cyB0ZXh0LWFtYmVyLTMwMC84MCBtdC0yIGJvcmRlci10IGJvcmRlci13aGl0ZS8xMCBwdC0yIj57ZW50cnkuY29zdF9jb250ZXh0fTwvcD4KICAgICAgICAgICAgICAgICl9CiAgICAgICAgICAgICAgICB7ZW50cnkuZm9sbG93X3VwX29mZmVyICYmICgKICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPSJ0ZXh0LXhzIHRleHQtd2F0ZXItMzAwLzYwIG10LTEgaXRhbGljIj57ZW50cnkuZm9sbG93X3VwX29mZmVyfTwvcD4KICAgICAgICAgICAgICAgICl9CiAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9e2B0ZXh0LXhzIG10LTIgJHtlbnRyeS5yb2xlID09PSAidXNlciIgPyAidGV4dC1lbWVyYWxkLTUwMC82MCB0ZXh0LXJpZ2h0IiA6ICJ0ZXh0LWdyYXktNjAwIn1gfT57ZW50cnkudGltZXN0YW1wfTwvcD4KICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICApKQogICAgICAgICl9CiAgICAgICAge2xvYWRpbmcgJiYgKAogICAgICAgICAgPGRpdiBjbGFzc05hbWU9ImZsZXgganVzdGlmeS1zdGFydCI+CiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJiZy13aGl0ZS81IGJvcmRlciBib3JkZXItd2hpdGUvMTAgcm91bmRlZC0yeGwgcHgtNCBweS0zIj4KICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZmxleCBnYXAtMSI+CiAgICAgICAgICAgICAgICB7WzAsMSwyXS5tYXAoaSA9PiA8c3BhbiBrZXk9e2l9IGNsYXNzTmFtZT0idy0xLjUgaC0xLjUgcm91bmRlZC1mdWxsIGJnLWVtZXJhbGQtNDAwIGFuaW1hdGUtYm91bmNlIiBzdHlsZT17eyBhbmltYXRpb25EZWxheTogYCR7aSAqIDAuMTV9c2AgfX0gLz4pfQogICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgIDwvZGl2PgogICAgICAgICl9CiAgICAgIDwvZGl2PgoKICAgICAgey8qIElucHV0IGFyZWEgKi99CiAgICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IGdhcC0yIj4KICAgICAgICA8YnV0dG9uCiAgICAgICAgICBvblBvaW50ZXJEb3duPXtzdGFydExpc3RlbmluZ30KICAgICAgICAgIG9uUG9pbnRlclVwPXtzdG9wTGlzdGVuaW5nfQogICAgICAgICAgY2xhc3NOYW1lPXtgZmxleC1zaHJpbmstMCB3LTExIGgtMTEgcm91bmRlZC14bCBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciB0cmFuc2l0aW9uLWFsbCAkewogICAgICAgICAgICBsaXN0ZW5pbmcgPyAiYmctcmVkLTUwMCB0ZXh0LXdoaXRlIGFuaW1hdGUtcHVsc2UiIDogImJnLXdoaXRlLzEwIHRleHQtZ3JheS00MDAgaG92ZXI6Ymctd2hpdGUvMjAiCiAgICAgICAgICB9YH0KICAgICAgICAgIHRpdGxlPSJIb2xkIHRvIHNwZWFrIgogICAgICAgID4KICAgICAgICAgIHtsaXN0ZW5pbmcgPyA8TWljT2ZmIGNsYXNzTmFtZT0idy01IGgtNSIgLz4gOiA8TWljIGNsYXNzTmFtZT0idy01IGgtNSIgLz59CiAgICAgICAgPC9idXR0b24+CiAgICAgICAgPGRpdiBjbGFzc05hbWU9ImZsZXgtMSByZWxhdGl2ZSI+CiAgICAgICAgICA8aW5wdXQKICAgICAgICAgICAgdHlwZT0idGV4dCIKICAgICAgICAgICAgdmFsdWU9e3F1ZXN0aW9ufQogICAgICAgICAgICBvbkNoYW5nZT17ZSA9PiBzZXRRdWVzdGlvbihlLnRhcmdldC52YWx1ZSl9CiAgICAgICAgICAgIG9uS2V5RG93bj17ZSA9PiBlLmtleSA9PT0gIkVudGVyIiAmJiAhbG9hZGluZyAmJiBzZW5kUXVlc3Rpb24oKX0KICAgICAgICAgICAgcGxhY2Vob2xkZXI9IkhvbWVvd25lciBxdWVzdGlvbuKApiIKICAgICAgICAgICAgY2xhc3NOYW1lPSJ3LWZ1bGwgYmctd2hpdGUvNSBib3JkZXIgYm9yZGVyLXdoaXRlLzEwIHJvdW5kZWQteGwgcHgtNCBweS0yLjUgdGV4dC13aGl0ZSB0ZXh0LXNtIGZvY3VzOm91dGxpbmUtbm9uZSBmb2N1czpib3JkZXItZW1lcmFsZC01MDAvNTAgcHItMTAiCiAgICAgICAgICAvPgogICAgICAgICAgPGJ1dHRvbgogICAgICAgICAgICBvbkNsaWNrPXtzZW5kUXVlc3Rpb259CiAgICAgICAgICAgIGRpc2FibGVkPXshcXVlc3Rpb24udHJpbSgpIHx8IGxvYWRpbmd9CiAgICAgICAgICAgIGNsYXNzTmFtZT0iYWJzb2x1dGUgcmlnaHQtMiB0b3AtMS8yIC10cmFuc2xhdGUteS0xLzIgdGV4dC1lbWVyYWxkLTQwMCBob3Zlcjp0ZXh0LWVtZXJhbGQtMzAwIGRpc2FibGVkOm9wYWNpdHktMzAgZGlzYWJsZWQ6Y3Vyc29yLW5vdC1hbGxvd2VkIgogICAgICAgICAgPgogICAgICAgICAgICA8U2VuZCBjbGFzc05hbWU9InctNCBoLTQiIC8+CiAgICAgICAgICA8L2J1dHRvbj4KICAgICAgICA8L2Rpdj4KICAgICAgPC9kaXY+CiAgICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IGdhcC0yIGZsZXgtd3JhcCI+CiAgICAgICAge1siSG93IGxvbmcgc2hvdWxkIG15IHpvbmVzIHJ1bj8iLCAiV2h5IGRvZXMgbXkgbGF3biBoYXZlIGRyeSBzcG90cz8iLCAiV2hhdCBkb2VzIHRoaXMgcmVwYWlyIGNvc3Q/Il0ubWFwKHEgPT4gKAogICAgICAgICAgPGJ1dHRvbiBrZXk9e3F9IG9uQ2xpY2s9eygpID0+IHNldFF1ZXN0aW9uKHEpfSBjbGFzc05hbWU9InRleHQteHMgcHgtMyBweS0xLjUgcm91bmRlZC1mdWxsIGJnLXdoaXRlLzUgYm9yZGVyIGJvcmRlci13aGl0ZS8xMCB0ZXh0LWdyYXktNDAwIGhvdmVyOnRleHQtd2hpdGUgaG92ZXI6Ym9yZGVyLXdoaXRlLzMwIHRyYW5zaXRpb24tYWxsIj4KICAgICAgICAgICAgPE1lc3NhZ2VTcXVhcmUgY2xhc3NOYW1lPSJ3LTMgaC0zIGlubGluZSBtci0xIiAvPntxfQogICAgICAgICAgPC9idXR0b24+CiAgICAgICAgKSl9CiAgICAgIDwvZGl2PgogICAgPC9kaXY+CiAgKTsKfQo=
+"use client";
+
+import { useState, useRef, useCallback } from "react";
+import { User, Mic, MicOff, Send, MessageSquare } from "lucide-react";
+
+interface ConversationEntry {
+  role: "user" | "tech";
+  text: string;
+  timestamp: string;
+  key_points?: string[];
+  cost_context?: string | null;
+  follow_up_offer?: string;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnySpeechRecognition = any;
+
+export default function HomeownerMode() {
+  const [question, setQuestion] = useState("");
+  const [systemContext, setSystemContext] = useState("");
+  const [conversation, setConversation] = useState<ConversationEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<AnySpeechRecognition>(null);
+
+  const startListening = useCallback(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech recognition is not supported in this browser. Try Chrome.");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setQuestion((prev: string) => prev ? prev + " " + transcript : transcript);
+    };
+    recognition.onend = () => setListening(false);
+    recognition.onerror = () => setListening(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+    setListening(true);
+  }, []);
+
+  const stopListening = useCallback(() => {
+    recognitionRef.current?.stop();
+    setListening(false);
+  }, []);
+
+  const sendQuestion = async () => {
+    if (!question.trim()) return;
+    const q = question.trim();
+    setQuestion("");
+    setLoading(true);
+
+    const userEntry: ConversationEntry = {
+      role: "user",
+      text: q,
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    };
+    setConversation(prev => [...prev, userEntry]);
+
+    try {
+      const res = await fetch("/api/irrigation-voice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: q, systemContext }),
+      });
+      const data = await res.json();
+      const a = data.analysis;
+      const techEntry: ConversationEntry = {
+        role: "tech",
+        text: a.technician_response || "No response generated.",
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        key_points: a.key_points,
+        cost_context: a.cost_context,
+        follow_up_offer: a.follow_up_offer,
+      };
+      setConversation(prev => [...prev, techEntry]);
+    } catch {
+      setConversation(prev => [...prev, {
+        role: "tech",
+        text: "Unable to generate response. Please try again.",
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="text-gray-400 text-xs uppercase tracking-wide block mb-1">System Context (optional)</label>
+        <input
+          type="text"
+          value={systemContext}
+          onChange={e => setSystemContext(e.target.value)}
+          placeholder="e.g. Hunter Pro-C, 8 zones, 2010 install, clay soil, NJ"
+          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500/50"
+        />
+      </div>
+
+      <div className="min-h-48 max-h-96 overflow-y-auto space-y-3 pr-1">
+        {conversation.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-gray-600">
+            <User className="w-10 h-10 mb-3 opacity-30" />
+            <p className="text-sm">Homeowner questions appear here</p>
+            <p className="text-xs mt-1">Tap the mic or type a question below</p>
+          </div>
+        ) : (
+          conversation.map((entry, i) => (
+            <div key={i} className={`flex ${entry.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div className={`max-w-sm rounded-2xl px-4 py-3 text-sm ${
+                entry.role === "user"
+                  ? "bg-emerald-800/40 border border-emerald-700/30 text-white"
+                  : "bg-white/5 border border-white/10 text-gray-200"
+              }`}>
+                <p>{entry.text}</p>
+                {entry.key_points && entry.key_points.length > 0 && (
+                  <ul className="mt-2 space-y-0.5">
+                    {entry.key_points.map((kp, j) => (
+                      <li key={j} className="text-xs text-emerald-300 flex items-start gap-1.5">
+                        <span className="mt-0.5">•</span>{kp}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {entry.cost_context && (
+                  <p className="text-xs text-amber-300/80 mt-2 border-t border-white/10 pt-2">{entry.cost_context}</p>
+                )}
+                {entry.follow_up_offer && (
+                  <p className="text-xs text-water-300/60 mt-1 italic">{entry.follow_up_offer}</p>
+                )}
+                <p className={`text-xs mt-2 ${entry.role === "user" ? "text-emerald-500/60 text-right" : "text-gray-600"}`}>{entry.timestamp}</p>
+              </div>
+            </div>
+          ))
+        )}
+        {loading && (
+          <div className="flex justify-start">
+            <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3">
+              <div className="flex gap-1">
+                {[0,1,2].map(i => <span key={i} className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          onPointerDown={startListening}
+          onPointerUp={stopListening}
+          className={`flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
+            listening ? "bg-red-500 text-white animate-pulse" : "bg-white/10 text-gray-400 hover:bg-white/20"
+          }`}
+          title="Hold to speak"
+        >
+          {listening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+        </button>
+        <div className="flex-1 relative">
+          <input
+            type="text"
+            value={question}
+            onChange={e => setQuestion(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && !loading && sendQuestion()}
+            placeholder="Homeowner question…"
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500/50 pr-10"
+          />
+          <button
+            onClick={sendQuestion}
+            disabled={!question.trim() || loading}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-emerald-400 hover:text-emerald-300 disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      <div className="flex gap-2 flex-wrap">
+        {["How long should my zones run?", "Why does my lawn have dry spots?", "What does this repair cost?"].map(q => (
+          <button key={q} onClick={() => setQuestion(q)} className="text-xs px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-all">
+            <MessageSquare className="w-3 h-3 inline mr-1" />{q}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}

@@ -5,6 +5,7 @@ export interface LocationData {
   state?: string;
   soilType?: string;
   hardiness_zone?: string;
+  grassClass?: 'cool' | 'warm' | 'transition';
   weather?: {
     temp_f: number;
     humidity: number;
@@ -36,6 +37,30 @@ const STATE_ABBR: Record<string, string> = {
   Virginia: 'VA', Washington: 'WA', 'West Virginia': 'WV',
   Wisconsin: 'WI', Wyoming: 'WY', 'District of Columbia': 'DC',
 };
+
+/**
+ * Derive cool-season / warm-season / transition classification from USDA hardiness zone.
+ * Zone ≤6 → cool, Zone ≥8 → warm, Zone 7 → transition.
+ * Exported so prompts and the UI badge can both use it.
+ */
+export function deriveGrassClass(zone: string): 'cool' | 'warm' | 'transition' {
+  if (!zone || zone === 'Unknown') return 'cool';
+  const num = parseInt(zone.replace(/[^0-9]/g, ''), 10);
+  if (isNaN(num)) return 'cool';
+  if (num <= 6) return 'cool';
+  if (num >= 8) return 'warm';
+  return 'transition'; // zone 7
+}
+
+// ── sessionStorage geocode cache (client-side only; no-op on SSR) ─────────────
+function cacheGet(key: string): string | null {
+  if (typeof window === 'undefined') return null;
+  try { return sessionStorage.getItem(key); } catch { return null; }
+}
+function cacheSet(key: string, value: string): void {
+  if (typeof window === 'undefined') return;
+  try { sessionStorage.setItem(key, value); } catch {}
+}
 
 /**
  * Fetch geologic/pedological soil type from USDA Web Soil Survey (no API key).
@@ -113,12 +138,20 @@ export async function getWeather(
 
 /**
  * Reverse geocode to town name + state abbreviation using Nominatim OSM.
- * Free, no API key required. Returns proper city/town names.
+ * Results are cached in sessionStorage (keyed by rounded lat/lng) to avoid
+ * re-hitting Nominatim's 1 req/sec rate limit on repeat uploads.
  */
 export async function reverseGeocode(
   lat: number,
   lng: number
 ): Promise<{ city?: string; state?: string }> {
+  // Round to 3 decimal places (~100m grid) for cache key
+  const key = `gc:${lat.toFixed(3)},${lng.toFixed(3)}`;
+  const cached = cacheGet(key);
+  if (cached) {
+    try { return JSON.parse(cached); } catch {}
+  }
+
   try {
     const res = await fetch(
       `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=10`,
@@ -127,7 +160,6 @@ export async function reverseGeocode(
     if (!res.ok) return {};
     const data = await res.json();
     const addr = data?.address ?? {};
-    // Best available place name: city > town > village > municipality > hamlet > county
     const city =
       addr.city ??
       addr.town ??
@@ -138,7 +170,9 @@ export async function reverseGeocode(
     const stateRaw: string = addr.state ?? '';
     const state =
       STATE_ABBR[stateRaw] ?? (stateRaw.length <= 3 ? stateRaw : undefined);
-    return { city, state };
+    const result = { city, state };
+    cacheSet(key, JSON.stringify(result));
+    return result;
   } catch {
     return {};
   }
@@ -178,10 +212,11 @@ function toDateStr(d: Date): string {
 }
 
 /**
- * Compare last-30-day precipitation vs the same 30-day window one year ago.
- * Recent data: Open-Meteo forecast API (past_days=30).
- * Prior-year baseline: Open-Meteo archive API (same calendar window, -1 year).
- * Returns totals in inches and % of prior-year normal.
+ * Compare last-30-day precipitation vs a 3-year rolling average for the same
+ * calendar window (years -1, -2, -3 fetched in parallel via Open-Meteo archive).
+ * A 3-year average is far more statistically robust than a single prior year,
+ * which can itself be an anomalous drought or flood year.
+ * Returns totals in inches and % of 3-year normal.
  */
 export async function getRainfallData(
   lat: number,
@@ -189,37 +224,56 @@ export async function getRainfallData(
 ): Promise<LocationData['rainfall']> {
   try {
     const today = new Date();
-    const priorEnd = new Date(today);
-    priorEnd.setFullYear(today.getFullYear() - 1);
-    const priorStart = new Date(priorEnd);
-    priorStart.setDate(priorEnd.getDate() - 30);
 
-    const [recentRes, priorRes] = await Promise.all([
-      fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
-          `&daily=precipitation_sum&past_days=30&forecast_days=0&precipitation_unit=inch`
-      ),
-      fetch(
+    // Recent 30 days via forecast API (no archive lag)
+    const recentFetch = fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
+        `&daily=precipitation_sum&past_days=30&forecast_days=0&precipitation_unit=inch`
+    );
+
+    // Same 30-day window for 3 prior years via archive API
+    const baselineFetches = [1, 2, 3].map(yearsBack => {
+      const end = new Date(today);
+      end.setFullYear(today.getFullYear() - yearsBack);
+      const start = new Date(end);
+      start.setDate(end.getDate() - 30);
+      return fetch(
         `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lng}` +
-          `&start_date=${toDateStr(priorStart)}&end_date=${toDateStr(priorEnd)}` +
+          `&start_date=${toDateStr(start)}&end_date=${toDateStr(end)}` +
           `&daily=precipitation_sum&precipitation_unit=inch`
-      ),
+      );
+    });
+
+    const [recentRes, ...baselineResponses] = await Promise.all([
+      recentFetch,
+      ...baselineFetches,
     ]);
 
-    if (!recentRes.ok || !priorRes.ok) return undefined;
-
-    const [recentData, priorData] = await Promise.all([
-      recentRes.json(),
-      priorRes.json(),
-    ]);
+    if (!recentRes.ok) return undefined;
 
     const sum = (arr: (number | null)[]): number =>
       (arr ?? []).reduce((s, v) => s + (v ?? 0), 0);
 
+    const recentData = await recentRes.json();
     const recent_in =
       Math.round(sum(recentData?.daily?.precipitation_sum) * 10) / 10;
-    const normal_in =
-      Math.round(sum(priorData?.daily?.precipitation_sum) * 10) / 10;
+
+    // Parse all baseline years that responded successfully
+    const baselineTotals: number[] = [];
+    for (const res of baselineResponses) {
+      if (!res.ok) continue;
+      try {
+        const data = await res.json();
+        baselineTotals.push(sum(data?.daily?.precipitation_sum));
+      } catch {
+        // skip failed years
+      }
+    }
+
+    if (baselineTotals.length === 0) return { recent_in, normal_in: 0, pct_of_normal: 100 };
+
+    const normal_raw = baselineTotals.reduce((s, v) => s + v, 0) / baselineTotals.length;
+    const normal_in = Math.round(normal_raw * 10) / 10;
 
     if (normal_in === 0) return { recent_in, normal_in, pct_of_normal: 100 };
     const pct_of_normal = Math.round((recent_in / normal_in) * 100);
@@ -230,7 +284,8 @@ export async function getRainfallData(
 }
 
 /**
- * Aggregate all location enrichment in parallel (6 concurrent API calls).
+ * Aggregate all location enrichment in parallel (7 concurrent API calls).
+ * Includes grass class derivation from hardiness zone for national routing.
  */
 export async function getFullLocationData(
   lat: number,
@@ -247,13 +302,14 @@ export async function getFullLocationData(
     ]);
 
   const soilTempVal = soilTemp.status === 'fulfilled' ? soilTemp.value : {};
+  const zone = hardiness_zone.status === 'fulfilled' ? hardiness_zone.value : 'Unknown';
 
   return {
     lat,
     lng,
     soilType: soilType.status === 'fulfilled' ? soilType.value : 'Unknown',
-    hardiness_zone:
-      hardiness_zone.status === 'fulfilled' ? hardiness_zone.value : 'Unknown',
+    hardiness_zone: zone,
+    grassClass: deriveGrassClass(zone),
     weather: weather.status === 'fulfilled' ? weather.value : undefined,
     city: geo.status === 'fulfilled' ? geo.value.city : undefined,
     state: geo.status === 'fulfilled' ? geo.value.state : undefined,

@@ -72,7 +72,7 @@ export default function AuditReport({ initialData, audit: auditProp, onNewAudit 
   const addIssue = () => {
     const issue = newIssue();
     setAudit(prev => ({ ...prev, issues: [...prev.issues, issue] }));
-    setExpanded(issue.id);
+    setExpanded(issue.id ?? null);
   };
 
   const updateIssue = (id: string, field: keyof AuditIssue, value: string) =>
@@ -192,17 +192,17 @@ export default function AuditReport({ initialData, audit: auditProp, onNewAudit 
           <div className="space-y-2">
             {audit.issues.map(issue => (
               <div key={issue.id} className={`border rounded-xl overflow-hidden ${severityBg(issue.severity)}`}>
-                <button onClick={() => setExpanded(expanded === issue.id ? null : issue.id)}
+                <button onClick={() => setExpanded(expanded === (issue.id ?? "") ? null : issue.id)}
                   className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/3 transition-colors">
                   {severityIcon(issue.severity)}
                   <span className="flex-1 text-sm font-medium text-white">{issue.issue || "New issue"}</span>
                   <span className="text-xs text-gray-500">{issue.zone ? "Zone " + issue.zone : ""}</span>
-                  {expanded === issue.id ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+                  {expanded === (issue.id ?? "") ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
                   <button onClick={e => { e.stopPropagation(); removeIssue(issue.id); }} className="text-gray-600 hover:text-red-400 transition-colors ml-1">
                     <Trash className="w-3.5 h-3.5" />
                   </button>
                 </button>
-                {expanded === issue.id && (
+                {expanded === (issue.id ?? "") && (
                   <div className="px-4 pb-4 pt-1 space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                       <div>

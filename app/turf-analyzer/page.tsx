@@ -111,14 +111,14 @@ export default function TurfAnalyzer() {
           <div className="flex items-center gap-2.5">
             <Link
               href="/"
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-field-500 hover:text-field-200 hover:bg-field-800/60 transition-all"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-field-200 hover:text-white hover:bg-field-800/60 transition-all"
               aria-label="Back to home"
             >
               <ArrowLeft size={17} />
             </Link>
             <div className="flex items-center gap-2">
               <Scan size={15} className="text-field-400" />
-              <span className="font-display text-[15px] text-field-100 tracking-[0.12em]">
+              <span className="font-display text-[15px] text-white tracking-[0.12em]">
                 Turf<span className="text-field-400">Analyzer</span>
               </span>
             </div>
@@ -126,7 +126,7 @@ export default function TurfAnalyzer() {
           {appState === 'results' && (
             <button
               onClick={reset}
-              className="flex items-center gap-1.5 text-field-400 hover:text-field-200 text-sm transition-colors"
+              className="flex items-center gap-1.5 text-field-200 hover:text-white text-sm transition-colors"
             >
               <RotateCcw size={14} /> New scan
             </button>
@@ -155,7 +155,7 @@ export default function TurfAnalyzer() {
         {/* Idle prompt */}
         {appState === 'idle' && (
           <div className="text-center py-2">
-            <p className="text-field-300 text-sm leading-relaxed">
+            <p className="text-field-50 text-sm leading-relaxed">
               Point your camera at any turf issue — weeds, disease, bare patches,
               discoloration — and get instant, location-aware guidance.
             </p>
@@ -165,7 +165,7 @@ export default function TurfAnalyzer() {
         {/* Error state */}
         {appState === 'error' && (
           <div className="rounded-xl bg-red-900/30 border border-red-700/40 p-4 text-center space-y-3">
-            <p className="text-red-300 text-sm">{errorMessage}</p>
+            <p className="text-red-200 text-sm">{errorMessage}</p>
             <button
               onClick={reset}
               className="px-5 py-2 rounded-xl bg-field-600 text-white text-sm hover:bg-field-500 transition"
@@ -188,12 +188,12 @@ export default function TurfAnalyzer() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-soil-900/70 to-transparent" />
                 <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-                  <span className="text-field-200 text-xs font-medium bg-soil-900/60 px-2.5 py-1 rounded-full backdrop-blur-sm">
+                  <span className="text-white text-xs font-medium bg-soil-900/60 px-2.5 py-1 rounded-full backdrop-blur-sm">
                     📸 Analyzed photo
                   </span>
                   <button
                     onClick={reset}
-                    className="flex items-center gap-1.5 text-field-300 hover:text-field-100 text-xs bg-soil-900/60 px-2.5 py-1 rounded-full backdrop-blur-sm transition"
+                    className="flex items-center gap-1.5 text-field-100 hover:text-white text-xs bg-soil-900/60 px-2.5 py-1 rounded-full backdrop-blur-sm transition"
                   >
                     <RotateCcw size={12} /> New scan
                   </button>

@@ -4,10 +4,19 @@ import { useState, useCallback } from "react";
 import { Cpu, ChevronDown, ChevronUp, Search, BookOpen } from "lucide-react";
 import { CONTROLLER_DATABASE, getAllBrands, findController } from "@/lib/irrigation/controllers";
 
+type ProgrammingTask = "set_time" | "set_watering" | "manual_run" | "rain_delay";
+const TASK_LABELS: Record<ProgrammingTask, string> = {
+  set_time: "Set Time",
+  set_watering: "Set Watering",
+  manual_run: "Manual Run",
+  rain_delay: "Rain Delay",
+};
+const TASK_KEYS: ProgrammingTask[] = ["set_time", "set_watering", "manual_run", "rain_delay"];
+
 export default function ControllerGuideComponent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedController, setSelectedController] = useState<typeof CONTROLLER_DATABASE[0] | null>(null);
-  const [selectedTask, setSelectedTask] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<ProgrammingTask>("set_time");
   const [expandedStep, setExpandedStep] = useState<number | null>(0);
   const [idMode, setIdMode] = useState(false);
   const [idQuery, setIdQuery] = useState("");
@@ -20,13 +29,13 @@ export default function ControllerGuideComponent() {
     ? CONTROLLER_DATABASE.filter(c =>
         c.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (c.nicknames && c.nicknames.some((n: string) => n.toLowerCase().includes(searchQuery.toLowerCase())))
+        c.aliases.some((n: string) => n.toLowerCase().includes(searchQuery.toLowerCase()))
       )
     : CONTROLLER_DATABASE;
 
   const selectController = (c: typeof CONTROLLER_DATABASE[0]) => {
     setSelectedController(c);
-    setSelectedTask(c.guides[0]?.task || null);
+    setSelectedTask("set_time");
     setExpandedStep(0);
   };
 
@@ -43,7 +52,7 @@ export default function ControllerGuideComponent() {
     setIdLoading(false);
   }, [idQuery]);
 
-  const currentGuide = selectedController?.guides.find((g: { task: string }) => g.task === selectedTask);
+  const currentSteps = selectedController?.programming[selectedTask] ?? [];
 
   return (
     <div className="space-y-5">
@@ -70,11 +79,11 @@ export default function ControllerGuideComponent() {
             <div className="bg-purple-900/10 border border-purple-700/40 rounded-xl p-4">
               <p className="text-xs text-purple-400 uppercase tracking-wide mb-1 font-medium">Match Found</p>
               <p className="text-white font-semibold">{idResult.brand} {idResult.model}</p>
-              {idResult.nicknames?.length > 0 && <p className="text-xs text-gray-500 mt-0.5">Also known as: {idResult.nicknames.join(", ")}</p>}
-              <p className="text-sm text-gray-300 mt-2">{idResult.description}</p>
+              {idResult.aliases.length > 0 && <p className="text-xs text-gray-500 mt-0.5">Also known as: {idResult.aliases.join(", ")}</p>}
               <div className="flex gap-3 mt-3 text-xs text-gray-400">
                 <span>Type: <span className="text-white">{idResult.type}</span></span>
-                <span>Zones: <span className="text-white">{idResult.zone_range}</span></span>
+                <span>Max Zones: <span className="text-white">{idResult.zones_max}</span></span>
+                <span>WiFi: <span className="text-white">{idResult.wifi ? "Yes" : "No"}</span></span>
               </div>
               <button onClick={() => { selectController(idResult); setIdMode(false); }}
                 className="mt-3 text-xs text-purple-400 hover:text-purple-300 underline transition-colors">
@@ -102,24 +111,24 @@ export default function ControllerGuideComponent() {
             <button onClick={() => setSelectedController(null)} className="text-gray-500 hover:text-white transition-colors text-xs">Back</button>
             <div className="flex-1">
               <p className="text-white font-semibold text-sm">{selectedController.brand} {selectedController.model}</p>
-              <p className="text-xs text-gray-500">{selectedController.type} · {selectedController.zone_range} zones</p>
+              <p className="text-xs text-gray-500">{selectedController.type} · up to {selectedController.zones_max} zones</p>
             </div>
           </div>
 
           <div className="flex gap-2 overflow-x-auto pb-1">
-            {selectedController.guides.map((g: { task: string }) => (
-              <button key={g.task} onClick={() => { setSelectedTask(g.task); setExpandedStep(0); }}
+            {TASK_KEYS.map((task) => (
+              <button key={task} onClick={() => { setSelectedTask(task); setExpandedStep(0); }}
                 className={`flex-shrink-0 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all capitalize ${
-                  selectedTask === g.task ? "border-purple-500 bg-purple-900/20 text-purple-300" : "border-white/10 text-gray-500 hover:border-white/20"
+                  selectedTask === task ? "border-purple-500 bg-purple-900/20 text-purple-300" : "border-white/10 text-gray-500 hover:border-white/20"
                 }`}>
-                {g.task.replace(/_/g, " ")}
+                {TASK_LABELS[task]}
               </button>
             ))}
           </div>
 
-          {currentGuide && (
+          {currentSteps.length > 0 && (
             <div className="space-y-2">
-              {currentGuide.steps.map((step: { title: string; instruction: string; display_shows?: string; tip?: string }, i: number) => (
+              {currentSteps.map((step, i: number) => (
                 <div key={i} className="border border-white/10 rounded-xl overflow-hidden">
                   <button onClick={() => setExpandedStep(expandedStep === i ? null : i)}
                     className="w-full flex items-center gap-3 px-4 py-3 text-left bg-white/5 hover:bg-white/8 transition-colors">
@@ -130,13 +139,11 @@ export default function ControllerGuideComponent() {
                   {expandedStep === i && (
                     <div className="px-4 pb-4 pt-2 space-y-2">
                       <p className="text-sm text-gray-200">{step.instruction}</p>
-                      {step.display_shows && (
-                        <div className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 font-mono text-xs text-purple-300">
-                          Display: {step.display_shows}
-                        </div>
-                      )}
                       {step.tip && (
                         <p className="text-xs text-amber-400/80 italic border-l-2 border-amber-700/40 pl-2">{step.tip}</p>
+                      )}
+                      {step.warning && (
+                        <p className="text-xs text-red-400/80 italic border-l-2 border-red-700/40 pl-2">⚠ {step.warning}</p>
                       )}
                     </div>
                   )}
@@ -174,9 +181,9 @@ export default function ControllerGuideComponent() {
                   <Cpu className="w-5 h-5 text-purple-400 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-white text-sm font-medium">{c.brand} {c.model}</p>
-                    <p className="text-xs text-gray-500 truncate">{c.description}</p>
+                    <p className="text-xs text-gray-500 truncate">{c.type} · {c.zones_max} zones max{c.wifi ? " · WiFi" : ""}{c.two_wire ? " · 2-wire" : ""}</p>
                   </div>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-purple-900/30 border border-purple-800/30 text-purple-400 flex-shrink-0">{c.zone_range} zones</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-purple-900/30 border border-purple-800/30 text-purple-400 flex-shrink-0">{c.zones_max} zones</span>
                 </div>
               </button>
             ))}

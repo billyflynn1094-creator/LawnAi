@@ -5,6 +5,10 @@ import { getSoilProfile } from '@/lib/soilRates';
 
 export const runtime = 'nodejs';
 
+// Gemini 2.5 Flash with a rich system prompt can take 15-30s on first call.
+// Vercel's default limit is 10s — raise to 60s to prevent timeout crashes.
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();

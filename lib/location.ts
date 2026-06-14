@@ -10,6 +10,8 @@ export interface LocationData {
     humidity: number;
     condition: string;
   };
+  soil_temp_surface_f?: number;
+  soil_temp_6cm_f?: number;
 }
 
 /**
@@ -122,18 +124,52 @@ export async function reverseGeocode(
 }
 
 /**
+ * Fetch real-time soil temperature from Open-Meteo (free, no API key required).
+ * Returns surface (0cm) and 6cm depth soil temps in °F.
+ */
+export async function getSoilTemperature(
+  lat: number,
+  lng: number
+): Promise<{ surface_f?: number; depth_6cm_f?: number }> {
+  try {
+    const res = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=soil_temperature_0cm,soil_temperature_6cm&temperature_unit=fahrenheit`
+    );
+    if (!res.ok) return {};
+    const data = await res.json();
+    return {
+      surface_f:
+        data?.current?.soil_temperature_0cm != null
+          ? Math.round(data.current.soil_temperature_0cm)
+          : undefined,
+      depth_6cm_f:
+        data?.current?.soil_temperature_6cm != null
+          ? Math.round(data.current.soil_temperature_6cm)
+          : undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
+/**
  * Aggregate all location data in parallel.
  */
 export async function getFullLocationData(
   lat: number,
   lng: number
 ): Promise<LocationData> {
-  const [soilType, hardiness_zone, weather, geo] = await Promise.allSettled([
-    getSoilType(lat, lng),
-    getHardinessZone(lat, lng),
-    getWeather(lat, lng),
-    reverseGeocode(lat, lng),
-  ]);
+  const [soilType, hardiness_zone, weather, geo, soilTemp] =
+    await Promise.allSettled([
+      getSoilType(lat, lng),
+      getHardinessZone(lat, lng),
+      getWeather(lat, lng),
+      reverseGeocode(lat, lng),
+      getSoilTemperature(lat, lng),
+    ]);
+
+  const soilTempVal =
+    soilTemp.status === "fulfilled" ? soilTemp.value : {};
 
   return {
     lat,
@@ -146,5 +182,7 @@ export async function getFullLocationData(
       weather.status === "fulfilled" ? weather.value : undefined,
     city: geo.status === "fulfilled" ? geo.value.city : undefined,
     state: geo.status === "fulfilled" ? geo.value.state : undefined,
+    soil_temp_surface_f: soilTempVal.surface_f,
+    soil_temp_6cm_f: soilTempVal.depth_6cm_f,
   };
 }

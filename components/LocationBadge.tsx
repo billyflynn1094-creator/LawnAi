@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin, Thermometer, Droplets, Loader2, AlertCircle } from "lucide-react";
+import { MapPin, Thermometer, Droplets, Loader2, AlertCircle, Layers } from "lucide-react";
 
 interface LocationData {
   lat: number;
@@ -10,6 +10,8 @@ interface LocationData {
   soilType?: string;
   hardiness_zone?: string;
   weather?: { temp_f: number; humidity: number; condition: string };
+  soil_temp_surface_f?: number;
+  soil_temp_6cm_f?: number;
 }
 
 interface LocationBadgeProps {
@@ -41,7 +43,7 @@ export default function LocationBadge({
         className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rust-500/20 text-rust-300 text-xs hover:bg-rust-500/30 transition"
       >
         <AlertCircle size={13} />
-        <span>Location unavailable — tap to retry</span>
+        <span>Location unavailable – tap to retry</span>
       </button>
     );
   }
@@ -54,7 +56,9 @@ export default function LocationBadge({
       <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-soil-800 text-field-200 text-xs">
         <MapPin size={12} className="text-field-400 shrink-0" />
         <span>
-          {location.city ? `${location.city}, ${location.state}` : `${location.lat.toFixed(3)}, ${location.lng.toFixed(3)}`}
+          {location.city
+            ? `${location.city}, ${location.state}`
+            : `${location.lat.toFixed(3)}, ${location.lng.toFixed(3)}`}
         </span>
       </div>
 
@@ -65,14 +69,14 @@ export default function LocationBadge({
         </div>
       )}
 
-      {/* Soil */}
+      {/* Soil type */}
       {location.soilType && location.soilType !== "Unknown" && (
         <div className="px-3 py-1.5 rounded-xl bg-soil-800 text-field-200 text-xs max-w-[180px] truncate">
           🌱 {location.soilType}
         </div>
       )}
 
-      {/* Weather */}
+      {/* Air weather */}
       {location.weather && (
         <>
           <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-soil-800 text-field-200 text-xs">
@@ -84,6 +88,20 @@ export default function LocationBadge({
             <span>{location.weather.humidity}%</span>
           </div>
         </>
+      )}
+
+      {/* Soil temperature */}
+      {location.soil_temp_surface_f != null && (
+        <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-soil-800 text-field-200 text-xs">
+          <Layers size={12} className="text-straw-400 shrink-0" />
+          <span>
+            Soil {location.soil_temp_surface_f}°F
+            {location.soil_temp_6cm_f != null &&
+            location.soil_temp_6cm_f !== location.soil_temp_surface_f
+              ? ` / ${location.soil_temp_6cm_f}°F @ 6cm`
+              : ""}
+          </span>
+        </div>
       )}
     </div>
   );

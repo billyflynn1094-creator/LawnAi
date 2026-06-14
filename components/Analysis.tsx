@@ -11,9 +11,16 @@ import {
   Calendar,
   Tag,
   Activity,
+  Sprout,
 } from 'lucide-react';
 import { useState } from 'react';
 import TimelineComponent from '@/components/Timeline';
+
+interface GrassType {
+  identified: string;
+  confidence: string;
+  notes: string;
+}
 
 interface TimelineStage {
   stage: string;
@@ -41,6 +48,7 @@ interface SoilProfileInfo {
 }
 
 interface Analysis {
+  grass_type?: GrassType;
   identified: { primary: string; confidence: string; description: string };
   diagnosis: {
     issue_type: string;
@@ -87,6 +95,12 @@ const DRAINAGE_BADGE: Record<string, string> = {
   rapid: 'text-sky-300 bg-sky-900/30',
   moderate: 'text-field-300 bg-field-800/40',
   slow: 'text-straw-300 bg-straw-400/20',
+};
+
+const CONFIDENCE_COLOR: Record<string, string> = {
+  high: 'text-field-300 bg-field-800/60',
+  medium: 'text-straw-300 bg-straw-400/20',
+  low: 'text-field-500 bg-soil-700/60',
 };
 
 function Section({
@@ -177,7 +191,7 @@ export default function AnalysisResults({ analysis }: AnalysisProps) {
         </div>
         {analysis.location_factors?.relevant_notes && (
           <p className="text-field-500 text-xs pt-1 border-t border-field-800/40 mt-2">
-            📍 {analysis.location_factors.relevant_notes}
+            🌍 {analysis.location_factors.relevant_notes}
           </p>
         )}
         {analysis.location_factors?.invasive_watch && (
@@ -187,12 +201,42 @@ export default function AnalysisResults({ analysis }: AnalysisProps) {
         )}
       </div>
 
+      {/* Grass Type Identifier */}
+      {analysis.grass_type && (
+        <div className="rounded-xl bg-field-900/50 border border-field-700/40 px-4 py-3 space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Sprout size={15} className="text-field-400 shrink-0" />
+              <p className="text-field-400 text-xs font-medium uppercase tracking-wide">
+                Grass Type Identified
+              </p>
+            </div>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full capitalize ${
+                CONFIDENCE_COLOR[analysis.grass_type.confidence] ??
+                'text-field-400'
+              }`}
+            >
+              {analysis.grass_type.confidence} confidence
+            </span>
+          </div>
+          <p className="text-field-100 font-display text-base">
+            {analysis.grass_type.identified}
+          </p>
+          {analysis.grass_type.notes && (
+            <p className="text-field-400 text-xs leading-relaxed">
+              {analysis.grass_type.notes}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Soil Profile */}
       {analysis._soil_profile && (
         <div className="rounded-xl bg-soil-800/60 border border-field-800/40 px-4 py-3 space-y-1.5">
           <div className="flex items-center justify-between">
             <p className="text-field-400 text-xs font-medium uppercase tracking-wide">
-              Soil Profile — {analysis._soil_profile.label}
+              Soil Profile – {analysis._soil_profile.label}
             </p>
             <span
               className={`text-xs px-2 py-0.5 rounded-full capitalize ${
@@ -204,7 +248,7 @@ export default function AnalysisResults({ analysis }: AnalysisProps) {
           </div>
           <p className="text-field-400 text-xs">{analysis._soil_profile.notes}</p>
           <p className="text-field-500 text-xs">
-            💊 Fertilizer schedule: {analysis._soil_profile.fertFrequency}
+            📊 Fertilizer schedule: {analysis._soil_profile.fertFrequency}
           </p>
         </div>
       )}
@@ -249,7 +293,7 @@ export default function AnalysisResults({ analysis }: AnalysisProps) {
                   </span>
                 </div>
 
-                {/* SKU badge — shown when catalog product matched */}
+                {/* SKU badge – shown when catalog product matched */}
                 {p.sku && (
                   <div className="flex items-center gap-1.5">
                     <Tag size={11} className="text-straw-500" />

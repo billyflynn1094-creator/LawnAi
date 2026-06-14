@@ -8,6 +8,7 @@ import {
   AlertCircle,
   Layers,
   CloudRain,
+  Leaf,
 } from "lucide-react";
 
 interface LocationData {
@@ -17,6 +18,7 @@ interface LocationData {
   state?: string;
   soilType?: string;
   hardiness_zone?: string;
+  grassClass?: "cool" | "warm" | "transition";
   weather?: { temp_f: number; humidity: number; condition: string };
   soil_temp_surface_f?: number;
   soil_temp_6cm_f?: number;
@@ -29,6 +31,24 @@ interface LocationBadgeProps {
   error: string | null;
   onRetry: () => void;
 }
+
+const GRASS_CLASS_STYLE: Record<
+  string,
+  { label: string; classes: string }
+> = {
+  cool: {
+    label: "Cool Season",
+    classes: "bg-field-800/60 text-field-300",
+  },
+  warm: {
+    label: "Warm Season",
+    classes: "bg-straw-400/20 text-straw-300",
+  },
+  transition: {
+    label: "Transition Zone",
+    classes: "bg-purple-900/40 text-purple-300",
+  },
+};
 
 export default function LocationBadge({
   location,
@@ -52,7 +72,7 @@ export default function LocationBadge({
         className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rust-500/20 text-rust-300 text-xs hover:bg-rust-500/30 transition"
       >
         <AlertCircle size={13} />
-        <span>Location unavailable – tap to retry</span>
+        <span>Location unavailable — tap to retry</span>
       </button>
     );
   }
@@ -68,9 +88,14 @@ export default function LocationBadge({
       ? "bg-straw-400/20 text-straw-300"
       : "bg-soil-800 text-field-200";
 
+  const grassStyle =
+    location.grassClass
+      ? GRASS_CLASS_STYLE[location.grassClass] ?? GRASS_CLASS_STYLE.cool
+      : null;
+
   return (
     <div className="flex flex-wrap gap-2">
-      {/* Town name only — no lat/lng fallback */}
+      {/* Town name */}
       {location.city && (
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-soil-800 text-field-200 text-xs">
           <MapPin size={12} className="text-field-400 shrink-0" />
@@ -86,6 +111,16 @@ export default function LocationBadge({
       {location.hardiness_zone && location.hardiness_zone !== "Unknown" && (
         <div className="px-3 py-1.5 rounded-xl bg-soil-800 text-field-200 text-xs">
           Zone {location.hardiness_zone}
+        </div>
+      )}
+
+      {/* Grass class badge — cool / warm / transition */}
+      {grassStyle && (
+        <div
+          className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs ${grassStyle.classes}`}
+        >
+          <Leaf size={11} className="shrink-0" />
+          <span>{grassStyle.label}</span>
         </div>
       )}
 
@@ -126,15 +161,21 @@ export default function LocationBadge({
         </div>
       )}
 
-      {/* 30-day rainfall vs prior-year average */}
+      {/* 30-day rainfall vs 3-year average */}
       {rain && (
-        <div className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs ${rainColor}`}>
+        <div
+          className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs ${rainColor}`}
+        >
           <CloudRain size={12} className="shrink-0" />
           <span>
             {rain.recent_in}in
             {rain.normal_in > 0 && (
-              <> ({rainDiff >= 0 ? "+" : ""}{rainDiff}% vs avg)</>)
-            }
+              <>
+                {" "}
+                ({rainDiff >= 0 ? "+" : ""}
+                {rainDiff}% vs 3yr avg)
+              </>
+            )}
           </span>
         </div>
       )}

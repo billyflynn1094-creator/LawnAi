@@ -113,7 +113,10 @@ export function getRegionalSoilProfile(lat: number, lng: number, state?: string)
   if (s === 'NJ') {
     if (lng > -74.2) return 'Sandy loam — Entisol/Ultisol (NJ Pine Barrens/Shore)';
     if (lat > 41) return 'Glacial loam — Inceptisol (North NJ Highlands)';
-    return 'Silt loam to sandy loam — Inceptisol (NJ Piedmont/Inner Coastal Plain)';
+    // Central NJ Piedmont (Somerset, Hunterdon, Morris counties)
+    // Penn silty clay loam series dominates — weathered Triassic Brunswick red shale
+    // Significant clay structure, moderate drainage, pH typically 6.0-6.8
+    return 'Silt loam to clay loam — Inceptisol/Ultisol (NJ Piedmont — Penn silty clay loam)';
   }
   if (['CT', 'MA', 'RI', 'NH', 'VT', 'ME'].includes(s)) return 'Glacial till / sandy loam — Inceptisol (New England)';
   if (s === 'NY') {

@@ -11,23 +11,15 @@ import {
   Calendar,
   Tag,
   Activity,
-  Sprout,
   Drill,
   Scissors,
   Wheat,
-  CircleCheck,
-  CircleX,
-  HelpCircle,
-  Eye,
-  TrendingUp,
-  BookOpen,
-  ChevronRight,
-  Layers,
+  ClipboardList,
 } from 'lucide-react';
 import { useState } from 'react';
-import TimelineComponent from '@/components/Timeline';
+import type { ReactNode } from 'react';
 
-// ── Type definitions ────────────────────────────────────────────────────────
+// ── Types ────────────────────────────────────────────────────────────────────
 
 interface ElaborateData {
   why_it_happens?: string;
@@ -37,39 +29,27 @@ interface ElaborateData {
   long_term_pathway?: string;
 }
 
-interface GrassType {
-  identified: string;
-  notes: string;
-}
-
-interface TimelineStage {
-  stage: string;
-  title: string;
-  actions: string[];
-  products: string[];
-  milestone: string;
-}
-
 interface Product {
   name: string;
   sku?: string;
   catalog_name?: string;
-  format?: 'granular' | 'liquid' | 'wettable_powder' | 'spray_ready';
-  type: string;
-  application_rate: string;
-  timing: string;
-  notes: string;
+  format?: string;
+  type?: string;
+  application_rate?: string;
+  timing?: string;
+  notes?: string;
 }
 
-interface SoilProfileInfo {
-  label: string;
-  notes: string;
-  fertFrequency: string;
-  drainageClass: string;
+interface TimelineStage {
+  stage?: string;
+  title?: string;
+  actions?: string[];
+  products?: string[];
+  milestone?: string;
 }
 
 interface MechanicalPractice {
-  recommended: boolean;
+  recommended?: boolean;
   timing?: string;
   method?: string;
   seed_type?: string;
@@ -83,483 +63,449 @@ interface MechanicalPractices {
   seeding?: MechanicalPractice;
 }
 
-interface Analysis {
-  overview_bullets?: string[];
-  grass_type?: GrassType;
-  identified: { primary: string; description: string };
-  diagnosis: {
-    issue_type: string;
-    severity: string;
-    cause: string;
-    spread_risk: string;
-  };
-  location_factors: { relevant_notes: string; invasive_watch: string | null };
-  treatment: {
-    immediate_actions: string[];
-    elaborate?: ElaborateData;
-    products: Product[];
-    cultural_practices: string[];
-  };
-  mechanical_practices?: MechanicalPractices;
-  timeline?: TimelineStage[];
-  prevention: string[];
-  follow_up: string;
-  professional_needed: boolean;
-  _soil_profile?: SoilProfileInfo;
-  raw?: string;
-  parse_error?: boolean;
+interface SoilProfileInfo {
+  label?: string;
+  notes?: string;
+  fertFrequency?: string;
+  drainageClass?: string;
 }
 
-interface AnalysisProps {
-  analysis: Analysis | null;
-}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnalysisData = Record<string, any>;
 
-// ── Style maps ──────────────────────────────────────────────────────────────
+// ── Constants ─────────────────────────────────────────────────────────────────
 
-const SEVERITY_COLOR: Record<string, string> = {
-  critical: 'text-red-400 bg-red-900/30',
-  moderate: 'text-straw-300 bg-straw-400/20',
-  mild: 'text-field-300 bg-field-800/40',
-  none: 'text-field-400 bg-field-900/40',
+const SEVERITY_STYLE: Record<string, string> = {
+  critical: 'bg-red-900/40 text-red-300 border border-red-700/40',
+  moderate: 'bg-orange-900/40 text-orange-300 border border-orange-700/40',
+  mild:     'bg-yellow-900/40 text-yellow-300 border border-yellow-700/40',
+  none:     'bg-field-900/40 text-field-400 border border-field-700/40',
 };
 
-const PRODUCT_BADGE: Record<string, string> = {
-  herbicide: 'bg-rust-500/20 text-rust-300',
-  fungicide: 'bg-purple-900/40 text-purple-300',
-  pesticide: 'bg-orange-900/40 text-orange-300',
-  fertilizer: 'bg-field-800/60 text-field-300',
-  amendment: 'bg-straw-400/20 text-straw-300',
-  organic: 'bg-emerald-900/40 text-emerald-300',
+const SPREAD_STYLE: Record<string, string> = {
+  high:   'bg-red-900/30 text-red-400',
+  medium: 'bg-orange-900/30 text-orange-400',
+  low:    'bg-field-900/30 text-field-400',
 };
 
 const FORMAT_BADGE: Record<string, string> = {
-  granular: 'bg-straw-400/25 text-straw-200 border border-straw-500/30',
-  liquid: 'bg-blue-900/30 text-blue-300 border border-blue-700/30',
-  wettable_powder: 'bg-purple-900/30 text-purple-300 border border-purple-700/30',
-  spray_ready: 'bg-field-800/40 text-field-300 border border-field-700/30',
+  granular:      'bg-straw-400/20 text-straw-200 border border-straw-500/30',
+  liquid:        'bg-blue-900/30 text-blue-300 border border-blue-700/30',
+  wdg:           'bg-purple-900/30 text-purple-300 border border-purple-700/30',
+  wettable_powder:'bg-purple-900/30 text-purple-300 border border-purple-700/30',
+  sc:            'bg-blue-900/30 text-blue-300 border border-blue-700/30',
+  spray_ready:   'bg-sky-900/30 text-sky-300 border border-sky-700/30',
 };
 
 const FORMAT_LABEL: Record<string, string> = {
-  granular: 'Granular',
-  liquid: 'Liquid',
-  wettable_powder: 'Wettable Powder',
-  spray_ready: 'Spray-Ready',
+  granular:       'Granular',
+  liquid:         'Liquid',
+  wdg:            'WDG',
+  wettable_powder:'WP',
+  sc:             'SC',
+  spray_ready:    'RTU',
 };
 
-const DRAINAGE_BADGE: Record<string, string> = {
-  rapid: 'text-sky-300 bg-sky-900/30',
-  moderate: 'text-field-300 bg-field-800/40',
-  slow: 'text-straw-300 bg-straw-400/20',
+const FORMAT_SORT: Record<string, number> = {
+  granular: 0, liquid: 1, wdg: 2, wettable_powder: 2, sc: 2, spray_ready: 3,
 };
 
-// ── Reusable components ─────────────────────────────────────────────────────
+// ── Sub-components ────────────────────────────────────────────────────────────
 
-function Section({
-  title,
-  icon,
-  children,
-  defaultOpen = true,
-}: {
-  title: string;
-  icon: React.ReactNode;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
+function SeverityBadge({ severity }: { severity?: string }) {
+  const s = (severity ?? 'none').toLowerCase();
+  const style = SEVERITY_STYLE[s] ?? SEVERITY_STYLE.none;
+  const icon =
+    s === 'critical' ? <AlertTriangle size={10} /> :
+    s === 'moderate' ? <ShieldAlert size={10} /> :
+    s === 'mild'     ? <Activity size={10} /> :
+    <CheckCircle size={10} />;
   return (
-    <div className="border border-field-800/50 rounded-xl overflow-hidden">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-soil-800/60 hover:bg-soil-700/60 transition"
-      >
-        <span className="flex items-center gap-2 text-field-200 text-sm font-medium">
-          {icon} {title}
-        </span>
-        {open ? <ChevronUp size={15} className="text-field-500" /> : <ChevronDown size={15} className="text-field-500" />}
-      </button>
-      {open && <div className="px-4 py-3 space-y-2">{children}</div>}
-    </div>
+    <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wide ${style}`}>
+      {icon} {s}
+    </span>
   );
 }
 
-/** Single sub-section inside an Elaborate panel (individually collapsible) */
-function ElaborateSub({ icon, label, content }: { icon: React.ReactNode; label: string; content: string }) {
+function ElaborateSub({ title, content }: { title: string; content?: string }) {
   const [open, setOpen] = useState(false);
+  if (!content) return null;
   return (
-    <div className="border-t border-field-800/30 first:border-t-0 pt-1">
+    <div className="border-t border-field-800/40 first:border-t-0">
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between py-1.5 text-xs text-field-400 hover:text-field-200 transition"
+        className="w-full flex items-center justify-between py-2.5 text-left text-field-300 hover:text-field-100 transition text-xs font-medium"
       >
-        <span className="flex items-center gap-1.5 font-medium">{icon} {label}</span>
-        {open ? <ChevronUp size={11} className="shrink-0" /> : <ChevronDown size={11} className="shrink-0" />}
+        {title}
+        {open
+          ? <ChevronUp size={12} className="text-field-500 shrink-0" />
+          : <ChevronDown size={12} className="text-field-500 shrink-0" />
+        }
       </button>
       {open && (
-        <p className="text-field-300 text-xs leading-relaxed pb-2 pl-4">{content}</p>
+        <p className="pb-3 text-xs text-field-400 leading-relaxed">{content}</p>
       )}
     </div>
   );
 }
 
-/** Elaborate expandable block — appears at the bottom of any section that has it */
-function Elaborate({ data }: { data: ElaborateData }) {
-  const [open, setOpen] = useState(false);
-  const entries: Array<{ key: keyof ElaborateData; label: string; icon: React.ReactNode }> = [
-    { key: 'why_it_happens', label: 'Why It Happens', icon: <HelpCircle size={11} /> },
-    { key: 'how_to_apply', label: 'How To Apply', icon: <ChevronRight size={11} /> },
-    { key: 'what_to_watch_for', label: 'What To Watch For', icon: <Eye size={11} /> },
-    { key: 'common_mistakes', label: 'Common Mistakes', icon: <AlertTriangle size={11} /> },
-    { key: 'long_term_pathway', label: 'Long-Term Pathway', icon: <TrendingUp size={11} /> },
-  ];
-  const available = entries.filter(e => !!data[e.key]);
-  if (!available.length) return null;
+function ProductRow({ product }: { product: Product }) {
+  const [expanded, setExpanded] = useState(false);
+  const fmt = (product.format ?? '').toLowerCase();
+  const fmtStyle = FORMAT_BADGE[fmt] ?? 'bg-field-800/40 text-field-400 border border-field-700/30';
+  const fmtLabel = FORMAT_LABEL[fmt] ?? (fmt ? fmt.toUpperCase() : '');
 
   return (
-    <div className="mt-3 pt-2 border-t border-field-800/30">
+    <div className="border-b border-field-800/30 last:border-b-0">
       <button
-        onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1.5 text-xs text-field-500 hover:text-field-300 transition"
+        onClick={() => setExpanded(e => !e)}
+        className="w-full flex items-center justify-between py-2.5 text-left gap-3"
       >
-        <BookOpen size={11} />
-        <span>{open ? 'Close' : 'Elaborate'}</span>
-        {open ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-xs text-field-200 font-medium truncate">{product.name}</span>
+          {fmtLabel && (
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap shrink-0 ${fmtStyle}`}>
+              {fmtLabel}
+            </span>
+          )}
+        </div>
+        {expanded
+          ? <ChevronUp size={12} className="text-field-600 shrink-0" />
+          : <ChevronDown size={12} className="text-field-600 shrink-0" />
+        }
       </button>
-      {open && (
-        <div className="mt-2 bg-soil-900/70 rounded-lg px-3 py-1">
-          {available.map(e => (
-            <ElaborateSub key={e.key} icon={e.icon} label={e.label} content={data[e.key]!} />
-          ))}
+      {expanded && (
+        <div className="pb-3 space-y-1.5 pl-1">
+          {product.type && (
+            <p className="text-[10px] text-field-500 uppercase tracking-wide mb-1">{product.type.replace(/_/g,' ')}</p>
+          )}
+          {product.application_rate && (
+            <p className="text-xs text-field-400">
+              <span className="text-field-500">Rate:</span> {product.application_rate}
+            </p>
+          )}
+          {product.timing && (
+            <p className="text-xs text-field-400">
+              <span className="text-field-500">Timing:</span> {product.timing}
+            </p>
+          )}
+          {product.notes && (
+            <p className="text-xs text-field-400 leading-relaxed mt-0.5">{product.notes}</p>
+          )}
+          {!product.sku && (
+            <p className="text-[10px] text-field-600 italic mt-1">
+              Source through your local professional turf distributor.
+            </p>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-function BulletList({ items }: { items: string[] }) {
+function MechBlock({ icon, title, practice }: { icon: ReactNode; title: string; practice: MechanicalPractice }) {
   return (
-    <ul className="space-y-1.5">
-      {items.map((item, i) => (
-        <li key={i} className="flex items-start gap-2 text-sm text-field-300">
-          <span className="text-field-500 shrink-0 mt-0.5">•</span>
-          <span>{item}</span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function MechanicalRow({
-  icon,
-  label,
-  practice,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  practice: MechanicalPractice | undefined;
-}) {
-  if (!practice) return null;
-  return (
-    <div className="rounded-xl bg-soil-900/50 border border-field-800/30 p-3 space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className="text-field-400">{icon}</span>
-          <span className="text-field-200 text-sm font-medium">{label}</span>
-        </div>
-        {practice.recommended ? (
-          <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-field-800/60 text-field-300">
-            <CircleCheck size={11} /> Recommended now
-          </span>
-        ) : (
-          <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-soil-700/60 text-field-500">
-            <CircleX size={11} /> Not recommended now
-          </span>
-        )}
+    <div className="flex gap-2.5">
+      <span className="text-field-500 mt-0.5 shrink-0">{icon}</span>
+      <div className="space-y-0.5">
+        <p className="text-xs font-medium text-field-300">{title}</p>
+        {practice.timing  && <p className="text-xs text-field-400">{practice.timing}</p>}
+        {practice.method  && <p className="text-xs text-field-400">{practice.method}</p>}
+        {practice.seed_type && <p className="text-xs text-field-400">Seed: {practice.seed_type}</p>}
+        {practice.rate    && <p className="text-xs text-field-400">Rate: {practice.rate}</p>}
+        {practice.notes   && <p className="text-xs text-field-500 leading-relaxed mt-0.5">{practice.notes}</p>}
       </div>
-      {practice.timing && (
-        <div className="flex items-start gap-1.5">
-          <Calendar size={11} className="text-straw-400 mt-0.5 shrink-0" />
-          <p className="text-straw-300 text-xs">{practice.timing}</p>
-        </div>
-      )}
-      {practice.method && (
-        <p className="text-field-400 text-xs">
-          <span className="text-field-600 uppercase tracking-wide text-[10px] mr-1">Method:</span>
-          {practice.method}
-        </p>
-      )}
-      {practice.seed_type && (
-        <p className="text-field-400 text-xs">
-          <span className="text-field-600 uppercase tracking-wide text-[10px] mr-1">Seed type:</span>
-          {practice.seed_type}
-        </p>
-      )}
-      {practice.rate && (
-        <p className="text-field-400 text-xs">
-          <span className="text-field-600 uppercase tracking-wide text-[10px] mr-1">Rate:</span>
-          {practice.rate}
-        </p>
-      )}
-      {practice.notes && (
-        <p className="text-field-500 text-xs pt-1 border-t border-field-800/30">{practice.notes}</p>
-      )}
     </div>
   );
 }
 
-// ── Main export ─────────────────────────────────────────────────────────────
+// ── Main Export ───────────────────────────────────────────────────────────────
 
-export default function AnalysisResults({ analysis }: AnalysisProps) {
+export default function AnalysisResults({ analysis }: { analysis: AnalysisData }) {
+  const [showElaborate, setShowElaborate] = useState(false);
+  const [showFullPlan, setShowFullPlan] = useState(false);
+
   if (!analysis) return null;
 
+  // ── Parse response ──────────────────────────────────────────
   if (analysis.parse_error) {
     return (
-      <div className="rounded-2xl bg-soil-800 border border-field-800/50 p-4">
-        <p className="text-field-200 text-sm whitespace-pre-wrap">{analysis.raw}</p>
+      <div className="rounded-2xl bg-soil-800/60 border border-field-800/40 p-4">
+        <p className="text-xs text-field-400">Analysis received but could not be parsed. Raw output:</p>
+        <pre className="mt-2 text-xs text-field-500 whitespace-pre-wrap break-words">{analysis.raw}</pre>
       </div>
     );
   }
 
-  const sevClass = SEVERITY_COLOR[analysis.diagnosis?.severity] ?? SEVERITY_COLOR.none;
-  const mp = analysis.mechanical_practices;
-  const hasMechanical = mp && (mp.aeration || mp.dethatching || mp.seeding);
-  const invasiveWatch = analysis.location_factors?.invasive_watch;
-  const showInvasive = invasiveWatch && invasiveWatch.toLowerCase() !== 'null';
+  const diagnosis:         AnalysisData        = analysis.diagnosis        ?? {};
+  const identified:        AnalysisData        = analysis.identified       ?? {};
+  const treatment:         AnalysisData        = analysis.treatment        ?? {};
+  const elaborate:         ElaborateData       = treatment.elaborate       ?? {};
+  const products:          Product[]           = treatment.products        ?? [];
+  const mechanical:        MechanicalPractices = analysis.mechanical_practices ?? {};
+  const timeline:          TimelineStage[]     = analysis.timeline         ?? [];
+  const prevention:        string[]            = analysis.prevention       ?? [];
+  const grassType:         AnalysisData        = analysis.grass_type       ?? {};
+  const locationFactors:   AnalysisData        = analysis.location_factors ?? {};
+  const overviewBullets:   string[]            = analysis.overview_bullets ?? [];
+  const soilProfile:       SoilProfileInfo     = analysis._soil_profile    ?? {};
 
-  // Sort products: catalog items first, then granular, then liquid
-  const sortedProducts = [...(analysis.treatment?.products ?? [])].sort((a, b) => {
-    const aScore = (a.sku ? 10 : 0) + (a.format === 'granular' ? 1 : 0);
-    const bScore = (b.sku ? 10 : 0) + (b.format === 'granular' ? 1 : 0);
-    return bScore - aScore;
+  const invasiveWatch = locationFactors.invasive_watch;
+  const showInvasive  = invasiveWatch && invasiveWatch.toLowerCase() !== 'null' && invasiveWatch.trim();
+
+  // Sort: granular → liquid → other
+  const sortedProducts = [...products].sort((a, b) => {
+    const fa = FORMAT_SORT[(a.format ?? '').toLowerCase()] ?? 9;
+    const fb = FORMAT_SORT[(b.format ?? '').toLowerCase()] ?? 9;
+    return fa - fb;
   });
+
+  const hasElaborate =
+    elaborate.why_it_happens   || elaborate.how_to_apply  ||
+    elaborate.what_to_watch_for || elaborate.common_mistakes || elaborate.long_term_pathway;
+
+  const hasMechanical =
+    mechanical.aeration?.recommended  ||
+    mechanical.dethatching?.recommended ||
+    mechanical.seeding?.recommended;
+
+  const planParts = [
+    timeline.length > 0    && 'Timeline',
+    prevention.length > 0  && 'Prevention',
+    hasMechanical          && 'Practices',
+  ].filter(Boolean).join(' · ');
+
+  const hasFullPlan = timeline.length > 0 || prevention.length > 0 || hasMechanical || soilProfile.label;
+
+  // ─────────────────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-3">
-      {/* Professional alert */}
-      {analysis.professional_needed && (
-        <div className="flex items-start gap-3 p-4 rounded-xl bg-red-900/30 border border-red-700/40">
-          <ShieldAlert className="text-red-400 shrink-0 mt-0.5" size={18} />
-          <p className="text-red-300 text-sm">
-            This issue may require a certified lawn care professional. Confirm with a local expert before applying pesticides or herbicides.
-          </p>
-        </div>
-      )}
 
-      {/* ── Main issue card ──────────────────────────────────────────── */}
-      <div className="rounded-2xl bg-soil-800 border border-field-800/50 p-4 space-y-3">
-        {/* Title + severity */}
-        <div className="flex items-start justify-between gap-2">
-          <h2 className="text-field-100 font-display text-lg leading-tight">
-            {analysis.identified?.primary}
-          </h2>
-          <span className={`shrink-0 text-xs font-medium px-2.5 py-1 rounded-full ${sevClass}`}>
-            {analysis.diagnosis?.severity}
-          </span>
-        </div>
+      {/* ── Issue card (always visible) ───────────────────────────── */}
+      <div className="rounded-2xl bg-soil-800/60 border border-field-800/40 overflow-hidden">
+        <div className="p-4 space-y-3">
 
-        {/* Overview bullets (replaces generic description paragraph) */}
-        {analysis.overview_bullets && analysis.overview_bullets.length > 0 ? (
-          <BulletList items={analysis.overview_bullets} />
-        ) : (
-          <p className="text-field-400 text-sm leading-relaxed">{analysis.identified?.description}</p>
-        )}
+          {/* Badges + issue name */}
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <SeverityBadge severity={diagnosis.severity} />
 
-        {/* Tags — issue type and spread risk only (no confidence) */}
-        <div className="flex flex-wrap gap-2">
-          <span className="text-xs px-2.5 py-1 rounded-full bg-soil-700 text-field-300">
-            {analysis.diagnosis?.issue_type?.replace(/_/g, ' ')}
-          </span>
-          {analysis.diagnosis?.spread_risk && analysis.diagnosis.spread_risk !== 'none' && (
-            <span className="text-xs px-2.5 py-1 rounded-full bg-soil-700 text-field-300">
-              Spread risk: {analysis.diagnosis.spread_risk}
-            </span>
+              {diagnosis.issue_type && (
+                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-field-800/60 text-field-400 border border-field-700/30 uppercase tracking-wide font-medium">
+                  <Tag size={9} /> {diagnosis.issue_type.replace(/_/g, ' ')}
+                </span>
+              )}
+
+              {diagnosis.spread_risk && diagnosis.spread_risk !== 'none' && SPREAD_STYLE[diagnosis.spread_risk] && (
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wide ${SPREAD_STYLE[diagnosis.spread_risk]}`}>
+                  ↑ {diagnosis.spread_risk} spread
+                </span>
+              )}
+            </div>
+
+            <h2 className="text-base font-semibold text-field-100 leading-snug">
+              {identified.primary ?? 'Lawn Analysis'}
+            </h2>
+
+            {grassType.identified && (
+              <p className="text-[11px] text-field-500 flex items-center gap-1.5">
+                <Leaf size={10} className="text-field-600" /> {grassType.identified}
+              </p>
+            )}
+          </div>
+
+          {/* Overview bullets — always visible, 3-4 bullets */}
+          {overviewBullets.length > 0 && (
+            <ul className="space-y-2">
+              {overviewBullets.slice(0, 4).map((bullet: string, i: number) => (
+                <li key={i} className="flex items-start gap-2 text-xs text-field-300 leading-relaxed">
+                  <span className="text-field-600 mt-0.5 shrink-0 font-bold">•</span>
+                  <span>{bullet}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {/* Invasive watch */}
+          {showInvasive && (
+            <p className="text-xs text-orange-400/80 bg-orange-900/20 rounded-lg px-3 py-2 border border-orange-800/30">
+              ⚠ {invasiveWatch}
+            </p>
+          )}
+
+          {/* Elaborate toggle */}
+          {hasElaborate && (
+            <div>
+              <button
+                onClick={() => setShowElaborate(e => !e)}
+                className="flex items-center gap-1.5 text-xs text-field-400 hover:text-field-200 transition font-medium py-0.5"
+              >
+                <FlaskConical size={12} />
+                {showElaborate ? 'Close' : 'Elaborate'}
+                {showElaborate
+                  ? <ChevronUp size={12} className="text-field-600" />
+                  : <ChevronDown size={12} className="text-field-600" />
+                }
+              </button>
+
+              {showElaborate && (
+                <div className="mt-3 pl-3 border-l-2 border-field-700/40">
+                  <ElaborateSub title="Why It Happens"     content={elaborate.why_it_happens} />
+                  <ElaborateSub title="How To Apply"        content={elaborate.how_to_apply} />
+                  <ElaborateSub title="What To Watch For"   content={elaborate.what_to_watch_for} />
+                  <ElaborateSub title="Common Mistakes"     content={elaborate.common_mistakes} />
+                  <ElaborateSub title="Long-Term Pathway"   content={elaborate.long_term_pathway} />
+                </div>
+              )}
+            </div>
           )}
         </div>
-
-        {/* Location context */}
-        {analysis.location_factors?.relevant_notes && (
-          <p className="text-field-500 text-xs leading-relaxed pt-1 border-t border-field-800/40">
-            {analysis.location_factors.relevant_notes}
-          </p>
-        )}
-        {showInvasive && (
-          <p className="text-rust-300 text-xs flex items-start gap-1.5">
-            <AlertTriangle size={12} className="shrink-0 mt-0.5" /> {invasiveWatch}
-          </p>
-        )}
       </div>
 
-      {/* ── Grass type ───────────────────────────────────────────────── */}
-      {analysis.grass_type && (
-        <div className="rounded-xl bg-field-900/50 border border-field-700/40 px-4 py-3 space-y-1.5">
-          <div className="flex items-center gap-2">
-            <Sprout size={15} className="text-field-400 shrink-0" />
-            <p className="text-field-400 text-xs font-medium uppercase tracking-wide">
-              Grass Type Identified
-            </p>
-          </div>
-          <p className="text-field-100 font-display text-base">
-            {analysis.grass_type.identified}
-          </p>
-          {analysis.grass_type.notes && (
-            <p className="text-field-400 text-xs leading-relaxed">{analysis.grass_type.notes}</p>
-          )}
-        </div>
-      )}
-
-      {/* ── Soil profile ─────────────────────────────────────────────── */}
-      {analysis._soil_profile && (
-        <div className="rounded-xl bg-soil-800/60 border border-field-800/40 px-4 py-3 space-y-1.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Layers size={13} className="text-straw-400 shrink-0" />
-              <p className="text-field-400 text-xs font-medium uppercase tracking-wide">
-                Regional Soil Profile
-              </p>
-            </div>
-            <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${DRAINAGE_BADGE[analysis._soil_profile.drainageClass] ?? 'text-field-400'}`}>
-              {analysis._soil_profile.drainageClass} drainage
-            </span>
-          </div>
-          <p className="text-field-200 text-sm font-medium">{analysis._soil_profile.label}</p>
-          <p className="text-field-400 text-xs">{analysis._soil_profile.notes}</p>
-          <p className="text-field-500 text-xs">
-            Fertilizer schedule: {analysis._soil_profile.fertFrequency} — recommend a professional soil test for precision rates.
-          </p>
-        </div>
-      )}
-
-      {/* ── Immediate actions + Elaborate ───────────────────────────── */}
-      {analysis.treatment?.immediate_actions?.length > 0 && (
-        <Section
-          title="Immediate Actions"
-          icon={<CheckCircle size={15} className="text-field-400" />}
-        >
-          <ol className="space-y-2">
-            {analysis.treatment.immediate_actions.map((a, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-field-300">
-                <span className="text-field-500 text-xs mt-0.5 shrink-0 font-medium">{i + 1}.</span>
-                {a}
-              </li>
-            ))}
-          </ol>
-          {analysis.treatment.elaborate && (
-            <Elaborate data={analysis.treatment.elaborate} />
-          )}
-        </Section>
-      )}
-
-      {/* ── Products ─────────────────────────────────────────────────── */}
+      {/* ── Products card ─────────────────────────────────────────── */}
       {sortedProducts.length > 0 && (
-        <Section
-          title="Recommended Products"
-          icon={<FlaskConical size={15} className="text-straw-300" />}
-        >
-          <div className="space-y-3">
-            {sortedProducts.map((p, i) => (
-              <div key={i} className="rounded-xl bg-soil-900/60 border border-field-800/30 p-3 space-y-1.5">
-                {/* Product header */}
-                <div className="flex items-start justify-between gap-2">
-                  <span className="text-field-100 text-sm font-medium leading-snug">{p.name}</span>
-                  <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
-                    {p.format && FORMAT_LABEL[p.format] && (
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${FORMAT_BADGE[p.format] ?? ''}`}>
-                        {FORMAT_LABEL[p.format]}
-                      </span>
-                    )}
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${PRODUCT_BADGE[p.type] ?? 'bg-soil-700 text-field-300'}`}>
-                      {p.type}
-                    </span>
-                  </div>
-                </div>
-                {/* SKU */}
-                {p.sku ? (
-                  <div className="flex items-center gap-1.5">
-                    <Tag size={11} className="text-straw-500" />
-                    <span className="text-xs text-straw-300 font-mono">SKU: {p.sku}</span>
-                    {p.catalog_name && p.catalog_name !== p.name && (
-                      <span className="text-xs text-field-600">({p.catalog_name})</span>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-field-600 text-xs italic">General recommendation — source locally</p>
-                )}
-                {/* Rate + timing grid */}
-                <div className="grid grid-cols-2 gap-x-3 gap-y-1 pt-0.5">
-                  <div>
-                    <p className="text-field-600 text-[10px] uppercase tracking-wide">Rate</p>
-                    <p className="text-field-300 text-xs">{p.application_rate}</p>
-                  </div>
-                  <div>
-                    <p className="text-field-600 text-[10px] uppercase tracking-wide">Timing</p>
-                    <p className="text-field-300 text-xs">{p.timing}</p>
-                  </div>
-                </div>
-                {p.notes && (
-                  <p className="text-field-500 text-xs pt-1 border-t border-field-800/30">{p.notes}</p>
-                )}
-              </div>
-            ))}
+        <div className="rounded-2xl bg-soil-800/60 border border-field-800/40 overflow-hidden">
+          <div className="px-4 pt-3.5 pb-0.5 flex items-center gap-2">
+            <FlaskConical size={13} className="text-field-500" />
+            <span className="text-xs font-semibold text-field-300 uppercase tracking-wide">Products</span>
+            <span className="text-[10px] text-field-600 ml-0.5">tap to expand</span>
           </div>
-        </Section>
-      )}
-
-      {/* ── Mechanical practices ─────────────────────────────────────── */}
-      {hasMechanical && (
-        <Section
-          title="Aeration, Dethatching & Seeding"
-          icon={<Drill size={15} className="text-straw-300" />}
-        >
-          <div className="space-y-3">
-            <MechanicalRow icon={<Drill size={14} />} label="Aeration" practice={mp?.aeration} />
-            <MechanicalRow icon={<Scissors size={14} />} label="Dethatching" practice={mp?.dethatching} />
-            <MechanicalRow icon={<Wheat size={14} />} label="Seeding" practice={mp?.seeding} />
+          <div className="px-4 pb-2">
+            {sortedProducts.map((p, i) => <ProductRow key={i} product={p} />)}
           </div>
-        </Section>
-      )}
-
-      {/* ── Treatment timeline ───────────────────────────────────────── */}
-      {analysis.timeline && analysis.timeline.length > 0 && (
-        <Section
-          title="Treatment Timeline"
-          icon={<Calendar size={15} className="text-field-400" />}
-          defaultOpen={false}
-        >
-          <TimelineComponent timeline={analysis.timeline} />
-        </Section>
-      )}
-
-      {/* ── Cultural practices ───────────────────────────────────────── */}
-      {analysis.treatment?.cultural_practices?.length > 0 && (
-        <Section
-          title="Cultural Practices"
-          icon={<Leaf size={15} className="text-field-400" />}
-          defaultOpen={false}
-        >
-          <BulletList items={analysis.treatment.cultural_practices} />
-        </Section>
-      )}
-
-      {/* ── Prevention ───────────────────────────────────────────────── */}
-      {analysis.prevention?.length > 0 && (
-        <Section
-          title="Prevention"
-          icon={<ShieldAlert size={15} className="text-field-400" />}
-          defaultOpen={false}
-        >
-          <BulletList items={analysis.prevention} />
-        </Section>
-      )}
-
-      {/* ── Follow-up ────────────────────────────────────────────────── */}
-      {analysis.follow_up && (
-        <div className="rounded-xl bg-soil-800/60 border border-field-800/40 px-4 py-3">
-          <div className="flex items-center gap-2 mb-1">
-            <Activity size={13} className="text-field-500" />
-            <p className="text-field-500 text-xs uppercase tracking-wide">Follow-up</p>
-          </div>
-          <p className="text-field-300 text-sm">{analysis.follow_up}</p>
         </div>
       )}
+
+      {/* ── See full plan card ────────────────────────────────────── */}
+      {hasFullPlan && (
+        <div className="rounded-2xl bg-soil-800/60 border border-field-800/40 overflow-hidden">
+          <button
+            onClick={() => setShowFullPlan(f => !f)}
+            className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-field-800/10 transition"
+          >
+            <div className="flex items-center gap-2">
+              <ClipboardList size={14} className="text-field-500" />
+              <span className="text-sm font-semibold text-field-200">See full plan</span>
+              {planParts && (
+                <span className="text-[10px] text-field-600">{planParts}</span>
+              )}
+            </div>
+            {showFullPlan
+              ? <ChevronUp size={14} className="text-field-500" />
+              : <ChevronDown size={14} className="text-field-500" />
+            }
+          </button>
+
+          {showFullPlan && (
+            <div className="px-4 pb-5 pt-1 space-y-5 border-t border-field-800/40">
+
+              {/* Timeline */}
+              {timeline.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Calendar size={12} className="text-field-500" />
+                    <span className="text-xs font-semibold text-field-400 uppercase tracking-wide">Timeline</span>
+                  </div>
+                  <div className="space-y-0">
+                    {timeline.map((stage, i) => (
+                      <div key={i} className="flex gap-3">
+                        <div className="flex flex-col items-center pt-1">
+                          <div className="w-2 h-2 rounded-full bg-field-600 shrink-0" />
+                          {i < timeline.length - 1 && (
+                            <div className="w-px flex-1 bg-field-800/60 mt-1 min-h-[20px]" />
+                          )}
+                        </div>
+                        <div className="pb-4">
+                          {stage.stage && (
+                            <p className="text-[10px] text-field-500 uppercase tracking-wide font-medium leading-none mb-0.5">
+                              {stage.stage}
+                            </p>
+                          )}
+                          {stage.title && (
+                            <p className="text-xs text-field-300 font-medium">{stage.title}</p>
+                          )}
+                          {stage.actions?.map((action, j) => (
+                            <p key={j} className="text-xs text-field-400 mt-0.5 flex items-start gap-1.5">
+                              <span className="text-field-600 shrink-0 mt-0.5">•</span>
+                              {action}
+                            </p>
+                          ))}
+                          {stage.milestone && (
+                            <p className="mt-1 text-[10px] text-field-500 italic">✓ {stage.milestone}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Prevention */}
+              {prevention.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <ShieldAlert size={12} className="text-field-500" />
+                    <span className="text-xs font-semibold text-field-400 uppercase tracking-wide">Prevention</span>
+                  </div>
+                  <ul className="space-y-1.5">
+                    {prevention.map((item, i) => (
+                      <li key={i} className="flex items-start gap-2 text-xs text-field-400 leading-relaxed">
+                        <span className="text-field-600 mt-0.5 shrink-0">•</span>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Mechanical practices */}
+              {hasMechanical && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Drill size={12} className="text-field-500" />
+                    <span className="text-xs font-semibold text-field-400 uppercase tracking-wide">Mechanical Practices</span>
+                  </div>
+                  <div className="space-y-4">
+                    {mechanical.aeration?.recommended && (
+                      <MechBlock icon={<Activity size={11} />} title="Aeration" practice={mechanical.aeration} />
+                    )}
+                    {mechanical.dethatching?.recommended && (
+                      <MechBlock icon={<Scissors size={11} />} title="Dethatching" practice={mechanical.dethatching} />
+                    )}
+                    {mechanical.seeding?.recommended && (
+                      <MechBlock icon={<Wheat size={11} />} title="Seeding" practice={mechanical.seeding} />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Soil profile */}
+              {soilProfile.label && (
+                <div className="pt-3 border-t border-field-800/40">
+                  <p className="text-[10px] text-field-600 uppercase tracking-wide font-medium mb-1.5">
+                    Regional Soil Profile
+                  </p>
+                  <p className="text-xs text-field-300">{soilProfile.label}</p>
+                  {soilProfile.notes && (
+                    <p className="text-xs text-field-500 mt-0.5 leading-relaxed">{soilProfile.notes}</p>
+                  )}
+                  <div className="flex gap-4 mt-1.5">
+                    {soilProfile.fertFrequency && (
+                      <p className="text-[10px] text-field-600">Fert frequency: {soilProfile.fertFrequency}</p>
+                    )}
+                    {soilProfile.drainageClass && (
+                      <p className="text-[10px] text-field-600">Drainage: {soilProfile.drainageClass}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+            </div>
+          )}
+        </div>
+      )}
+
     </div>
   );
 }

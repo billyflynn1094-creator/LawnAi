@@ -14,7 +14,7 @@ module.exports = {
           700: "#3d2b14",
         },
         field: {
-          900: "#0d1f0a",
+          900: "#0a1a08",
           800: "#162d11",
           700: "#1e3d17",
           600: "#2a5220",
@@ -23,7 +23,7 @@ module.exports = {
           300: "#6aab52",
           200: "#92c97c",
           100: "#c4e8b3",
-          50:  "#edf7e8",
+          50: "#edf7e8",
         },
         straw: {
           400: "#d4a843",
@@ -38,12 +38,12 @@ module.exports = {
         },
       },
       fontFamily: {
-        display: ["Georgia", "serif"],
-        body: ["system-ui", "sans-serif"],
+        display: ["var(--font-cormorant)", "Georgia", "serif"],
+        body: ["var(--font-outfit)", "system-ui", "sans-serif"],
         mono: ["ui-monospace", "monospace"],
       },
       backgroundImage: {
-        "grass-gradient": "linear-gradient(160deg, #0d1f0a 0%, #1e3d17 50%, #2a5220 100%)",
+        "grass-gradient": "linear-gradient(160deg, #0a1a08 0%, #1a3012 55%, #243d1a 100%)",
       },
     },
   },

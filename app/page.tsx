@@ -1,10 +1,18 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import CameraCapture from '@/components/Camera';
+import Link from 'next/link';
 import LocationBadge from '@/components/LocationBadge';
-import AnalysisResults from '@/components/Analysis';
-import { Sprout, RotateCcw } from 'lucide-react';
+import {
+  Sprout,
+  Scan,
+  Calendar,
+  BookOpen,
+  BarChart3,
+  ChevronRight,
+  Settings,
+  ArrowUpRight,
+} from 'lucide-react';
 
 interface LocationData {
   lat: number;
@@ -13,48 +21,93 @@ interface LocationData {
   state?: string;
   soilType?: string;
   hardiness_zone?: string;
+  grassClass?: 'cool' | 'warm' | 'transition';
   weather?: { temp_f: number; humidity: number; condition: string };
+  soil_temp_surface_f?: number;
+  soil_temp_6cm_f?: number;
+  rainfall?: { recent_in: number; normal_in: number; pct_of_normal: number };
 }
 
-type AppState = 'idle' | 'analyzing' | 'results' | 'error';
+interface ModuleItem {
+  id: string;
+  icon: React.ElementType;
+  title: string;
+  meta: string;
+  body: string;
+  href: string;
+  active: boolean;
+  badge?: string;
+}
 
-export default function Home() {
+const MODULES: ModuleItem[] = [
+  {
+    id: 'turf-analyzer',
+    icon: Scan,
+    title: 'Turf Analyzer',
+    meta: 'AI-Powered Diagnosis',
+    body: 'Point your camera at any lawn or turf issue. Get instant AI identification of weeds, disease, bare patches, and discoloration with location-aware remediation steps.',
+    href: '/turf-analyzer',
+    active: true,
+  },
+  {
+    id: 'timeline',
+    icon: Calendar,
+    title: 'Treatment Timeline',
+    meta: 'Seasonal Schedule',
+    body: 'Smart treatment programs calibrated to your USDA hardiness zone, grass type, soil temperature, and current conditions.',
+    href: '#',
+    active: false,
+    badge: 'Coming Soon',
+  },
+  {
+    id: 'catalog',
+    icon: BookOpen,
+    title: 'Product Catalog',
+    meta: 'Pro Recommendations',
+    body: 'Curated turf protection products from Syngenta, Bayer (Envu), BASF, Nufarm, and Corteva — granular and liquid options for precision treatment.',
+    href: '#',
+    active: false,
+    badge: 'Coming Soon',
+  },
+  {
+    id: 'reports',
+    icon: BarChart3,
+    title: 'Field Reports',
+    meta: 'Property Intelligence',
+    body: 'Historical scan data, trend analysis, and cumulative treatment records for your lawn or golf course.',
+    href: '#',
+    active: false,
+    badge: 'Coming Soon',
+  },
+];
+
+export default function CoverPage() {
   const [locationData, setLocationData] = useState<LocationData | null>(null);
   const [locationLoading, setLocationLoading] = useState(true);
   const [locationError, setLocationError] = useState<string | null>(null);
 
-  const [appState, setAppState] = useState<AppState>('idle');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [analysis, setAnalysis] = useState<any>(null);
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
   const fetchLocation = useCallback(() => {
     setLocationLoading(true);
     setLocationError(null);
-
     if (!navigator.geolocation) {
-      setLocationError('Geolocation not supported by your browser.');
+      setLocationError('Geolocation not supported');
       setLocationLoading(false);
       return;
     }
-
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
         try {
           const res = await fetch(`/api/location?lat=${lat}&lng=${lng}`);
-          if (!res.ok) throw new Error('Location enrichment failed');
-          const data = await res.json();
-          setLocationData(data);
+          if (!res.ok) throw new Error();
+          setLocationData(await res.json());
         } catch {
           setLocationData({ lat, lng });
         } finally {
           setLocationLoading(false);
         }
       },
-      (err) => {
-        console.warn('Geolocation error:', err);
+      () => {
         setLocationError('Location access denied.');
         setLocationLoading(false);
       },
@@ -62,147 +115,168 @@ export default function Home() {
     );
   }, []);
 
-  useEffect(() => {
-    fetchLocation();
-  }, [fetchLocation]);
-
-  const handleCapture = async (base64: string) => {
-    setCapturedImage(base64);
-    setAppState('analyzing');
-    setAnalysis(null);
-    setErrorMessage(null);
-
-    try {
-      const res = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          image: base64,
-          location: locationData ?? { lat: 0, lng: 0 },
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error ?? 'Analysis failed');
-      }
-
-      const data = await res.json();
-      setAnalysis(data.analysis);
-      setAppState('results');
-
-      // Smooth scroll to results
-      setTimeout(() => {
-        document.getElementById('results')?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-    } catch (err) {
-      setErrorMessage(
-        err instanceof Error ? err.message : 'Something went wrong. Please try again.'
-      );
-      setAppState('error');
-    }
-  };
-
-  const reset = () => {
-    setAppState('idle');
-    setAnalysis(null);
-    setCapturedImage(null);
-    setErrorMessage(null);
-  };
+  useEffect(() => { fetchLocation(); }, [fetchLocation]);
 
   return (
-    <main className="min-h-screen pb-16">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-soil-900/80 backdrop-blur-md border-b border-field-800/40">
-        <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sprout className="text-field-400" size={22} />
-            <span className="font-display text-lg text-field-100 tracking-tight">
-              Lawn<span className="text-field-400">AI</span>
-            </span>
+    <main className="min-h-screen flex flex-col overflow-x-hidden">
+
+      {/* ── HEADER ── */}
+      <header className="sticky top-0 z-20 bg-field-900/90 backdrop-blur-lg border-b border-white/5">
+        <div className="max-w-lg mx-auto px-4 py-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-field-400 to-field-600 flex items-center justify-center shadow-[0_0_16px_rgba(74,133,53,0.35)]">
+              <Sprout size={15} className="text-white" />
+            </div>
+            <div className="flex flex-col leading-none">
+              <span className="font-display text-[17px] text-field-50 tracking-[0.15em] leading-tight">
+                TURF<span className="text-field-400">AI</span>
+              </span>
+              <span className="text-[8px] text-field-600 tracking-[0.25em] uppercase mt-0.5">
+                Professional Diagnostics
+              </span>
+            </div>
           </div>
-          {appState === 'results' && (
-            <button
-              onClick={reset}
-              className="flex items-center gap-1.5 text-field-400 hover:text-field-200 text-sm transition"
-            >
-              <RotateCcw size={14} /> New scan
-            </button>
-          )}
+          <button className="w-9 h-9 rounded-full flex items-center justify-center text-field-500 hover:text-field-200 hover:bg-field-800/60 transition-all">
+            <Settings size={16} />
+          </button>
         </div>
       </header>
 
-      <div className="max-w-lg mx-auto px-4 pt-5 space-y-4">
-        {/* Location context */}
-        <LocationBadge
-          location={locationData}
-          loading={locationLoading}
-          error={locationError}
-          onRetry={fetchLocation}
+      {/* ── HERO ── */}
+      <div className="relative px-5 pt-10 pb-8 max-w-lg mx-auto w-full">
+        {/* Atmospheric glow orbs */}
+        <div
+          className="absolute -top-8 right-0 w-72 h-72 rounded-full pointer-events-none animate-glow"
+          style={{ background: 'radial-gradient(circle, rgba(74,133,53,0.18) 0%, transparent 70%)' }}
+        />
+        <div
+          className="absolute top-24 -left-16 w-52 h-52 rounded-full pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(42,82,32,0.12) 0%, transparent 70%)' }}
         />
 
-        {/* ── IDLE / ANALYZING state: show live camera ── */}
-        {appState !== 'results' && (
-          <CameraCapture
-            onCapture={handleCapture}
-            isAnalyzing={appState === 'analyzing'}
+        <p
+          className="animate-entry text-field-500 text-[10px] tracking-[0.35em] uppercase font-semibold mb-3"
+          style={{ animationDelay: '0ms' }}
+        >
+          National US Coverage
+        </p>
+
+        <h1
+          className="animate-entry font-display text-[3.25rem] leading-[0.97] text-field-50 mb-5"
+          style={{ animationDelay: '80ms' }}
+        >
+          Precision<br />
+          <span className="italic text-field-300">Turf Care,</span><br />
+          <span className="text-field-400">Elevated.</span>
+        </h1>
+
+        <p
+          className="animate-entry text-field-400 text-[13px] leading-relaxed max-w-[300px] mb-6"
+          style={{ animationDelay: '160ms' }}
+        >
+          AI diagnostics and expert guidance — calibrated to your location, soil profile, and live weather conditions.
+        </p>
+
+        <div className="animate-entry" style={{ animationDelay: '240ms' }}>
+          <LocationBadge
+            location={locationData}
+            loading={locationLoading}
+            error={locationError}
+            onRetry={fetchLocation}
           />
-        )}
+        </div>
+      </div>
 
-        {/* Hero prompt — idle only */}
-        {appState === 'idle' && (
-          <div className="text-center py-2 space-y-1">
-            <p className="text-field-300 text-sm">
-              Point your camera at any lawn issue — weeds, disease, bare patches,
-              discoloration — and get instant, location-aware guidance.
-            </p>
-          </div>
-        )}
+      {/* ── DIVIDER ── */}
+      <div
+        className="animate-entry max-w-lg mx-auto px-5 pb-4 w-full"
+        style={{ animationDelay: '320ms' }}
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-field-800/50" />
+          <span className="text-field-600 text-[9px] tracking-[0.3em] uppercase font-bold">Modules</span>
+          <div className="flex-1 h-px bg-field-800/50" />
+        </div>
+      </div>
 
-        {/* Error state */}
-        {appState === 'error' && (
-          <div className="rounded-xl bg-red-900/30 border border-red-700/40 p-4 text-center space-y-3">
-            <p className="text-red-300 text-sm">{errorMessage}</p>
-            <button
-              onClick={reset}
-              className="px-5 py-2 rounded-xl bg-field-600 text-white text-sm hover:bg-field-500 transition"
-            >
-              Try again
-            </button>
-          </div>
-        )}
+      {/* ── MODULE CARDS ── */}
+      <div className="flex-1 max-w-lg mx-auto px-4 pb-10 w-full space-y-2.5">
+        {MODULES.map((mod, i) => {
+          const Icon = mod.icon;
+          const delay = 380 + i * 80;
 
-        {/* ── RESULTS state: photo thumbnail + analysis directly below ── */}
-        {appState === 'results' && (
-          <div id="results" className="space-y-4">
-            {/* Captured photo — compact thumbnail pinned above results */}
-            {capturedImage && (
-              <div className="relative rounded-2xl overflow-hidden bg-soil-900 shadow-xl">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={capturedImage}
-                  alt="Analyzed lawn"
-                  className="w-full h-48 object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-soil-900/70 to-transparent" />
-                <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-                  <span className="text-field-200 text-xs font-medium bg-soil-900/60 px-2.5 py-1 rounded-full backdrop-blur-sm">
-                    📸 Analyzed photo
-                  </span>
-                  <button
-                    onClick={reset}
-                    className="flex items-center gap-1.5 text-field-300 hover:text-field-100 text-xs bg-soil-900/60 px-2.5 py-1 rounded-full backdrop-blur-sm transition"
-                  >
-                    <RotateCcw size={12} /> New scan
-                  </button>
+          if (mod.active) {
+            return (
+              <Link
+                key={mod.id}
+                href={mod.href}
+                className="animate-entry group relative flex gap-4 p-5 rounded-2xl bg-field-800/40 border border-field-600/30 hover:border-field-500/55 hover:bg-field-800/60 transition-all duration-200 active:scale-[0.985] overflow-hidden"
+                style={{ animationDelay: `${delay}ms` }}
+              >
+                {/* Left accent bar */}
+                <div className="absolute left-0 inset-y-5 w-[3px] rounded-full bg-gradient-to-b from-field-400 to-field-600" />
+                {/* Hover shimmer */}
+                <div className="absolute inset-0 bg-gradient-to-r from-field-600/0 via-field-500/5 to-field-600/0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+
+                {/* Icon */}
+                <div className="shrink-0 w-[52px] h-[52px] rounded-xl bg-gradient-to-br from-field-500/90 to-field-700 flex items-center justify-center shadow-[0_4px_20px_rgba(74,133,53,0.3)]">
+                  <Icon size={22} className="text-white" />
                 </div>
-              </div>
-            )}
 
-            {/* Analysis results — immediately below the photo */}
-            <AnalysisResults analysis={analysis} />
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between mb-0.5">
+                    <span className="font-display text-[1.3rem] text-white leading-tight">{mod.title}</span>
+                    <ArrowUpRight
+                      size={15}
+                      className="shrink-0 mt-1 text-field-500 group-hover:text-field-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-all"
+                    />
+                  </div>
+                  <p className="text-field-500 text-[9px] tracking-[0.22em] uppercase font-bold mb-2">{mod.meta}</p>
+                  <p className="text-field-300 text-[13px] leading-relaxed">{mod.body}</p>
+                  <div className="mt-3 inline-flex items-center gap-1 text-field-400 text-[11px] font-semibold tracking-wide group-hover:text-field-200 transition-colors">
+                    Open Module <ChevronRight size={10} className="group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </div>
+              </Link>
+            );
+          }
+
+          return (
+            <div
+              key={mod.id}
+              className="animate-entry relative flex gap-4 p-5 rounded-2xl bg-field-900/30 border border-field-800/25 opacity-50 cursor-not-allowed overflow-hidden"
+              style={{ animationDelay: `${delay}ms` }}
+            >
+              <div className="shrink-0 w-[52px] h-[52px] rounded-xl bg-field-900/60 border border-field-800/40 flex items-center justify-center">
+                <Icon size={22} className="text-field-700" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between mb-0.5">
+                  <span className="font-display text-[1.3rem] text-field-500 leading-tight">{mod.title}</span>
+                  {mod.badge && (
+                    <span className="shrink-0 text-[8px] px-2 py-0.5 rounded-full bg-field-800/60 border border-field-700/30 text-field-600 font-bold tracking-widest uppercase">
+                      {mod.badge}
+                    </span>
+                  )}
+                </div>
+                <p className="text-field-700 text-[9px] tracking-[0.22em] uppercase font-bold mb-2">{mod.meta}</p>
+                <p className="text-field-600 text-[13px] leading-relaxed">{mod.body}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── FOOTER ── */}
+      <div className="max-w-lg mx-auto px-5 pb-8 w-full">
+        <div className="border-t border-field-800/30 pt-4 flex items-center justify-between">
+          <span className="text-field-700 text-[10px] tracking-wide">Powered by Gemini AI</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-field-500 animate-pulse" />
+            <span className="text-field-700 text-[10px] tracking-wide">v1.0 · US Coverage</span>
           </div>
-        )}
+        </div>
       </div>
     </main>
   );

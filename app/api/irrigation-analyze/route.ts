@@ -5,58 +5,53 @@ import {
   buildDesignAssessmentPrompt,
   CONTROLLER_ID_PROMPT,
   VALVE_ID_PROMPT,
-  RAIN_SENSOR_PROMPT,
+  buildRainSensorPrompt,
   buildElectricalPrompt,
   buildHydraulicPrompt,
+  buildZoneAssessmentPrompt,
+  buildHomeownerPrompt,
+  buildInspectionSummaryPrompt,
 } from "@/lib/irrigation/prompts";
 
 export async function POST(req: NextRequest) {
+  const body = await req.json();
+  const {
+    mode,
+    image,
+    symptom,
+    ohmReading,
+    brand,
+    preset,
+    zones,
+    question,
+    systemContext,
+    findings,
+  } = body as {
+    mode: string;
+    image?: string;
+    symptom?: string;
+    ohmReading?: number;
+    brand?: string;
+    preset?: string;
+    zones?: { type: string; count: number }[];
+    question?: string;
+    systemContext?: string;
+    findings?: string;
+  };
+
   try {
-    const body = await req.json();
-    const { mode, image, symptom, ohmReading, brand, hydraulicSymptom, locationContext } = body;
+    let userPrompt = "";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let imagePart: any = null;
 
-    if (!mode) {
-      return NextResponse.json({ error: "mode is required" }, { status: 400 });
+    if (image) {
+      imagePart = imageToGeminiPart(image);
     }
 
-    if (mode === "electrical_diagnosis") {
-      const prompt = buildElectricalPrompt(symptom, ohmReading, brand);
-      const result = await geminiFlash.generateContent([
-        { text: IRRIGATION_SYSTEM_PROMPT },
-        { text: prompt },
-      ]);
-      const text = result.response.text();
-      let analysis;
-      try { analysis = JSON.parse(text); }
-      catch { const m = text.match(/\{[\s\S]*\}/); analysis = m ? JSON.parse(m[0]) : { raw: text }; }
-      return NextResponse.json({ analysis });
-    }
-
-    if (mode === "hydraulic_diagnosis") {
-      const prompt = buildHydraulicPrompt(hydraulicSymptom || symptom || "unknown hydraulic issue");
-      const result = await geminiFlash.generateContent([
-        { text: IRRIGATION_SYSTEM_PROMPT },
-        { text: prompt },
-      ]);
-      const text = result.response.text();
-      let analysis;
-      try { analysis = JSON.parse(text); }
-      catch { const m = text.match(/\{[\s\S]*\}/); analysis = m ? JSON.parse(m[0]) : { raw: text }; }
-      return NextResponse.json({ analysis });
-    }
-
-    if (!image) {
-      return NextResponse.json({ error: "image is required for this mode" }, { status: 400 });
-    }
-
-    const base64 = image.includes(",") ? image.split(",")[1] : image;
-    const imagePart = imageToGeminiPart(base64);
-
-    let userPrompt: string;
     switch (mode) {
       case "design_assessment":
       case "full_inspection":
-        userPrompt = buildDesignAssessmentPrompt(locationContext || "No location context provided");
+        userPrompt = buildDesignAssessmentPrompt();
         break;
       case "controller_id":
         userPrompt = CONTROLLER_ID_PROMPT;
@@ -65,26 +60,54 @@ export async function POST(req: NextRequest) {
         userPrompt = VALVE_ID_PROMPT;
         break;
       case "rain_sensor":
-        userPrompt = RAIN_SENSOR_PROMPT;
+        userPrompt = buildRainSensorPrompt();
+        break;
+      case "electrical_diagnosis":
+        userPrompt = buildElectricalPrompt(symptom ?? preset ?? "general", ohmReading, brand);
+        break;
+      case "hydraulic_diagnosis":
+        userPrompt = buildHydraulicPrompt(symptom ?? preset ?? "general");
+        break;
+      case "zone_assessment":
+        userPrompt = buildZoneAssessmentPrompt(zones ?? []);
+        break;
+      case "homeowner":
+        userPrompt = buildHomeownerPrompt(question ?? "", systemContext ?? "");
+        break;
+      case "inspection_summary":
+        userPrompt = buildInspectionSummaryPrompt(findings ?? "");
         break;
       default:
-        userPrompt = buildDesignAssessmentPrompt("General irrigation assessment requested");
+        return NextResponse.json({ error: `Unknown mode: ${mode}` }, { status: 400 });
     }
 
-    const result = await geminiFlash.generateContent([
-      { text: IRRIGATION_SYSTEM_PROMPT },
-      imagePart,
-      { text: userPrompt },
-    ]);
+    const parts = imagePart
+      ? [IRRIGATION_SYSTEM_PROMPT, imagePart, userPrompt]
+      : [IRRIGATION_SYSTEM_PROMPT, userPrompt];
 
+    const result = await geminiFlash.generateContent(parts);
     const text = result.response.text();
-    let analysis;
-    try { analysis = JSON.parse(text); }
-    catch { const m = text.match(/\{[\s\S]*\}/); analysis = m ? JSON.parse(m[0]) : { raw: text }; }
+
+    let analysis: unknown;
+    try {
+      analysis = JSON.parse(text);
+    } catch {
+      const match = text.match(/\{[\s\S]*\}/);
+      if (match) {
+        try {
+          analysis = JSON.parse(match[0]);
+        } catch {
+          analysis = { error: "Parse error", raw: text.slice(0, 500) };
+        }
+      } else {
+        analysis = { error: "No JSON found", raw: text.slice(0, 500) };
+      }
+    }
 
     return NextResponse.json({ analysis });
-  } catch (err) {
-    console.error("[irrigation-analyze]", err);
-    return NextResponse.json({ error: "Analysis failed. Please try again." }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    console.error("[irrigation-analyze]", message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

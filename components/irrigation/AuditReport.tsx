@@ -7,6 +7,7 @@ export interface AuditIssue {
   id: string;
   zone: string;
   severity: "critical" | "moderate" | "mild";
+  triage?: string;
   issue: string;
   resolution: string;
   estimated_cost?: string;

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { geminiFlash, imageToGeminiPart } from '@/lib/gemini';
 import { buildAnalysisPrompt, buildSystemPrompt, LocationContext } from '@/lib/prompts';
-import { findMatchingProducts } from '@/lib/catalog';
 import { getSoilProfile } from '@/lib/soilRates';
 
 export const runtime = 'nodejs';
@@ -36,35 +35,7 @@ export async function POST(req: NextRequest) {
     try {
       const analysis = JSON.parse(cleaned);
 
-      // ── Post-process: enrich products with catalog SKUs ──────────────────
-      if (analysis.treatment?.products?.length) {
-        const keywords = [
-          analysis.diagnosis?.issue_type ?? '',
-          analysis.identified?.primary ?? '',
-          ...analysis.treatment.products.map((p: { name: string }) => p.name),
-        ].filter(Boolean);
-
-        const catalogMatches = findMatchingProducts(keywords);
-
-        analysis.treatment.products = analysis.treatment.products.map(
-          (p: { name: string; sku?: string; type: string; application_rate: string; timing: string; notes: string }) => {
-            // Only add catalog match if AI didn't already find one
-            if (!p.sku) {
-              const match = catalogMatches.find(c =>
-                c.name.toLowerCase().includes(p.name.toLowerCase().split(' ')[0]) ||
-                p.name.toLowerCase().includes(c.name.toLowerCase().split(' ')[0]) ||
-                c.useCase.some(uc => p.name.toLowerCase().includes(uc.toLowerCase()))
-              );
-              if (match) {
-                return { ...p, sku: match.sku, catalog_name: match.name };
-              }
-            }
-            return p;
-          }
-        );
-      }
-
-      // ── Attach soil profile for UI display ───────────────────────────────
+      // Attach regional soil profile for UI display
       const soilProfile = getSoilProfile(location?.soilType);
       analysis._soil_profile = {
         label: soilProfile.label,

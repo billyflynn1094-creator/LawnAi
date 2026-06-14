@@ -9,6 +9,8 @@ export interface AuditIssue {
   severity: "critical" | "moderate" | "mild";
   triage?: string;
   issue: string;
+  short_fix?: string;
+  cost_reality?: string;
   resolution: string;
   estimated_cost?: string;
 }

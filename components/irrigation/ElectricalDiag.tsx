@@ -122,7 +122,7 @@ export default function ElectricalDiag() {
             className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500/50"
           />
           {ohmVerdict && (
-            <p className={`text-xs mt-1 ${ohmVerdict.severity === "ok" ? "text-emerald-400" : "text-red-400"}`}>
+            <p className={`text-xs mt-1 ${ohmVerdict.severity === "none" ? "text-emerald-400" : "text-red-400"}`}>
               {ohmVerdict.verdict}
             </p>
           )}

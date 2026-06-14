@@ -12,6 +12,11 @@ import {
   Tag,
   Activity,
   Sprout,
+  Drill,
+  Scissors,
+  Wheat,
+  CircleCheck,
+  CircleX,
 } from 'lucide-react';
 import { useState } from 'react';
 import TimelineComponent from '@/components/Timeline';
@@ -47,6 +52,21 @@ interface SoilProfileInfo {
   drainageClass: string;
 }
 
+interface MechanicalPractice {
+  recommended: boolean;
+  timing?: string;
+  method?: string;
+  seed_type?: string;
+  rate?: string;
+  notes?: string;
+}
+
+interface MechanicalPractices {
+  aeration?: MechanicalPractice;
+  dethatching?: MechanicalPractice;
+  seeding?: MechanicalPractice;
+}
+
 interface Analysis {
   grass_type?: GrassType;
   identified: { primary: string; confidence: string; description: string };
@@ -62,6 +82,7 @@ interface Analysis {
     products: Product[];
     cultural_practices: string[];
   };
+  mechanical_practices?: MechanicalPractices;
   timeline?: TimelineStage[];
   prevention: string[];
   follow_up: string;
@@ -135,10 +156,69 @@ function Section({
   );
 }
 
+function MechanicalRow({
+  icon,
+  label,
+  practice,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  practice: MechanicalPractice | undefined;
+}) {
+  if (!practice) return null;
+  return (
+    <div className="rounded-xl bg-soil-900/50 border border-field-800/30 p-3 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-field-400">{icon}</span>
+          <span className="text-field-200 text-sm font-medium">{label}</span>
+        </div>
+        {practice.recommended ? (
+          <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-field-800/60 text-field-300">
+            <CircleCheck size={11} /> Recommended now
+          </span>
+        ) : (
+          <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-soil-700/60 text-field-500">
+            <CircleX size={11} /> Not recommended now
+          </span>
+        )}
+      </div>
+      {practice.timing && (
+        <div className="flex items-start gap-1.5">
+          <Calendar size={11} className="text-straw-400 mt-0.5 shrink-0" />
+          <p className="text-straw-300 text-xs">{practice.timing}</p>
+        </div>
+      )}
+      {practice.method && (
+        <p className="text-field-400 text-xs">
+          <span className="text-field-600 uppercase tracking-wide text-[10px] mr-1">Method:</span>
+          {practice.method}
+        </p>
+      )}
+      {practice.seed_type && (
+        <p className="text-field-400 text-xs">
+          <span className="text-field-600 uppercase tracking-wide text-[10px] mr-1">Seed type:</span>
+          {practice.seed_type}
+        </p>
+      )}
+      {practice.rate && (
+        <p className="text-field-400 text-xs">
+          <span className="text-field-600 uppercase tracking-wide text-[10px] mr-1">Rate:</span>
+          {practice.rate}
+        </p>
+      )}
+      {practice.notes && (
+        <p className="text-field-500 text-xs pt-1 border-t border-field-800/30">
+          {practice.notes}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function AnalysisResults({ analysis }: AnalysisProps) {
   if (!analysis) return null;
 
-  // Fallback for parse errors
   if (analysis.parse_error) {
     return (
       <div className="rounded-2xl bg-soil-800 border border-field-800/50 p-4">
@@ -149,6 +229,9 @@ export default function AnalysisResults({ analysis }: AnalysisProps) {
 
   const sevClass =
     SEVERITY_COLOR[analysis.diagnosis?.severity] ?? SEVERITY_COLOR.none;
+
+  const mp = analysis.mechanical_practices;
+  const hasMechanical = mp && (mp.aeration || mp.dethatching || mp.seeding);
 
   return (
     <div className="space-y-3">
@@ -169,9 +252,7 @@ export default function AnalysisResults({ analysis }: AnalysisProps) {
           <h2 className="text-field-100 font-display text-lg leading-tight">
             {analysis.identified?.primary}
           </h2>
-          <span
-            className={`shrink-0 text-xs font-medium px-2.5 py-1 rounded-full ${sevClass}`}
-          >
+          <span className={`shrink-0 text-xs font-medium px-2.5 py-1 rounded-full ${sevClass}`}>
             {analysis.diagnosis?.severity}
           </span>
         </div>
@@ -191,7 +272,7 @@ export default function AnalysisResults({ analysis }: AnalysisProps) {
         </div>
         {analysis.location_factors?.relevant_notes && (
           <p className="text-field-500 text-xs pt-1 border-t border-field-800/40 mt-2">
-            🌍 {analysis.location_factors.relevant_notes}
+            {analysis.location_factors.relevant_notes}
           </p>
         )}
         {analysis.location_factors?.invasive_watch && (
@@ -211,12 +292,9 @@ export default function AnalysisResults({ analysis }: AnalysisProps) {
                 Grass Type Identified
               </p>
             </div>
-            <span
-              className={`text-xs px-2 py-0.5 rounded-full capitalize ${
-                CONFIDENCE_COLOR[analysis.grass_type.confidence] ??
-                'text-field-400'
-              }`}
-            >
+            <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${
+              CONFIDENCE_COLOR[analysis.grass_type.confidence] ?? 'text-field-400'
+            }`}>
               {analysis.grass_type.confidence} confidence
             </span>
           </div>
@@ -236,19 +314,17 @@ export default function AnalysisResults({ analysis }: AnalysisProps) {
         <div className="rounded-xl bg-soil-800/60 border border-field-800/40 px-4 py-3 space-y-1.5">
           <div className="flex items-center justify-between">
             <p className="text-field-400 text-xs font-medium uppercase tracking-wide">
-              Soil Profile – {analysis._soil_profile.label}
+              Soil Profile - {analysis._soil_profile.label}
             </p>
-            <span
-              className={`text-xs px-2 py-0.5 rounded-full capitalize ${
-                DRAINAGE_BADGE[analysis._soil_profile.drainageClass] ?? 'text-field-400'
-              }`}
-            >
+            <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${
+              DRAINAGE_BADGE[analysis._soil_profile.drainageClass] ?? 'text-field-400'
+            }`}>
               {analysis._soil_profile.drainageClass} drainage
             </span>
           </div>
           <p className="text-field-400 text-xs">{analysis._soil_profile.notes}</p>
           <p className="text-field-500 text-xs">
-            📊 Fertilizer schedule: {analysis._soil_profile.fertFrequency}
+            Fertilizer schedule: {analysis._soil_profile.fertFrequency}
           </p>
         </div>
       )}
@@ -284,16 +360,12 @@ export default function AnalysisResults({ analysis }: AnalysisProps) {
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-field-100 text-sm font-medium">{p.name}</span>
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full ${
-                      PRODUCT_BADGE[p.type] ?? 'bg-soil-700 text-field-300'
-                    }`}
-                  >
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    PRODUCT_BADGE[p.type] ?? 'bg-soil-700 text-field-300'
+                  }`}>
                     {p.type}
                   </span>
                 </div>
-
-                {/* SKU badge – shown when catalog product matched */}
                 {p.sku && (
                   <div className="flex items-center gap-1.5">
                     <Tag size={11} className="text-straw-500" />
@@ -303,7 +375,6 @@ export default function AnalysisResults({ analysis }: AnalysisProps) {
                     )}
                   </div>
                 )}
-
                 <div className="grid grid-cols-2 gap-x-3 gap-y-1">
                   <div>
                     <p className="text-field-600 text-xs uppercase tracking-wide">Rate</p>
@@ -321,6 +392,32 @@ export default function AnalysisResults({ analysis }: AnalysisProps) {
                 )}
               </div>
             ))}
+          </div>
+        </Section>
+      )}
+
+      {/* Mechanical Practices - Aeration / Dethatching / Seeding */}
+      {hasMechanical && (
+        <Section
+          title="Aeration, Dethatching & Seeding"
+          icon={<Drill size={15} className="text-straw-300" />}
+        >
+          <div className="space-y-3">
+            <MechanicalRow
+              icon={<Drill size={14} />}
+              label="Aeration"
+              practice={mp?.aeration}
+            />
+            <MechanicalRow
+              icon={<Scissors size={14} />}
+              label="Dethatching"
+              practice={mp?.dethatching}
+            />
+            <MechanicalRow
+              icon={<Wheat size={14} />}
+              label="Seeding"
+              practice={mp?.seeding}
+            />
           </div>
         </Section>
       )}

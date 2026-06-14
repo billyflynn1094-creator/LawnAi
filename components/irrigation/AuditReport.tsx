@@ -61,8 +61,8 @@ function newIssue(): AuditIssue {
   return { id: Math.random().toString(36).slice(2), zone: "", severity: "moderate", issue: "", resolution: "" };
 }
 
-export default function AuditReport({ initialData }: { initialData?: Partial<AuditData> }) {
-  const [audit, setAudit] = useState<AuditData>({ ...emptyAudit(), ...initialData });
+export default function AuditReport({ initialData, audit: auditProp, onNewAudit }: { initialData?: Partial<AuditData>; audit?: AuditData; onNewAudit?: () => void }) {
+  const [audit, setAudit] = useState<AuditData>(auditProp ?? { ...emptyAudit(), ...initialData });
   const [expanded, setExpanded] = useState<string | null>(null);
   const [recInput, setRecInput] = useState("");
 

@@ -15,9 +15,9 @@ interface ConversationEntry {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySpeechRecognition = any;
 
-export default function HomeownerMode() {
+export default function HomeownerMode({ systemContext: initialContext = "" }: { systemContext?: string }) {
   const [question, setQuestion] = useState("");
-  const [systemContext, setSystemContext] = useState("");
+  const [systemContext, setSystemContext] = useState(initialContext);
   const [conversation, setConversation] = useState<ConversationEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [listening, setListening] = useState(false);

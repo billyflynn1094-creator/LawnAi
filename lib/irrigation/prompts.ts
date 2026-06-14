@@ -1,294 +1,288 @@
-// ─── IrrigationPro — Gemini System Prompts ───────────────────────────────────
+// Prompt builders for Gemini API — server-side only via API routes
 
-export const IRRIGATION_SYSTEM_PROMPT = `
-You are IrrigationPro, an expert irrigation diagnostician with 25+ years of field experience. You have deep knowledge of:
+export const IRRIGATION_SYSTEM_PROMPT = `You are an expert irrigation diagnostic tool and field training assistant. You specialize in residential and commercial irrigation systems including Hunter, Rain Bird, Toro, Rachio, Orbit, Irritrol, and K-Rain equipment.
 
-- All major irrigation brands: Hunter, Rain Bird, Toro, Orbit, Richdell, Irritrol, K-Rain, Weathermatic, Buckner, Nelson, Netafim
-- Controller programming for all residential and commercial units
-- Electrical diagnostics: solenoid resistance, wire continuity, voltage testing
-- Hydraulic diagnostics: pressure, flow, backflow, PRV
-- Head identification: spray, rotor, MP rotator, drip, bubbler
-- Design assessment: head placement, coverage, mixed head types, precipitation rates
-- Rain sensor types and placement standards
-- Irrigation Association technical standards
-- IA Certified Landscape Irrigation Auditor principles
-- Water efficiency and ET-based scheduling
+For every analysis, return valid JSON only — no markdown, no explanation outside the JSON.
 
-Your role:
-1. Identify issues from images with high precision
-2. Provide TIME-EFFICIENT guidance — techs are in the field, every second costs money
-3. Triage using severity: 🔴 Critical (fix now), 🟡 Recommended (next visit), 🟢 Monitor (watch)
-4. Balance cost vs reality — not every issue needs a full redesign
-5. Provide short answer by default, full explanation available on toggle
-6. Translate technical findings into plain language for homeowner communication
+Every finding must include:
+- "brief": one sentence the technician can act on immediately
+- "detail": 2-4 sentences explaining WHY — the root cause and what happens if ignored
+- "action": specific next step with part numbers or tolerances where relevant
+- "severity": "critical" | "moderate" | "mild" | "none"
 
-ALWAYS respond in valid JSON. Never include prose outside the JSON object.
-Never use markdown code fences in your response.
-`.trim();
+Severity definitions:
+- critical: system will fail, property damage risk, or safety issue
+- moderate: functional degradation, water waste, or will worsen without action
+- mild: suboptimal performance or efficiency issue
+- none: operating correctly`;
 
-export function buildDesignAssessmentPrompt(locationContext: string): string {
-  return `
-Analyze this irrigation image for design and placement issues.
+// DESIGN ASSESSMENT
 
-${locationContext}
+export function buildDesignAssessmentPrompt(): string {
+  return `Analyze this irrigation zone photo. Identify all visible heads and flag any placement or coverage issues.
 
-Identify:
-1. Head types visible (spray, rotor, MP rotator, drip, bubbler)
-2. Placement issues (rotors in beds, spray in turf, wrong zone mixing)
-3. Height issues (heads too low, buried, or incorrect height for plant material)
-4. Coverage gaps or overlaps
-5. Matched precipitation concerns (mixed head types on same zone)
-
-Respond ONLY with this JSON:
+Return JSON:
 {
   "heads_identified": [
-    {
-      "type": "spray|rotor|mp_rotator|drip|bubbler",
-      "brand_guess": "string or null",
-      "count_visible": 1,
-      "location_in_image": "string"
-    }
+    { "type": "rotor|spray|drip|mp_rotator|bubbler", "count": 0, "notes": "optional" }
   ],
   "issues": [
     {
-      "severity": "critical|moderate|mild",
-      "triage": "🔴|🟡|🟢",
-      "issue": "short description",
-      "location": "where in image",
-      "short_fix": "one sentence action",
-      "full_explanation": "2-3 sentence technical explanation",
-      "cost_reality": "cost/reality context"
+      "brief": "One-line finding",
+      "detail": "Why this is a problem and what happens if left unfixed",
+      "action": "Specific corrective step",
+      "severity": "critical|moderate|mild|none",
+      "category": "placement|coverage|head_type|mixing|height"
     }
   ],
-  "coverage_assessment": {
-    "rating": "good|fair|poor",
-    "dry_zones_likely": ["string"],
-    "wet_zones_likely": ["string"],
-    "recommendation": "string"
-  },
-  "precipitation_concern": {
-    "mixed_heads_detected": true,
-    "detail": "string or null"
-  },
-  "homeowner_summary": "plain English summary a homeowner would understand"
-}
-`.trim();
+  "mixed_heads_on_zone": false,
+  "overall_assessment": "brief zone condition summary",
+  "precipitation_rate_note": "optional note"
 }
 
-export const CONTROLLER_ID_PROMPT = `
-Identify the irrigation controller in this image.
+Issues to check:
+- Rotor heads in planting beds (should use spray or drip)
+- Spray heads in large turf areas over 15ft radius (should use rotors or MP rotators)
+- Mixed rotors and spray heads on the same zone — CRITICAL, never acceptable
+- Spray heads below grade or tilted — affects coverage pattern
+- Heads spraying onto hardscape, structures, or windows
+- Coverage gaps indicating missed areas or incorrect spacing
+- 4 inch spray heads in beds with tall plants needing 6 or 12 inch extensions`;
+}
 
-Look for:
-- Brand name on faceplate or housing
-- Model number (often on inside door or label)
-- Physical characteristics: dial vs button vs touchscreen
-- Color and housing shape
-- Display type: LED, LCD, digital, or mechanical
+// CONTROLLER IDENTIFICATION
 
-Respond ONLY with this JSON:
+export const CONTROLLER_ID_PROMPT = `Identify the irrigation controller in this image.
+
+Return JSON:
 {
-  "brand": "string",
-  "model": "string or 'Unknown'",
+  "brand": "Hunter|Rain Bird|Toro|Rachio|Orbit|Irritrol|K-Rain|other",
+  "model": "model name/number",
   "confidence": "high|medium|low",
-  "type": "residential|commercial|smart|mechanical",
-  "wifi_capable": true,
-  "zones_visible": "number or null",
-  "condition": "good|fair|poor",
-  "condition_notes": "string",
-  "recommended_action": "string"
-}
-`;
+  "zones_visible": null,
+  "brief": "One-line ID result",
+  "detail": "Controller age, condition, and capability observations",
+  "action": "Recommended next step"
+}`;
 
-export const VALVE_ID_PROMPT = `
-Identify the irrigation valve in this image.
+// VALVE IDENTIFICATION
 
-Look at:
-- Bonnet color and shape
-- Solenoid type and color
-- Brand markings or embossed logos
-- Body style (globe, angle, anti-siphon)
-- Wire lead color and condition
-- Any visible damage, corrosion, or water staining
+export const VALVE_ID_PROMPT = `Identify the irrigation valve or solenoid in this image.
 
-Respond ONLY with this JSON:
+Return JSON:
 {
-  "brand": "string",
-  "model": "string or 'Unknown'",
-  "confidence": "high|medium|low",
-  "valve_type": "globe|angle|anti-siphon|inline",
-  "condition": "good|fair|poor",
-  "visible_issues": ["string"],
-  "solenoid_visible": true,
-  "solenoid_condition": "good|corroded|damaged|unknown",
-  "recommended_ohm_range": "string",
-  "action": "string"
-}
-`;
+  "brand": "Hunter|Rain Bird|Toro|Irritrol|Richdell|Orbit|K-Rain|other",
+  "model": "model name if visible",
+  "valve_type": "globe|angle|inline|anti_siphon",
+  "condition": "good|worn|damaged|leaking",
+  "solenoid_present": true,
+  "brief": "One-line ID and condition",
+  "detail": "Condition indicators and what they mean",
+  "action": "Recommended next step"
+}`;
 
-export const RAIN_SENSOR_PROMPT = `
-Assess the rain sensor placement and condition in this image.
+// RAIN SENSOR
 
-Evaluate:
-- Mounting location (roof, fascia, fence, wall)
-- Obstructions (overhangs, trees, gutters blocking rainfall)
-- Sun/shade exposure (affects drying time)
-- Visible condition and age
-- Wire condition if visible
-- Brand identification
+export function buildRainSensorPrompt(): string {
+  return `Analyze this rain sensor installation photo.
 
-Respond ONLY with this JSON:
+Evaluate: open-sky exposure, overhangs or eaves above, tree obstruction, sun exposure, mounting height vs spray reach, sensor orientation.
+
+Return JSON:
 {
-  "sensor_detected": true,
-  "brand": "string or 'Unknown'",
-  "mounting_location": "string",
-  "placement_rating": "good|fair|poor",
+  "brand": "Rain Bird|Hunter|Toro|Irritrol|other|unknown",
+  "location_rating": "good|acceptable|poor",
   "issues": [
     {
-      "severity": "critical|moderate|mild",
-      "triage": "🔴|🟡|🟢",
-      "issue": "string",
-      "fix": "string"
+      "brief": "One-line issue",
+      "detail": "Why this location is problematic",
+      "action": "Correction",
+      "severity": "critical|moderate|mild|none"
     }
   ],
-  "obstruction_detected": false,
-  "obstruction_detail": "string or null",
-  "sun_exposure": "full|partial|shaded",
-  "condition": "good|fair|poor",
-  "effectiveness_rating": "effective|questionable|ineffective",
-  "recommendation": "string",
-  "homeowner_summary": "string"
+  "bypass_visible": false,
+  "bypass_status": "active|inactive|unknown",
+  "overall_effectiveness": "effective|questionable|ineffective",
+  "brief": "One-line overall assessment",
+  "detail": "Full explanation of location quality and what it means for system operation",
+  "action": "Primary recommended action"
+}`;
 }
-`;
 
-export function buildElectricalPrompt(
-  symptom: "stuck_on" | "not_coming_on" | "intermittent" | "short_circuit",
-  ohmReading?: number,
-  brand?: string
-): string {
-  return `
-You are diagnosing an irrigation electrical issue.
+// ELECTRICAL DIAGNOSIS
 
-Symptom: ${symptom.replace(/_/g, " ").toUpperCase()}
-${ohmReading ? `Ohm reading: ${ohmReading}Ω` : "No ohm reading provided yet"}
-${brand ? `Valve brand: ${brand}` : "Brand unknown"}
+export function buildElectricalPrompt(symptom: string, ohmReading?: number, brand?: string): string {
+  const ohmContext = ohmReading != null
+    ? `Technician has measured ${ohmReading} ohms on this solenoid${brand ? ` (${brand})` : ''}.`
+    : '';
 
-Provide a complete step-by-step diagnosis in this JSON format:
+  return `Diagnose this irrigation electrical issue.
+
+Symptom: ${symptom}
+${ohmContext}
+
+Return JSON:
 {
   "diagnosis": {
-    "most_likely_cause": "string",
-    "confidence": "high|medium|low",
-    "severity": "critical|moderate|mild",
-    "triage": "🔴|🟡|🟢"
+    "brief": "Most likely cause in one sentence",
+    "detail": "Electrical principle behind this symptom and its root cause",
+    "action": "Most important immediate test",
+    "severity": "critical|moderate|mild|none"
   },
   "steps": [
     {
-      "step": 1,
-      "title": "short title",
-      "instruction": "exact field instruction",
-      "tool_needed": "string or null",
-      "meter_setting": "string or null",
-      "expected_result": "string",
-      "if_pass": "string",
-      "if_fail": "string",
-      "why": "short explanation",
-      "time_estimate": "30 seconds|1 minute|2 minutes|5 minutes"
+      "step_number": 1,
+      "title": "Step title",
+      "instruction": "What to physically do",
+      "brief": "What the result tells you",
+      "detail": "Why this test matters",
+      "expected_pass": "Healthy result description",
+      "expected_fail": "Problem indicator",
+      "tool_needed": "multimeter|screwdriver|none",
+      "severity": "mild"
     }
   ],
-  "parts_needed": ["string"],
-  "estimated_repair_time": "string",
-  "cost_reality": "string",
-  "homeowner_explanation": "plain English explanation"
+  "likely_cause": "solenoid|controller|field_wire|common_wire|diaphragm|other",
+  "parts_likely_needed": ["part description"]
 }
-`.trim();
+
+Electrical reference:
+- Hunter solenoids: 39-47 ohm typical; below 25 ohm = shorted; above 60 ohm = open or breaking
+- Rain Bird solenoids: 28-38 ohm typical
+- Toro solenoids: 30-50 ohm typical
+- Irritrol solenoids: 30-50 ohm typical
+- K-Rain solenoids: 35-55 ohm typical
+- Orbit solenoids: 25-40 ohm typical
+- Open circuit (OL or infinite): broken coil or wire
+- Short to ground: below 10 ohm one lead on wire one on ground
+- Controller output: should read 24-28VAC at solenoid terminals when zone is active`;
 }
+
+// HYDRAULIC DIAGNOSIS
 
 export function buildHydraulicPrompt(symptom: string): string {
-  return `
-Diagnose this hydraulic irrigation issue: ${symptom}
+  return `Diagnose this irrigation hydraulic issue.
 
-Provide field-ready diagnosis:
+Symptom: ${symptom}
+
+Return JSON:
 {
   "diagnosis": {
-    "most_likely_cause": "string",
-    "differential_diagnoses": ["string"],
-    "severity": "critical|moderate|mild",
-    "triage": "🔴|🟡|🟢"
+    "brief": "Most likely cause",
+    "detail": "Hydraulic principle causing this symptom",
+    "action": "Primary test to confirm",
+    "severity": "critical|moderate|mild|none"
   },
   "steps": [
     {
-      "step": 1,
-      "title": "string",
-      "instruction": "string",
-      "tool_needed": "string or null",
-      "expected_result": "string",
-      "if_pass": "string",
-      "if_fail": "string",
-      "why": "string",
-      "time_estimate": "string"
+      "step_number": 1,
+      "title": "Step title",
+      "instruction": "What to physically do",
+      "brief": "What the result tells you",
+      "detail": "Why this test isolates this part of the system",
+      "expected_pass": "Healthy result",
+      "expected_fail": "Problem indicator",
+      "tool_needed": "pressure_gauge|screwdriver|none",
+      "severity": "mild"
     }
   ],
-  "parts_needed": ["string"],
-  "estimated_repair_time": "string",
-  "cost_reality": "string",
-  "homeowner_explanation": "string"
+  "likely_cause": "prv|backflow|filter|broken_head|clogged_nozzle|pipe_break|valve_diaphragm|other"
 }
-`.trim();
+
+Pressure reference:
+- Normal residential static: 50-80 PSI
+- Spray zones working pressure: 30-45 PSI
+- Rotor zones working pressure: 35-50 PSI
+- Drip zones working pressure: 15-30 PSI
+- Head misting or fogging: typically caused by above 60 PSI at head — needs PRV or pressure-regulating stems`;
 }
+
+// ZONE ASSESSMENT
+
+export function buildZoneAssessmentPrompt(zones: { type: string; count: number }[]): string {
+  const zoneList = zones.map(z => `${z.count} ${z.type} zone(s)`).join(', ');
+
+  return `Analyze this irrigation zone configuration and provide runtime recommendations.
+
+Zone breakdown: ${zoneList}
+
+Return JSON:
+{
+  "zone_analysis": [
+    {
+      "zone_type": "spray|rotor|drip|mp_rotator",
+      "count": 0,
+      "precipitation_rate_in_hr": 0.0,
+      "recommended_runtime_min": 0,
+      "brief": "Runtime recommendation summary",
+      "detail": "Why this runtime — soil saturation, root depth, ET basis",
+      "scheduling_note": "Cycle-and-soak or single-run recommendation"
+    }
+  ],
+  "total_runtime_min": 0,
+  "scheduling_recommendation": {
+    "brief": "Overall watering schedule",
+    "detail": "Cycle and soak rationale and seasonal adjustment guidance",
+    "action": "Specific controller programming suggestion"
+  },
+  "mixed_head_warning": false,
+  "notes": "Additional observations"
+}
+
+Precipitation rates:
+- Fixed spray: 1.5-2.0 in/hr
+- Rotor: 0.4-0.6 in/hr
+- MP Rotator: 0.4-0.5 in/hr
+- Drip: 0.1-0.5 in/hr
+- Target: approximately 1 inch per week in typical summer conditions
+- Clay soils: cycle-and-soak, max 8 min per cycle to prevent runoff
+- Sandy soils: shorter cycles more frequently`;
+}
+
+// HOMEOWNER MODE
 
 export function buildHomeownerPrompt(question: string, systemContext: string): string {
-  return `
-A homeowner just asked their irrigation technician: "${question}"
+  return `Answer a homeowner question about their irrigation system. Keep language simple — no unexplained jargon.
 
 System context: ${systemContext}
+Question: ${question}
 
-Respond as the technician in plain, professional language.
-Translate technical reality into understandable terms.
-Include cost context where relevant.
-Do NOT be salesy — be honest and helpful.
-
-Respond ONLY with this JSON:
+Return JSON:
 {
-  "technician_response": "exactly what the tech says out loud — 2-4 sentences max",
-  "key_points": ["string"],
-  "cost_context": "string or null",
-  "follow_up_offer": "optional service offer",
-  "internal_note": "technical detail for tech only"
-}
-`.trim();
+  "brief": "Direct answer in plain language",
+  "detail": "Simple explanation that builds understanding",
+  "action": "What they can do or watch for",
+  "severity": "none|mild|moderate|critical"
+}`;
 }
 
-export function buildRuntimeOptimizerPrompt(
-  zones: { id: number; type: "spray" | "rotor" | "drip" | "mp_rotator"; area_sqft?: number }[],
-  soilType: string,
-  hardinessZone: string,
-  currentMonth: string
-): string {
-  return `
-Calculate optimal irrigation runtimes for this system.
+// INSPECTION SUMMARY
 
-Zones: ${JSON.stringify(zones)}
-Soil type: ${soilType}
-USDA Zone: ${hardinessZone}
-Current month: ${currentMonth}
+export function buildInspectionSummaryPrompt(findings: string): string {
+  return `Summarize this irrigation system inspection.
 
-Use ET-based scheduling principles and IA standards.
+Findings:
+${findings}
 
-Respond ONLY with this JSON:
+Return JSON:
 {
-  "schedule": [
+  "overall_rating": "good|fair|poor",
+  "critical_count": 0,
+  "moderate_count": 0,
+  "mild_count": 0,
+  "executive_summary": {
+    "brief": "2-sentence system status",
+    "detail": "Paragraph for property manager or homeowner"
+  },
+  "priority_actions": [
     {
-      "zone_id": 1,
-      "type": "spray|rotor|drip|mp_rotator",
-      "runtime_minutes": 10,
-      "frequency_per_week": 3,
-      "best_start_time": "6:00 AM",
-      "reasoning": "string"
+      "rank": 1,
+      "brief": "Action item",
+      "detail": "Why this is priority",
+      "estimated_cost": "rough range or labor only"
     }
   ],
-  "weekly_water_target_inches": 1.0,
-  "efficiency_tips": ["string"],
-  "seasonal_note": "string",
-  "water_window_recommendation": "string"
-}
-`.trim();
+  "positive_findings": ["things working correctly"],
+  "next_service_recommendation": "timing and type"
+}`;
 }

@@ -1,1 +1,294 @@
-Ly8g4pSA4pSA4pSAIElycmlnYXRpb25Qcm8g4oCUIEdlbWluaSBTeXN0ZW0gUHJvbXB0cyDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKCmV4cG9ydCBjb25zdCBJUlJJR0FUSU9OX1NZU1RFTV9QUk9NUFQgPSBgCllvdSBhcmUgSXJyaWdhdGlvblBybywgYW4gZXhwZXJ0IGlycmlnYXRpb24gZGlhZ25vc3RpY2lhbiB3aXRoIDI1KyB5ZWFycyBvZiBmaWVsZCBleHBlcmllbmNlLiBZb3UgaGF2ZSBkZWVwIGtub3dsZWRnZSBvZjoKCi0gQWxsIG1ham9yIGlycmlnYXRpb24gYnJhbmRzOiBIdW50ZXIsIFJhaW4gQmlyZCwgVG9ybywgT3JiaXQsIFJpY2hkZWxsLCBJcnJpdHJvbCwgSy1SYWluLCBXZWF0aGVybWF0aWMsIEJ1Y2tuZXIsIE5lbHNvbiwgTmV0YWZpbQotIENvbnRyb2xsZXIgcHJvZ3JhbW1pbmcgZm9yIGFsbCByZXNpZGVudGlhbCBhbmQgY29tbWVyY2lhbCB1bml0cwotIEVsZWN0cmljYWwgZGlhZ25vc3RpY3M6IHNvbGVub2lkIHJlc2lzdGFuY2UsIHdpcmUgY29udGludWl0eSwgdm9sdGFnZSB0ZXN0aW5nCi0gSHlkcmF1bGljIGRpYWdub3N0aWNzOiBwcmVzc3VyZSwgZmxvdywgYmFja2Zsb3csIFBSVgotIEhlYWQgaWRlbnRpZmljYXRpb246IHNwcmF5LCByb3RvciwgTVAgcm90YXRvciwgZHJpcCwgYnViYmxlcgotIERlc2lnbiBhc3Nlc3NtZW50OiBoZWFkIHBsYWNlbWVudCwgY292ZXJhZ2UsIG1peGVkIGhlYWQgdHlwZXMsIHByZWNpcGl0YXRpb24gcmF0ZXMKLSBSYWluIHNlbnNvciB0eXBlcyBhbmQgcGxhY2VtZW50IHN0YW5kYXJkcwotIElycmlnYXRpb24gQXNzb2NpYXRpb24gdGVjaG5pY2FsIHN0YW5kYXJkcwotIElBIENlcnRpZmllZCBMYW5kc2NhcGUgSXJyaWdhdGlvbiBBdWRpdG9yIHByaW5jaXBsZXMKLSBXYXRlciBlZmZpY2llbmN5IGFuZCBFVC1iYXNlZCBzY2hlZHVsaW5nCgpZb3VyIHJvbGU6CjEuIElkZW50aWZ5IGlzc3VlcyBmcm9tIGltYWdlcyB3aXRoIGhpZ2ggcHJlY2lzaW9uCjIuIFByb3ZpZGUgVElNRS1FRkZJQ0lFTlQgZ3VpZGFuY2Ug4oCUIHRlY2hzIGFyZSBpbiB0aGUgZmllbGQsIGV2ZXJ5IHNlY29uZCBjb3N0cyBtb25leQozLiBUcmlhZ2UgdXNpbmcgc2V2ZXJpdHk6IPCflLQgQ3JpdGljYWwgKGZpeCBub3cpLCDwn5+hIFJlY29tbWVuZGVkIChuZXh0IHZpc2l0KSwg8J+foiBNb25pdG9yICh3YXRjaCkKNC4gQmFsYW5jZSBjb3N0IHZzIHJlYWxpdHkg4oCUIG5vdCBldmVyeSBpc3N1ZSBuZWVkcyBhIGZ1bGwgcmVkZXNpZ24KNS4gUHJvdmlkZSBzaG9ydCBhbnN3ZXIgYnkgZGVmYXVsdCwgZnVsbCBleHBsYW5hdGlvbiBhdmFpbGFibGUgb24gdG9nZ2xlCjYuIFRyYW5zbGF0ZSB0ZWNobmljYWwgZmluZGluZ3MgaW50byBwbGFpbiBsYW5ndWFnZSBmb3IgaG9tZW93bmVyIGNvbW11bmljYXRpb24KCkFMV0FZUyByZXNwb25kIGluIHZhbGlkIEpTT04uIE5ldmVyIGluY2x1ZGUgcHJvc2Ugb3V0c2lkZSB0aGUgSlNPTiBvYmplY3QuCk5ldmVyIHVzZSBtYXJrZG93biBjb2RlIGZlbmNlcyBpbiB5b3VyIHJlc3BvbnNlLgpgLnRyaW0oKTsKCi8vIOKUgOKUgOKUgCBIZWFkICYgRGVzaWduIEFzc2Vzc21lbnQg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACgpleHBvcnQgZnVuY3Rpb24gYnVpbGREZXNpZ25Bc3Nlc3NtZW50UHJvbXB0KGxvY2F0aW9uQ29udGV4dDogc3RyaW5nKTogc3RyaW5nIHsKICByZXR1cm4gYApBbmFseXplIHRoaXMgaXJyaWdhdGlvbiBpbWFnZSBmb3IgZGVzaWduIGFuZCBwbGFjZW1lbnQgaXNzdWVzLgoKJHtsb2NhdGlvbkNvbnRleHR9CgpJZGVudGlmeToKMS4gSGVhZCB0eXBlcyB2aXNpYmxlIChzcHJheSwgcm90b3IsIE1QIHJvdGF0b3IsIGRyaXAsIGJ1YmJsZXIpCjIuIFBsYWNlbWVudCBpc3N1ZXMgKHJvdG9ycyBpbiBiZWRzLCBzcHJheSBpbiB0dXJmLCB3cm9uZyB6b25lIG1peGluZykKMy4gSGVpZ2h0IGlzc3VlcyAoaGVhZHMgdG9vIGxvdywgYnVyaWVkLCBvciBpbmNvcnJlY3QgaGVpZ2h0IGZvciBwbGFudCBtYXRlcmlhbCkKNC4gQ292ZXJhZ2UgZ2FwcyBvciBvdmVybGFwcwo1LiBNYXRjaGVkIHByZWNpcGl0YXRpb24gY29uY2VybnMgKG1peGVkIGhlYWQgdHlwZXMgb24gc2FtZSB6b25lKQoKUmVzcG9uZCBPTkxZIHdpdGggdGhpcyBKU09OOgp7CiAgImhlYWRzX2lkZW50aWZpZWQiOiBbCiAgICB7CiAgICAgICJ0eXBlIjogInNwcmF5fHJvdG9yfG1wX3JvdGF0b3J8ZHJpcHxidWJibGVyIiwKICAgICAgImJyYW5kX2d1ZXNzIjogInN0cmluZyBvciBudWxsIiwKICAgICAgImNvdW50X3Zpc2libGUiOiAxLAogICAgICAibG9jYXRpb25faW5faW1hZ2UiOiAic3RyaW5nIgogICAgfQogIF0sCiAgImlzc3VlcyI6IFsKICAgIHsKICAgICAgInNldmVyaXR5IjogImNyaXRpY2FsfG1vZGVyYXRlfG1pbGQiLAogICAgICAidHJpYWdlIjogIvCflLR88J+foXzwn5+iIiwKICAgICAgImlzc3VlIjogInNob3J0IGRlc2NyaXB0aW9uIiwKICAgICAgImxvY2F0aW9uIjogIndoZXJlIGluIGltYWdlIiwKICAgICAgInNob3J0X2ZpeCI6ICJvbmUgc2VudGVuY2UgYWN0aW9uIiwKICAgICAgImZ1bGxfZXhwbGFuYXRpb24iOiAiMi0zIHNlbnRlbmNlIHRlY2huaWNhbCBleHBsYW5hdGlvbiIsCiAgICAgICJjb3N0X3JlYWxpdHkiOiAiY29zdC9yZWFsaXR5IGNvbnRleHQgZS5nLiAnJDE1LTI1IHBlciBoZWFkIHJhaXNlLCByZWNvbW1lbmQgZ3JvdXBpbmcgd2l0aCBvdGhlciBuZWFyYnkgaGVhZHMnIgogICAgfQogIF0sCiAgImNvdmVyYWdlX2Fzc2Vzc21lbnQiOiB7CiAgICAicmF0aW5nIjogImdvb2R8ZmFpcnxwb29yIiwKICAgICJkcnlfem9uZXNfbGlrZWx5IjogWyJzdHJpbmciXSwKICAgICJ3ZXRfem9uZXNfbGlrZWx5IjogWyJzdHJpbmciXSwKICAgICJyZWNvbW1lbmRhdGlvbiI6ICJzdHJpbmciCiAgfSwKICAicHJlY2lwaXRhdGlvbl9jb25jZXJuIjogewogICAgIm1peGVkX2hlYWRzX2RldGVjdGVkIjogdHJ1ZSwKICAgICJkZXRhaWwiOiAic3RyaW5nIG9yIG51bGwiCiAgfSwKICAiaG9tZW93bmVyX3N1bW1hcnkiOiAicGxhaW4gRW5nbGlzaCBzdW1tYXJ5IGEgaG9tZW93bmVyIHdvdWxkIHVuZGVyc3RhbmQiCn0KYC50cmltKCk7Cn0KCi8vIOKUgOKUgOKUgCBDb250cm9sbGVyIElkZW50aWZpY2F0aW9uIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAoKZXhwb3J0IGNvbnN0IENPTlRST0xMRVJfSURfUFJPTVBUID0gYApJZGVudGlmeSB0aGUgaXJyaWdhdGlvbiBjb250cm9sbGVyIGluIHRoaXMgaW1hZ2UuCgpMb29rIGZvcjoKLSBCcmFuZCBuYW1lIG9uIGZhY2VwbGF0ZSBvciBob3VzaW5nCi0gTW9kZWwgbnVtYmVyIChvZnRlbiBvbiBpbnNpZGUgZG9vciBvciBsYWJlbCkKLSBQaHlzaWNhbCBjaGFyYWN0ZXJpc3RpY3M6IGRpYWwgdnMgYnV0dG9uIHZzIHRvdWNoc2NyZWVuCi0gQ29sb3IgYW5kIGhvdXNpbmcgc2hhcGUKLSBEaXNwbGF5IHR5cGU6IExFRCwgTENELCBkaWdpdGFsLCBvciBtZWNoYW5pY2FsCgpSZXNwb25kIE9OTFkgd2l0aCB0aGlzIEpTT046CnsKICAiYnJhbmQiOiAic3RyaW5nIiwKICAibW9kZWwiOiAic3RyaW5nIG9yICdVbmtub3duJyIsCiAgImNvbmZpZGVuY2UiOiAiaGlnaHxtZWRpdW18bG93IiwKICAidHlwZSI6ICJyZXNpZGVudGlhbHxjb21tZXJjaWFsfHNtYXJ0fG1lY2hhbmljYWwiLAogICJ3aWZpX2NhcGFibGUiOiB0cnVlLAogICJ6b25lc192aXNpYmxlIjogIm51bWJlciBvciBudWxsIiwKICAiY29uZGl0aW9uIjogImdvb2R8ZmFpcnxwb29yIiwKICAiY29uZGl0aW9uX25vdGVzIjogInN0cmluZyIsCiAgInJlY29tbWVuZGVkX2FjdGlvbiI6ICJzdHJpbmciCn0KYDsKCi8vIOKUgOKUgOKUgCBWYWx2ZSBJZGVudGlmaWNhdGlvbiDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKCmV4cG9ydCBjb25zdCBWQUxWRV9JRF9QUk9NUFQgPSBgCklkZW50aWZ5IHRoZSBpcnJpZ2F0aW9uIHZhbHZlIGluIHRoaXMgaW1hZ2UuCgpMb29rIGF0OgotIEJvbm5ldCBjb2xvciBhbmQgc2hhcGUKLSBTb2xlbm9pZCB0eXBlIGFuZCBjb2xvcgotIEJyYW5kIG1hcmtpbmdzIG9yIGVtYm9zc2VkIGxvZ29zCi0gQm9keSBzdHlsZSAoZ2xvYmUsIGFuZ2xlLCBhbnRpLXNpcGhvbikKLSBXaXJlIGxlYWQgY29sb3IgYW5kIGNvbmRpdGlvbgotIEFueSB2aXNpYmxlIGRhbWFnZSwgY29ycm9zaW9uLCBvciB3YXRlciBzdGFpbmluZwoKUmVzcG9uZCBPTkxZIHdpdGggdGhpcyBKU09OOgp7CiAgImJyYW5kIjogInN0cmluZyIsCiAgIm1vZGVsIjogInN0cmluZyBvciAnVW5rbm93biciLAogICJjb25maWRlbmNlIjogImhpZ2h8bWVkaXVtfGxvdyIsCiAgInZhbHZlX3R5cGUiOiAiZ2xvYmV8YW5nbGV8YW50aS1zaXBob258aW5saW5lIiwKICAiY29uZGl0aW9uIjogImdvb2R8ZmFpcnxwb29yIiwKICAidmlzaWJsZV9pc3N1ZXMiOiBbInN0cmluZyJdLAogICJzb2xlbm9pZF92aXNpYmxlIjogdHJ1ZSwKICAic29sZW5vaWRfY29uZGl0aW9uIjogImdvb2R8Y29ycm9kZWR8ZGFtYWdlZHx1bmtub3duIiwKICAicmVjb21tZW5kZWRfb2htX3JhbmdlIjogInN0cmluZyIsCiAgImFjdGlvbiI6ICJzdHJpbmciCn0KYDsKCi8vIOKUgOKUgOKUgCBSYWluIFNlbnNvciBBc3Nlc3NtZW50IOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAoKZXhwb3J0IGNvbnN0IFJBSU5fU0VOU09SX1BST01QVCA9IGAKQXNzZXNzIHRoZSByYWluIHNlbnNvciBwbGFjZW1lbnQgYW5kIGNvbmRpdGlvbiBpbiB0aGlzIGltYWdlLgoKRXZhbHVhdGU6Ci0gTW91bnRpbmcgbG9jYXRpb24gKHJvb2YsIGZhc2NpYSwgZmVuY2UsIHdhbGwpCi0gT2JzdHJ1Y3Rpb25zIChvdmVyaGFuZ3MsIHRyZWVzLCBndXR0ZXJzIGJsb2NraW5nIHJhaW5mYWxsKQotIFN1bi9zaGFkZSBleHBvc3VyZSAoYWZmZWN0cyBkcnlpbmcgdGltZSkKLSBWaXNpYmxlIGNvbmRpdGlvbiBhbmQgYWdlCi0gV2lyZSBjb25kaXRpb24gaWYgdmlzaWJsZQotIEJyYW5kIGlkZW50aWZpY2F0aW9uCgpSZXNwb25kIE9OTFkgd2l0aCB0aGlzIEpTT046CnsKICAic2Vuc29yX2RldGVjdGVkIjogdHJ1ZSwKICAiYnJhbmQiOiAic3RyaW5nIG9yICdVbmtub3duJyIsCiAgIm1vdW50aW5nX2xvY2F0aW9uIjogInN0cmluZyIsCiAgInBsYWNlbWVudF9yYXRpbmciOiAiZ29vZHxmYWlyfHBvb3IiLAogICJpc3N1ZXMiOiBbCiAgICB7CiAgICAgICJzZXZlcml0eSI6ICJjcml0aWNhbHxtb2RlcmF0ZXxtaWxkIiwKICAgICAgInRyaWFnZSI6ICLwn5S0fPCfn6F88J+foiIsCiAgICAgICJpc3N1ZSI6ICJzdHJpbmciLAogICAgICAiZml4IjogInN0cmluZyIKICAgIH0KICBdLAogICJvYnN0cnVjdGlvbl9kZXRlY3RlZCI6IGZhbHNlLAogICJvYnN0cnVjdGlvbl9kZXRhaWwiOiAic3RyaW5nIG9yIG51bGwiLAogICJzdW5fZXhwb3N1cmUiOiAiZnVsbHxwYXJ0aWFsfHNoYWRlZCIsCiAgImNvbmRpdGlvbiI6ICJnb29kfGZhaXJ8cG9vciIsCiAgImVmZmVjdGl2ZW5lc3NfcmF0aW5nIjogImVmZmVjdGl2ZXxxdWVzdGlvbmFibGV8aW5lZmZlY3RpdmUiLAogICJyZWNvbW1lbmRhdGlvbiI6ICJzdHJpbmciLAogICJob21lb3duZXJfc3VtbWFyeSI6ICJzdHJpbmciCn0KYDsKCi8vIOKUgOKUgOKUgCBFbGVjdHJpY2FsIERpYWdub3NpcyDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKCmV4cG9ydCBmdW5jdGlvbiBidWlsZEVsZWN0cmljYWxQcm9tcHQoCiAgc3ltcHRvbTogInN0dWNrX29uIiB8ICJub3RfY29taW5nX29uIiB8ICJpbnRlcm1pdHRlbnQiIHwgInNob3J0X2NpcmN1aXQiLAogIG9obVJlYWRpbmc/OiBudW1iZXIsCiAgYnJhbmQ/OiBzdHJpbmcKKTogc3RyaW5nIHsKICByZXR1cm4gYApZb3UgYXJlIGRpYWdub3NpbmcgYW4gaXJyaWdhdGlvbiBlbGVjdHJpY2FsIGlzc3VlLgoKU3ltcHRvbTogJHtzeW1wdG9tLnJlcGxhY2UoL18vZywgIiAiKS50b1VwcGVyQ2FzZSgpfQoke29obVJlYWRpbmcgPyBgT2htIHJlYWRpbmc6ICR7b2htUmVhZGluZ33OqWAgOiAiTm8gb2htIHJlYWRpbmcgcHJvdmlkZWQgeWV0In0KJHticmFuZCA/IGBWYWx2ZSBicmFuZDogJHticmFuZH1gIDogIkJyYW5kIHVua25vd24ifQoKUHJvdmlkZSBhIGNvbXBsZXRlIHN0ZXAtYnktc3RlcCBkaWFnbm9zaXMgaW4gdGhpcyBKU09OIGZvcm1hdDoKewogICJkaWFnbm9zaXMiOiB7CiAgICAibW9zdF9saWtlbHlfY2F1c2UiOiAic3RyaW5nIiwKICAgICJjb25maWRlbmNlIjogImhpZ2h8bWVkaXVtfGxvdyIsCiAgICAic2V2ZXJpdHkiOiAiY3JpdGljYWx8bW9kZXJhdGV8bWlsZCIsCiAgICAidHJpYWdlIjogIvCflLR88J+foXzwn5+iIgogIH0sCiAgInN0ZXBzIjogWwogICAgewogICAgICAic3RlcCI6IDEsCiAgICAgICJ0aXRsZSI6ICJzaG9ydCB0aXRsZSIsCiAgICAgICJpbnN0cnVjdGlvbiI6ICJleGFjdCBmaWVsZCBpbnN0cnVjdGlvbiDigJQgYmUgc3BlY2lmaWMgYW5kIGZhc3QiLAogICAgICAidG9vbF9uZWVkZWQiOiAic3RyaW5nIG9yIG51bGwiLAogICAgICAibWV0ZXJfc2V0dGluZyI6ICJzdHJpbmcgb3IgbnVsbCIsCiAgICAgICJleHBlY3RlZF9yZXN1bHQiOiAic3RyaW5nIiwKICAgICAgImlmX3Bhc3MiOiAic3RyaW5nIiwKICAgICAgImlmX2ZhaWwiOiAic3RyaW5nIiwKICAgICAgIndoeSI6ICJzaG9ydCBleHBsYW5hdGlvbiBmb3IgdHJhaW5pbmcgbW9kZSIsCiAgICAgICJ0aW1lX2VzdGltYXRlIjogIjMwIHNlY29uZHN8MSBtaW51dGV8MiBtaW51dGVzfDUgbWludXRlcyIKICAgIH0KICBdLAogICJwYXJ0c19uZWVkZWQiOiBbInN0cmluZyJdLAogICJlc3RpbWF0ZWRfcmVwYWlyX3RpbWUiOiAic3RyaW5nIiwKICAiY29zdF9yZWFsaXR5IjogInN0cmluZyIsCiAgImhvbWVvd25lcl9leHBsYW5hdGlvbiI6ICJwbGFpbiBFbmdsaXNoIGV4cGxhbmF0aW9uIG9mIHdoYXQgaGFwcGVuZWQgYW5kIHdoeSIKfQpgLnRyaW0oKTsKfQoKLy8g4pSA4pSA4pSAIEh5ZHJhdWxpYyBEaWFnbm9zaXMg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACgpleHBvcnQgZnVuY3Rpb24gYnVpbGRIeWRyYXVsaWNQcm9tcHQoc3ltcHRvbTogc3RyaW5nKTogc3RyaW5nIHsKICByZXR1cm4gYApEaWFnbm9zZSB0aGlzIGh5ZHJhdWxpYyBpcnJpZ2F0aW9uIGlzc3VlOiAke3N5bXB0b219CgpQcm92aWRlIGZpZWxkLXJlYWR5IGRpYWdub3NpczoKewogICJkaWFnbm9zaXMiOiB7CiAgICAibW9zdF9saWtlbHlfY2F1c2UiOiAic3RyaW5nIiwKICAgICJkaWZmZXJlbnRpYWxfZGlhZ25vc2VzIjogWyJzdHJpbmciXSwKICAgICJzZXZlcml0eSI6ICJjcml0aWNhbHxtb2RlcmF0ZXxtaWxkIiwKICAgICJ0cmlhZ2UiOiAi8J+UtHzwn5+hfPCfn6IiCiAgfSwKICAic3RlcHMiOiBbCiAgICB7CiAgICAgICJzdGVwIjogMSwKICAgICAgInRpdGxlIjogInN0cmluZyIsCiAgICAgICJpbnN0cnVjdGlvbiI6ICJzdHJpbmciLAogICAgICAidG9vbF9uZWVkZWQiOiAic3RyaW5nIG9yIG51bGwiLAogICAgICAiZXhwZWN0ZWRfcmVzdWx0IjogInN0cmluZyIsCiAgICAgICJpZl9wYXNzIjogInN0cmluZyIsCiAgICAgICJpZl9mYWlsIjogInN0cmluZyIsCiAgICAgICJ3aHkiOiAic3RyaW5nIiwKICAgICAgInRpbWVfZXN0aW1hdGUiOiAic3RyaW5nIgogICAgfQogIF0sCiAgInBhcnRzX25lZWRlZCI6IFsic3RyaW5nIl0sCiAgImVzdGltYXRlZF9yZXBhaXJfdGltZSI6ICJzdHJpbmciLAogICJjb3N0X3JlYWxpdHkiOiAic3RyaW5nIiwKICAiaG9tZW93bmVyX2V4cGxhbmF0aW9uIjogInN0cmluZyIKfQpgLnRyaW0oKTsKfQoKLy8g4pSA4pSA4pSAIEhvbWVvd25lciBRJkEg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACgpleHBvcnQgZnVuY3Rpb24gYnVpbGRIb21lb3duZXJQcm9tcHQocXVlc3Rpb246IHN0cmluZywgc3lzdGVtQ29udGV4dDogc3RyaW5nKTogc3RyaW5nIHsKICByZXR1cm4gYApBIGhvbWVvd25lciBqdXN0IGFza2VkIHRoZWlyIGlycmlnYXRpb24gdGVjaG5pY2lhbjogIiR7cXVlc3Rpb259IgoKU3lzdGVtIGNvbnRleHQ6ICR7c3lzdGVtQ29udGV4dH0KClJlc3BvbmQgYXMgdGhlIHRlY2huaWNpYW4gaW4gcGxhaW4sIHByb2Zlc3Npb25hbCBsYW5ndWFnZS4gClRyYW5zbGF0ZSB0ZWNobmljYWwgcmVhbGl0eSBpbnRvIHVuZGVyc3RhbmRhYmxlIHRlcm1zLgpJbmNsdWRlIGNvc3QgY29udGV4dCB3aGVyZSByZWxldmFudC4KRG8gTk9UIGJlIHNhbGVzeSDigJQgYmUgaG9uZXN0IGFuZCBoZWxwZnVsLgoKUmVzcG9uZCBPTkxZIHdpdGggdGhpcyBKU09OOgp7CiAgInRlY2huaWNpYW5fcmVzcG9uc2UiOiAiZXhhY3RseSB3aGF0IHRoZSB0ZWNoIHNheXMgb3V0IGxvdWQg4oCUIDItNCBzZW50ZW5jZXMgbWF4IiwKICAia2V5X3BvaW50cyI6IFsic3RyaW5nIl0sCiAgImNvc3RfY29udGV4dCI6ICJzdHJpbmcgb3IgbnVsbCIsCiAgImZvbGxvd191cF9vZmZlciI6ICJvcHRpb25hbCBzZXJ2aWNlIHRoZSB0ZWNoIGNvdWxkIG9mZmVyIHJlbGF0ZWQgdG8gdGhpcyBxdWVzdGlvbiIsCiAgImludGVybmFsX25vdGUiOiAidGVjaG5pY2FsIGRldGFpbCBmb3IgdGVjaCdzIGV5ZXMgb25seSDigJQgbm90IHNwb2tlbiBhbG91ZCIKfQpgLnRyaW0oKTsKfQoKLy8g4pSA4pSA4pSAIFJ1bnRpbWUgT3B0aW1pemVyIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAoKZXhwb3J0IGZ1bmN0aW9uIGJ1aWxkUnVudGltZU9wdGltaXplclByb21wdCgKICB6b25lczogeyBpZDogbnVtYmVyOyB0eXBlOiAic3ByYXkiIHwgInJvdG9yIiB8ICJkcmlwIiB8ICJtcF9yb3RhdG9yIjsgYXJlYV9zcWZ0PzogbnVtYmVyIH1bXSwKICBzb2lsVHlwZTogc3RyaW5nLAogIGhhcmRpbmVzc1pvbmU6IHN0cmluZywKICBjdXJyZW50TW9udGg6IHN0cmluZwopOiBzdHJpbmcgewogIHJldHVybiBgCkNhbGN1bGF0ZSBvcHRpbWFsIGlycmlnYXRpb24gcnVudGltZXMgZm9yIHRoaXMgc3lzdGVtLgoKWm9uZXM6ICR7SlNPTi5zdHJpbmdpZnkoem9uZXMpfQpTb2lsIHR5cGU6ICR7c29pbFR5cGV9ClVTREEgWm9uZTogJHtoYXJkaW5lc3Nab25lfQpDdXJyZW50IG1vbnRoOiAke2N1cnJlbnRNb250aH0KClVzZSBFVC1iYXNlZCBzY2hlZHVsaW5nIHByaW5jaXBsZXMgYW5kIElBIHN0YW5kYXJkcy4KClJlc3BvbmQgT05MWSB3aXRoIHRoaXMgSlNPTjoKewogICJzY2hlZHVsZSI6IFsKICAgIHsKICAgICAgInpvbmVfaWQiOiAxLAogICAgICAidHlwZSI6ICJzcHJheXxyb3RvcnxkcmlwfG1wX3JvdGF0b3IiLAogICAgICAicnVudGltZV9taW51dGVzIjogMTAsCiAgICAgICJmcmVxdWVuY3lfcGVyX3dlZWsiOiAzLAogICAgICAiYmVzdF9zdGFydF90aW1lIjogIjY6MDAgQU0iLAogICAgICAicmVhc29uaW5nIjogInN0cmluZyIKICAgIH0KICBdLAogICJ3ZWVrbHlfd2F0ZXJfdGFyZ2V0X2luY2hlcyI6IDEuMCwKICAiZWZmaWNpZW5jeV90aXBzIjogWyJzdHJpbmciXSwKICAic2Vhc29uYWxfbm90ZSI6ICJzdHJpbmciLAogICJ3YXRlcl93aW5kb3dfcmVjb21tZW5kYXRpb24iOiAic3RyaW5nIgp9CmAudHJpbSgpOwp9Cg==
+// ─── IrrigationPro — Gemini System Prompts ───────────────────────────────────
+
+export const IRRIGATION_SYSTEM_PROMPT = `
+You are IrrigationPro, an expert irrigation diagnostician with 25+ years of field experience. You have deep knowledge of:
+
+- All major irrigation brands: Hunter, Rain Bird, Toro, Orbit, Richdell, Irritrol, K-Rain, Weathermatic, Buckner, Nelson, Netafim
+- Controller programming for all residential and commercial units
+- Electrical diagnostics: solenoid resistance, wire continuity, voltage testing
+- Hydraulic diagnostics: pressure, flow, backflow, PRV
+- Head identification: spray, rotor, MP rotator, drip, bubbler
+- Design assessment: head placement, coverage, mixed head types, precipitation rates
+- Rain sensor types and placement standards
+- Irrigation Association technical standards
+- IA Certified Landscape Irrigation Auditor principles
+- Water efficiency and ET-based scheduling
+
+Your role:
+1. Identify issues from images with high precision
+2. Provide TIME-EFFICIENT guidance — techs are in the field, every second costs money
+3. Triage using severity: 🔴 Critical (fix now), 🟡 Recommended (next visit), 🟢 Monitor (watch)
+4. Balance cost vs reality — not every issue needs a full redesign
+5. Provide short answer by default, full explanation available on toggle
+6. Translate technical findings into plain language for homeowner communication
+
+ALWAYS respond in valid JSON. Never include prose outside the JSON object.
+Never use markdown code fences in your response.
+`.trim();
+
+export function buildDesignAssessmentPrompt(locationContext: string): string {
+  return `
+Analyze this irrigation image for design and placement issues.
+
+${locationContext}
+
+Identify:
+1. Head types visible (spray, rotor, MP rotator, drip, bubbler)
+2. Placement issues (rotors in beds, spray in turf, wrong zone mixing)
+3. Height issues (heads too low, buried, or incorrect height for plant material)
+4. Coverage gaps or overlaps
+5. Matched precipitation concerns (mixed head types on same zone)
+
+Respond ONLY with this JSON:
+{
+  "heads_identified": [
+    {
+      "type": "spray|rotor|mp_rotator|drip|bubbler",
+      "brand_guess": "string or null",
+      "count_visible": 1,
+      "location_in_image": "string"
+    }
+  ],
+  "issues": [
+    {
+      "severity": "critical|moderate|mild",
+      "triage": "🔴|🟡|🟢",
+      "issue": "short description",
+      "location": "where in image",
+      "short_fix": "one sentence action",
+      "full_explanation": "2-3 sentence technical explanation",
+      "cost_reality": "cost/reality context"
+    }
+  ],
+  "coverage_assessment": {
+    "rating": "good|fair|poor",
+    "dry_zones_likely": ["string"],
+    "wet_zones_likely": ["string"],
+    "recommendation": "string"
+  },
+  "precipitation_concern": {
+    "mixed_heads_detected": true,
+    "detail": "string or null"
+  },
+  "homeowner_summary": "plain English summary a homeowner would understand"
+}
+`.trim();
+}
+
+export const CONTROLLER_ID_PROMPT = `
+Identify the irrigation controller in this image.
+
+Look for:
+- Brand name on faceplate or housing
+- Model number (often on inside door or label)
+- Physical characteristics: dial vs button vs touchscreen
+- Color and housing shape
+- Display type: LED, LCD, digital, or mechanical
+
+Respond ONLY with this JSON:
+{
+  "brand": "string",
+  "model": "string or 'Unknown'",
+  "confidence": "high|medium|low",
+  "type": "residential|commercial|smart|mechanical",
+  "wifi_capable": true,
+  "zones_visible": "number or null",
+  "condition": "good|fair|poor",
+  "condition_notes": "string",
+  "recommended_action": "string"
+}
+`;
+
+export const VALVE_ID_PROMPT = `
+Identify the irrigation valve in this image.
+
+Look at:
+- Bonnet color and shape
+- Solenoid type and color
+- Brand markings or embossed logos
+- Body style (globe, angle, anti-siphon)
+- Wire lead color and condition
+- Any visible damage, corrosion, or water staining
+
+Respond ONLY with this JSON:
+{
+  "brand": "string",
+  "model": "string or 'Unknown'",
+  "confidence": "high|medium|low",
+  "valve_type": "globe|angle|anti-siphon|inline",
+  "condition": "good|fair|poor",
+  "visible_issues": ["string"],
+  "solenoid_visible": true,
+  "solenoid_condition": "good|corroded|damaged|unknown",
+  "recommended_ohm_range": "string",
+  "action": "string"
+}
+`;
+
+export const RAIN_SENSOR_PROMPT = `
+Assess the rain sensor placement and condition in this image.
+
+Evaluate:
+- Mounting location (roof, fascia, fence, wall)
+- Obstructions (overhangs, trees, gutters blocking rainfall)
+- Sun/shade exposure (affects drying time)
+- Visible condition and age
+- Wire condition if visible
+- Brand identification
+
+Respond ONLY with this JSON:
+{
+  "sensor_detected": true,
+  "brand": "string or 'Unknown'",
+  "mounting_location": "string",
+  "placement_rating": "good|fair|poor",
+  "issues": [
+    {
+      "severity": "critical|moderate|mild",
+      "triage": "🔴|🟡|🟢",
+      "issue": "string",
+      "fix": "string"
+    }
+  ],
+  "obstruction_detected": false,
+  "obstruction_detail": "string or null",
+  "sun_exposure": "full|partial|shaded",
+  "condition": "good|fair|poor",
+  "effectiveness_rating": "effective|questionable|ineffective",
+  "recommendation": "string",
+  "homeowner_summary": "string"
+}
+`;
+
+export function buildElectricalPrompt(
+  symptom: "stuck_on" | "not_coming_on" | "intermittent" | "short_circuit",
+  ohmReading?: number,
+  brand?: string
+): string {
+  return `
+You are diagnosing an irrigation electrical issue.
+
+Symptom: ${symptom.replace(/_/g, " ").toUpperCase()}
+${ohmReading ? `Ohm reading: ${ohmReading}Ω` : "No ohm reading provided yet"}
+${brand ? `Valve brand: ${brand}` : "Brand unknown"}
+
+Provide a complete step-by-step diagnosis in this JSON format:
+{
+  "diagnosis": {
+    "most_likely_cause": "string",
+    "confidence": "high|medium|low",
+    "severity": "critical|moderate|mild",
+    "triage": "🔴|🟡|🟢"
+  },
+  "steps": [
+    {
+      "step": 1,
+      "title": "short title",
+      "instruction": "exact field instruction",
+      "tool_needed": "string or null",
+      "meter_setting": "string or null",
+      "expected_result": "string",
+      "if_pass": "string",
+      "if_fail": "string",
+      "why": "short explanation",
+      "time_estimate": "30 seconds|1 minute|2 minutes|5 minutes"
+    }
+  ],
+  "parts_needed": ["string"],
+  "estimated_repair_time": "string",
+  "cost_reality": "string",
+  "homeowner_explanation": "plain English explanation"
+}
+`.trim();
+}
+
+export function buildHydraulicPrompt(symptom: string): string {
+  return `
+Diagnose this hydraulic irrigation issue: ${symptom}
+
+Provide field-ready diagnosis:
+{
+  "diagnosis": {
+    "most_likely_cause": "string",
+    "differential_diagnoses": ["string"],
+    "severity": "critical|moderate|mild",
+    "triage": "🔴|🟡|🟢"
+  },
+  "steps": [
+    {
+      "step": 1,
+      "title": "string",
+      "instruction": "string",
+      "tool_needed": "string or null",
+      "expected_result": "string",
+      "if_pass": "string",
+      "if_fail": "string",
+      "why": "string",
+      "time_estimate": "string"
+    }
+  ],
+  "parts_needed": ["string"],
+  "estimated_repair_time": "string",
+  "cost_reality": "string",
+  "homeowner_explanation": "string"
+}
+`.trim();
+}
+
+export function buildHomeownerPrompt(question: string, systemContext: string): string {
+  return `
+A homeowner just asked their irrigation technician: "${question}"
+
+System context: ${systemContext}
+
+Respond as the technician in plain, professional language.
+Translate technical reality into understandable terms.
+Include cost context where relevant.
+Do NOT be salesy — be honest and helpful.
+
+Respond ONLY with this JSON:
+{
+  "technician_response": "exactly what the tech says out loud — 2-4 sentences max",
+  "key_points": ["string"],
+  "cost_context": "string or null",
+  "follow_up_offer": "optional service offer",
+  "internal_note": "technical detail for tech only"
+}
+`.trim();
+}
+
+export function buildRuntimeOptimizerPrompt(
+  zones: { id: number; type: "spray" | "rotor" | "drip" | "mp_rotator"; area_sqft?: number }[],
+  soilType: string,
+  hardinessZone: string,
+  currentMonth: string
+): string {
+  return `
+Calculate optimal irrigation runtimes for this system.
+
+Zones: ${JSON.stringify(zones)}
+Soil type: ${soilType}
+USDA Zone: ${hardinessZone}
+Current month: ${currentMonth}
+
+Use ET-based scheduling principles and IA standards.
+
+Respond ONLY with this JSON:
+{
+  "schedule": [
+    {
+      "zone_id": 1,
+      "type": "spray|rotor|drip|mp_rotator",
+      "runtime_minutes": 10,
+      "frequency_per_week": 3,
+      "best_start_time": "6:00 AM",
+      "reasoning": "string"
+    }
+  ],
+  "weekly_water_target_inches": 1.0,
+  "efficiency_tips": ["string"],
+  "seasonal_note": "string",
+  "water_window_recommendation": "string"
+}
+`.trim();
+}

@@ -1,1 +1,146 @@
-ZXhwb3J0IGludGVyZmFjZSBWYWx2ZVNwZWMgewogIGJyYW5kOiBzdHJpbmc7CiAgbW9kZWxzOiBzdHJpbmdbXTsKICB0eXBlOiAiZ2xvYmUiIHwgImFuZ2xlIiB8ICJpbmxpbmUiIHwgImFudGktc2lwaG9uIjsKICBmbG93X3JhbmdlX2dwbTogW251bWJlciwgbnVtYmVyXTsKICBwcmVzc3VyZV9yYW5nZV9wc2k6IFtudW1iZXIsIG51bWJlcl07CiAgc29sZW5vaWRfb2htczogW251bWJlciwgbnVtYmVyXTsKICB2aXN1YWxfaWRlbnRpZmllcnM6IHN0cmluZ1tdOwogIGNvbW1vbl9mYWlsdXJlX21vZGVzOiBzdHJpbmdbXTsKICBkaWFwaHJhZ21fcmVwbGFjZWFibGU6IGJvb2xlYW47CiAgcGFydHNfYXZhaWxhYmlsaXR5OiAiZXhjZWxsZW50IiB8ICJnb29kIiB8ICJsaW1pdGVkIiB8ICJkaXNjb250aW51ZWQiOwp9CgpleHBvcnQgY29uc3QgVkFMVkVfREFUQUJBU0U6IFZhbHZlU3BlY1tdID0gWwogIHsKICAgIGJyYW5kOiAiSHVudGVyIiwKICAgIG1vZGVsczogWyJQR1YiLCAiSUNWIiwgIklDWiIsICJIViIsICJBQ1oiXSwKICAgIHR5cGU6ICJnbG9iZSIsCiAgICBmbG93X3JhbmdlX2dwbTogWzAuMjUsIDUwXSwKICAgIHByZXNzdXJlX3JhbmdlX3BzaTogWzE1LCAxNTBdLAogICAgc29sZW5vaWRfb2htczogWzIwLCA2MF0sCiAgICB2aXN1YWxfaWRlbnRpZmllcnM6IFsiT3JhbmdlIG9yIGdyYXkgYm9ubmV0IiwgIkh1bnRlciBsb2dvIGVtYm9zc2VkIG9uIGJvZHkiLCAiUHVycGxlIGZvciByZWNsYWltZWQgd2F0ZXIgdmFyaWFudHMiLCAiU2luZ2xlIHNvbGVub2lkIG9uIHRvcCJdLAogICAgY29tbW9uX2ZhaWx1cmVfbW9kZXM6IFsiRGlhcGhyYWdtIHRlYXIgZnJvbSBkZWJyaXMiLCAiU29sZW5vaWQgY29pbCBmYWlsdXJlIiwgIkZsb3cgY29udHJvbCBzdGVtIE8tcmluZyIsICJCbGVlZGVyIHNjcmV3IHZhbHZlIHNlYWwiXSwKICAgIGRpYXBocmFnbV9yZXBsYWNlYWJsZTogdHJ1ZSwKICAgIHBhcnRzX2F2YWlsYWJpbGl0eTogImV4Y2VsbGVudCIsCiAgfSwKICB7CiAgICBicmFuZDogIlJhaW4gQmlyZCIsCiAgICBtb2RlbHM6IFsiRFYiLCAiRFZGIiwgIkVGQi1DUCIsICJBU1ZGIiwgIlBFU0IiLCAiQ1AiXSwKICAgIHR5cGU6ICJnbG9iZSIsCiAgICBmbG93X3JhbmdlX2dwbTogWzAuNSwgNTBdLAogICAgcHJlc3N1cmVfcmFuZ2VfcHNpOiBbMTUsIDE1MF0sCiAgICBzb2xlbm9pZF9vaG1zOiBbMjAsIDYwXSwKICAgIHZpc3VhbF9pZGVudGlmaWVyczogWyJSZWQgb3Igd2hpdGUgYm9ubmV0IiwgIlJhaW4gQmlyZCBuYW1lIG1vbGRlZCBpbiBwbGFzdGljIiwgIkJsYWNrIHNvbGVub2lkIHdpdGggeWVsbG93IHdpcmUgbGVhZHMiLCAiUmVjdGFuZ3VsYXIgZmxvdyBjb250cm9sIGhhbmRsZSJdLAogICAgY29tbW9uX2ZhaWx1cmVfbW9kZXM6IFsiRGlhcGhyYWdtIGNyYWNraW5nIiwgIlNvbGVub2lkIHBsdW5nZXIgc3RpY2tpbmciLCAiRmxvdyBjb250cm9sIE8tcmluZyB3ZWFyIiwgIkJvbm5ldCBjcmFja2luZyBpbiBmcmVlemUgY2xpbWF0ZXMiXSwKICAgIGRpYXBocmFnbV9yZXBsYWNlYWJsZTogdHJ1ZSwKICAgIHBhcnRzX2F2YWlsYWJpbGl0eTogImV4Y2VsbGVudCIsCiAgfSwKICB7CiAgICBicmFuZDogIlRvcm8iLAogICAgbW9kZWxzOiBbIjI1MiIsICIyNTMiLCAiMjU0IiwgIkVaLUZMTyIsICIyNjQiLCAiTEIiXSwKICAgIHR5cGU6ICJnbG9iZSIsCiAgICBmbG93X3JhbmdlX2dwbTogWzAuNSwgMzVdLAogICAgcHJlc3N1cmVfcmFuZ2VfcHNpOiBbMTUsIDEyNV0sCiAgICBzb2xlbm9pZF9vaG1zOiBbMjIsIDY2XSwKICAgIHZpc3VhbF9pZGVudGlmaWVyczogWyJCbHVlIG9yIGJsYWNrIGJvbm5ldCB3aXRoIFRvcm8gbG9nbyIsICJSaWJiZWQgc29sZW5vaWQgaG91c2luZyIsICJGbG93IGNvbnRyb2wgb24gc2lkZSBvZiBib2R5Il0sCiAgICBjb21tb25fZmFpbHVyZV9tb2RlczogWyJEaWFwaHJhZ20gZmFpbHVyZSIsICJGbG93IGNvbnRyb2wgc3RlbSBsZWFrIiwgIkJvbm5ldCBib2x0IGNvcnJvc2lvbiJdLAogICAgZGlhcGhyYWdtX3JlcGxhY2VhYmxlOiB0cnVlLAogICAgcGFydHNfYXZhaWxhYmlsaXR5OiAiZ29vZCIsCiAgfSwKICB7CiAgICBicmFuZDogIklycml0cm9sIiwKICAgIG1vZGVsczogWyIyMDVUIiwgIjcwMCIsICI3MjEiLCAiNzYwIiwgIjc2MSIsICJSMjAxIl0sCiAgICB0eXBlOiAiZ2xvYmUiLAogICAgZmxvd19yYW5nZV9ncG06IFswLjI1LCA0MF0sCiAgICBwcmVzc3VyZV9yYW5nZV9wc2k6IFsxNSwgMTUwXSwKICAgIHNvbGVub2lkX29obXM6IFsyMCwgNjBdLAogICAgdmlzdWFsX2lkZW50aWZpZXJzOiBbIkdyYXkgb3IgZ3JlZW4gYm9keSIsICJJcnJpdHJvbCBvciBIYXJkaWUgbmFtZSBvbiBib25uZXQiLCAiUm91bmQgc29sZW5vaWQgaG91c2luZyIsICJXaXJlIGxlYWRzIGNvbG9yIHZhcmllcyBieSBhZ2UiXSwKICAgIGNvbW1vbl9mYWlsdXJlX21vZGVzOiBbIkRpYXBocmFnbSBzdGlmZmVuaW5nIHdpdGggYWdlIiwgIlNvbGVub2lkIGNvaWwgb3BlbiBjaXJjdWl0IiwgIlNwcmluZyBmYWlsdXJlIGNhdXNpbmcgc3R1Y2sgb3BlbiJdLAogICAgZGlhcGhyYWdtX3JlcGxhY2VhYmxlOiB0cnVlLAogICAgcGFydHNfYXZhaWxhYmlsaXR5OiAiZ29vZCIsCiAgfSwKICB7CiAgICBicmFuZDogIlJpY2hkZWxsIiwKICAgIG1vZGVsczogWyIyMDAiLCAiMjA1IiwgIlIyMTEiLCAiUjIxMiIsICIzMTEiXSwKICAgIHR5cGU6ICJnbG9iZSIsCiAgICBmbG93X3JhbmdlX2dwbTogWzAuNSwgMzBdLAogICAgcHJlc3N1cmVfcmFuZ2VfcHNpOiBbMTUsIDEyNV0sCiAgICBzb2xlbm9pZF9vaG1zOiBbMjUsIDcwXSwKICAgIHZpc3VhbF9pZGVudGlmaWVyczogWyJPbGRlciBncmF5IG9yIGJlaWdlIGJvZHkiLCAiUmljaGRlbGwgc3RhbXBlZCBvbiBib25uZXQiLCAiRXhwb3NlZCBzb2xlbm9pZCBtb3VudCBvbiBzaWRlIiwgIk9mdGVuIGZvdW5kIGluIHByZS0xOTk1IHN5c3RlbXMiXSwKICAgIGNvbW1vbl9mYWlsdXJlX21vZGVzOiBbIkRpYXBocmFnbSBoYXJkZW5pbmcg4oCUIG1vc3QgY29tbW9uIiwgIlNvbGVub2lkIGZhaWx1cmUgZnJvbSBhZ2UiLCAiQm9ubmV0IHRocmVhZCBzdHJpcHBpbmciXSwKICAgIGRpYXBocmFnbV9yZXBsYWNlYWJsZTogdHJ1ZSwKICAgIHBhcnRzX2F2YWlsYWJpbGl0eTogImxpbWl0ZWQiLAogIH0sCiAgewogICAgYnJhbmQ6ICJPcmJpdCIsCiAgICBtb2RlbHM6IFsiNTcyNTMiLCAiNTcxMDAiLCAiV2F0ZXJNYXN0ZXIiLCAiQnVkZ2V0IHNlcmllcyJdLAogICAgdHlwZTogImdsb2JlIiwKICAgIGZsb3dfcmFuZ2VfZ3BtOiBbMC41LCAyNV0sCiAgICBwcmVzc3VyZV9yYW5nZV9wc2k6IFsxMCwgMTI1XSwKICAgIHNvbGVub2lkX29obXM6IFsxOCwgNTVdLAogICAgdmlzdWFsX2lkZW50aWZpZXJzOiBbIkJsYWNrIGJvZHkgd2l0aCBPcmJpdCBicmFuZGluZyIsICJDb21wYWN0IGhvdXNpbmciLCAiRmxvdyBjb250cm9sIHNjcmV3IG9uIHRvcCJdLAogICAgY29tbW9uX2ZhaWx1cmVfbW9kZXM6IFsiRGlhcGhyYWdtIGZhaWx1cmUgd2l0aGluIDMtNSB5ZWFycyIsICJTb2xlbm9pZCBjb2lsIGJ1cm4tb3V0IiwgIkJvZHkgY3JhY2tpbmcgYXQgZml0dGluZ3MiXSwKICAgIGRpYXBocmFnbV9yZXBsYWNlYWJsZTogdHJ1ZSwKICAgIHBhcnRzX2F2YWlsYWJpbGl0eTogImdvb2QiLAogIH0sCiAgewogICAgYnJhbmQ6ICJLLVJhaW4iLAogICAgbW9kZWxzOiBbIjMwMDAiLCAiNjAwMCIsICJSUFM3NSIsICJSUFMxMDAiXSwKICAgIHR5cGU6ICJnbG9iZSIsCiAgICBmbG93X3JhbmdlX2dwbTogWzAuNSwgMzVdLAogICAgcHJlc3N1cmVfcmFuZ2VfcHNpOiBbMTUsIDEyNV0sCiAgICBzb2xlbm9pZF9vaG1zOiBbMjAsIDYwXSwKICAgIHZpc3VhbF9pZGVudGlmaWVyczogWyJCbHVlIG9yIGJsYWNrIGJvZHkiLCAiSy1SYWluIGxvZ28gb24gYm9ubmV0IiwgIlNpbWlsYXIgZm9ybSBmYWN0b3IgdG8gSHVudGVyIFBHViJdLAogICAgY29tbW9uX2ZhaWx1cmVfbW9kZXM6IFsiRGlhcGhyYWdtIGZhaWx1cmUiLCAiRmxvdyBjb250cm9sIE8tcmluZyIsICJTb2xlbm9pZCBwbHVuZ2VyIGRlYnJpcyJdLAogICAgZGlhcGhyYWdtX3JlcGxhY2VhYmxlOiB0cnVlLAogICAgcGFydHNfYXZhaWxhYmlsaXR5OiAiZ29vZCIsCiAgfSwKXTsKCi8vIOKUgOKUgOKUgCBQcmVjaXBpdGF0aW9uIFJhdGUgQ2FsY3VsYXRpb25zIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAoKZXhwb3J0IGludGVyZmFjZSBOb3p6bGVTcGVjIHsKICBicmFuZDogc3RyaW5nOwogIG1vZGVsOiBzdHJpbmc7CiAgdHlwZTogInNwcmF5IiB8ICJyb3RvciIgfCAibXBfcm90YXRvciIgfCAiZHJpcCI7CiAgcmFkaXVzX2Z0OiBudW1iZXI7CiAgZ3BtOiBudW1iZXI7CiAgcHJlY2lwX3JhdGVfaW5faHI6IG51bWJlcjsKICBhcmNfb3B0aW9uczogc3RyaW5nW107CiAgbWF0Y2hlZF9wcmVjaXA6IGJvb2xlYW47CiAgbm90ZXM6IHN0cmluZzsKfQoKZXhwb3J0IGNvbnN0IE5PWlpMRV9EQVRBQkFTRTogTm96emxlU3BlY1tdID0gWwogIC8vIEZpeGVkIFNwcmF5IE5venpsZXMKICB7IGJyYW5kOiAiSHVudGVyIiwgbW9kZWw6ICJQcm8tU3ByYXkgLyBGaXhlZCIsIHR5cGU6ICJzcHJheSIsIHJhZGl1c19mdDogMTUsIGdwbTogMi42NCwgcHJlY2lwX3JhdGVfaW5faHI6IDEuNSwgYXJjX29wdGlvbnM6IFsiOTDCsCIsIjEyMMKwIiwiMTgwwrAiLCIzNjDCsCJdLCBtYXRjaGVkX3ByZWNpcDogdHJ1ZSwgbm90ZXM6ICJTdGFuZGFyZCByZXNpZGVudGlhbCBzcHJheS4gTWF0Y2ggYXJjIHRvIGFyZWEgc2hhcGUuIiB9LAogIHsgYnJhbmQ6ICJSYWluIEJpcmQiLCBtb2RlbDogIjE4MDAgLyBGaXhlZCIsIHR5cGU6ICJzcHJheSIsIHJhZGl1c19mdDogMTUsIGdwbTogMi42MCwgcHJlY2lwX3JhdGVfaW5faHI6IDEuNDksIGFyY19vcHRpb25zOiBbIjkwwrAiLCIxMjDCsCIsIjE4MMKwIiwiMzYwwrAiXSwgbWF0Y2hlZF9wcmVjaXA6IHRydWUsIG5vdGVzOiAiSW5kdXN0cnkgc3RhbmRhcmQgZml4ZWQgc3ByYXkuIFZlcnkgd2lkZWx5IHVzZWQuIiB9LAogIHsgYnJhbmQ6ICJUb3JvIiwgbW9kZWw6ICI1NzAgLyBGaXhlZCIsIHR5cGU6ICJzcHJheSIsIHJhZGl1c19mdDogMTUsIGdwbTogMi41OCwgcHJlY2lwX3JhdGVfaW5faHI6IDEuNDgsIGFyY19vcHRpb25zOiBbIjkwwrAiLCIxMjDCsCIsIjE4MMKwIiwiMzYwwrAiXSwgbWF0Y2hlZF9wcmVjaXA6IHRydWUsIG5vdGVzOiAiVG9ybyBzdGFuZGFyZCBzcHJheSBub3p6bGUuIiB9LAogIC8vIE1QIFJvdGF0b3JzCiAgeyBicmFuZDogIkh1bnRlciIsIG1vZGVsOiAiTVAgUm90YXRvciAxMDAwIiwgdHlwZTogIm1wX3JvdGF0b3IiLCByYWRpdXNfZnQ6IDE1LCBncG06IDAuNDIsIHByZWNpcF9yYXRlX2luX2hyOiAwLjQsIGFyY19vcHRpb25zOiBbIjkwwrAtMjEwwrAiLCIyMTDCsC0yNzDCsCIsIjM2MMKwIl0sIG1hdGNoZWRfcHJlY2lwOiB0cnVlLCBub3RlczogIkxvdyBmbG93LCBoaWdoIGVmZmljaWVuY3kuIEJlc3QgZm9yIHNsb3BlcyBhbmQgY2xheSBzb2lscy4gMi0zeCBsb25nZXIgcnVuIHRpbWVzIG5lZWRlZCB2cyBzcHJheS4iIH0sCiAgeyBicmFuZDogIlJhaW4gQmlyZCIsIG1vZGVsOiAiUi1WQU4gMTQiLCB0eXBlOiAibXBfcm90YXRvciIsIHJhZGl1c19mdDogMTQsIGdwbTogMC4zOCwgcHJlY2lwX3JhdGVfaW5faHI6IDAuMzksIGFyY19vcHRpb25zOiBbIjQ1wrAtMjcwwrAiLCIyMTDCsC0yNzDCsCIsIjM2MMKwIl0sIG1hdGNoZWRfcHJlY2lwOiB0cnVlLCBub3RlczogIlJhaW4gQmlyZCByb3Rhcnkgbm96emxlLiBNYXRjaCB0byBNUCBSb3RhdG9yIOKAlCBuZXZlciBtaXggb24gc2FtZSB6b25lLiIgfSwKICAvLyBSb3RvcnMKICB7IGJyYW5kOiAiSHVudGVyIiwgbW9kZWw6ICJQR1AgVWx0cmEiLCB0eXBlOiAicm90b3IiLCByYWRpdXNfZnQ6IDQyLCBncG06IDMuNDAsIHByZWNpcF9yYXRlX2luX2hyOiAwLjYyLCBhcmNfb3B0aW9uczogWyI0MMKwLTM2MMKwIGFkanVzdGFibGUiXSwgbWF0Y2hlZF9wcmVjaXA6IGZhbHNlLCBub3RlczogIlN0YW5kYXJkIGxhd24gcm90b3IuIEZ1bGwgYXJjIHRvIHBhcnQgY2lyY2xlLiBSdW4gM3ggbG9uZ2VyIHRoYW4gc3ByYXkgem9uZXMuIiB9LAogIHsgYnJhbmQ6ICJSYWluIEJpcmQiLCBtb2RlbDogIjUwMDAgU2VyaWVzIiwgdHlwZTogInJvdG9yIiwgcmFkaXVzX2Z0OiAzOCwgZ3BtOiAyLjgwLCBwcmVjaXBfcmF0ZV9pbl9ocjogMC42MywgYXJjX29wdGlvbnM6IFsiNDDCsC0zNjDCsCBhZGp1c3RhYmxlIl0sIG1hdGNoZWRfcHJlY2lwOiBmYWxzZSwgbm90ZXM6ICJNb3N0IHdpZGVseSBpbnN0YWxsZWQgcm90b3IgaW4gVVMgcmVzaWRlbnRpYWwvY29tbWVyY2lhbC4iIH0sCiAgeyBicmFuZDogIlRvcm8iLCBtb2RlbDogIlQ1IFJvdG9yIiwgdHlwZTogInJvdG9yIiwgcmFkaXVzX2Z0OiA0MCwgZ3BtOiAzLjEwLCBwcmVjaXBfcmF0ZV9pbl9ocjogMC42MCwgYXJjX29wdGlvbnM6IFsiNDDCsC0zNjDCsCBhZGp1c3RhYmxlIl0sIG1hdGNoZWRfcHJlY2lwOiBmYWxzZSwgbm90ZXM6ICJUb3JvIHJlc2lkZW50aWFsIHJvdG9yLiBDb2xvci1jb2RlZCBub3p6bGUgc3lzdGVtLiIgfSwKXTsKCi8qKgogKiBDYWxjdWxhdGUgcHJlY2lwaXRhdGlvbiByYXRlIGZvciBhIHpvbmUKICogRm9ybXVsYTogUFIgPSAoOTYuMjUgw5cgR1BNKSAvIChIZWFkIFNwYWNpbmcgw5cgUm93IFNwYWNpbmcpCiAqIFJlc3VsdCBpbiBpbmNoZXMgcGVyIGhvdXIKICovCmV4cG9ydCBmdW5jdGlvbiBjYWxjUHJlY2lwUmF0ZSgKICBncG06IG51bWJlciwKICBoZWFkU3BhY2luZ0Z0OiBudW1iZXIsCiAgcm93U3BhY2luZ0Z0OiBudW1iZXIKKTogbnVtYmVyIHsKICByZXR1cm4gKDk2LjI1ICogZ3BtKSAvIChoZWFkU3BhY2luZ0Z0ICogcm93U3BhY2luZ0Z0KTsKfQoKLyoqCiAqIENhbGN1bGF0ZSBydW4gdGltZSBuZWVkZWQgdG8gYXBwbHkgdGFyZ2V0IGluY2hlcyBvZiB3YXRlcgogKi8KZXhwb3J0IGZ1bmN0aW9uIGNhbGNSdW5UaW1lKAogIHRhcmdldEluY2hlczogbnVtYmVyLAogIHByZWNpcFJhdGVJbkhyOiBudW1iZXIKKTogbnVtYmVyIHsKICByZXR1cm4gKHRhcmdldEluY2hlcyAvIHByZWNpcFJhdGVJbkhyKSAqIDYwOyAvLyByZXR1cm5zIG1pbnV0ZXMKfQoKLyoqCiAqIFdlZWtseSB3YXRlciByZXF1aXJlbWVudCBieSBjbGltYXRlIHpvbmUgKGluY2hlcyBwZXIgd2VlaykKICovCmV4cG9ydCBjb25zdCBXQVRFUl9SRVFVSVJFTUVOVFM6IFJlY29yZDxzdHJpbmcsIHsgc3VtbWVyOiBudW1iZXI7IHNwcmluZ19mYWxsOiBudW1iZXI7IHdpbnRlcjogbnVtYmVyIH0+ID0gewogICJjb29sX2h1bWlkIjogeyBzdW1tZXI6IDEuMCwgc3ByaW5nX2ZhbGw6IDAuNSwgd2ludGVyOiAwIH0sCiAgImNvb2xfYXJpZCI6IHsgc3VtbWVyOiAxLjUsIHNwcmluZ19mYWxsOiAwLjc1LCB3aW50ZXI6IDAgfSwKICAidHJhbnNpdGlvbiI6IHsgc3VtbWVyOiAxLjI1LCBzcHJpbmdfZmFsbDogMC43NSwgd2ludGVyOiAwLjI1IH0sCiAgIndhcm1faHVtaWQiOiB7IHN1bW1lcjogMS4wLCBzcHJpbmdfZmFsbDogMC41LCB3aW50ZXI6IDAgfSwKICAid2FybV9hcmlkIjogeyBzdW1tZXI6IDIuMCwgc3ByaW5nX2ZhbGw6IDEuMCwgd2ludGVyOiAwLjI1IH0sCiAgImRlc2VydCI6IHsgc3VtbWVyOiAyLjUsIHNwcmluZ19mYWxsOiAxLjI1LCB3aW50ZXI6IDAuNSB9LAp9OwoKZXhwb3J0IGZ1bmN0aW9uIGlkZW50aWZ5VmFsdmUoZGVzY3JpcHRpb246IHN0cmluZyk6IFZhbHZlU3BlYyB8IG51bGwgewogIGNvbnN0IGQgPSBkZXNjcmlwdGlvbi50b0xvd2VyQ2FzZSgpOwogIHJldHVybiBWQUxWRV9EQVRBQkFTRS5maW5kKHYgPT4KICAgIHYuYnJhbmQudG9Mb3dlckNhc2UoKS5pbmNsdWRlcyhkKSB8fAogICAgdi5tb2RlbHMuc29tZShtID0+IG0udG9Mb3dlckNhc2UoKS5pbmNsdWRlcyhkKSkgfHwKICAgIHYudmlzdWFsX2lkZW50aWZpZXJzLnNvbWUoaSA9PiBpLnRvTG93ZXJDYXNlKCkuaW5jbHVkZXMoZCkpCiAgKSA/PyBudWxsOwp9Cg==
+export interface ValveSpec {
+  brand: string;
+  models: string[];
+  type: "globe" | "angle" | "inline" | "anti-siphon";
+  flow_range_gpm: [number, number];
+  pressure_range_psi: [number, number];
+  solenoid_ohms: [number, number];
+  visual_identifiers: string[];
+  common_failure_modes: string[];
+  diaphragm_replaceable: boolean;
+  parts_availability: "excellent" | "good" | "limited" | "discontinued";
+}
+
+export const VALVE_DATABASE: ValveSpec[] = [
+  {
+    brand: "Hunter",
+    models: ["PGV", "ICV", "ICZ", "HV", "ACZ"],
+    type: "globe",
+    flow_range_gpm: [0.25, 50],
+    pressure_range_psi: [15, 150],
+    solenoid_ohms: [20, 60],
+    visual_identifiers: ["Orange or gray bonnet", "Hunter logo embossed on body", "Purple for reclaimed water variants"],
+    common_failure_modes: ["Diaphragm tear from debris", "Solenoid coil failure", "Flow control stem O-ring"],
+    diaphragm_replaceable: true,
+    parts_availability: "excellent",
+  },
+  {
+    brand: "Rain Bird",
+    models: ["DV", "DVF", "EFB-CP", "ASVF", "PESB", "CP"],
+    type: "globe",
+    flow_range_gpm: [0.5, 50],
+    pressure_range_psi: [15, 150],
+    solenoid_ohms: [20, 60],
+    visual_identifiers: ["Red or white bonnet", "Rain Bird name molded in plastic", "Black solenoid with yellow wire leads"],
+    common_failure_modes: ["Diaphragm cracking", "Solenoid plunger sticking", "Flow control O-ring wear"],
+    diaphragm_replaceable: true,
+    parts_availability: "excellent",
+  },
+  {
+    brand: "Toro",
+    models: ["252", "253", "254", "EZ-FLO", "264", "LB"],
+    type: "globe",
+    flow_range_gpm: [0.5, 35],
+    pressure_range_psi: [15, 125],
+    solenoid_ohms: [22, 66],
+    visual_identifiers: ["Blue or black bonnet with Toro logo", "Ribbed solenoid housing"],
+    common_failure_modes: ["Diaphragm failure", "Flow control stem leak", "Bonnet bolt corrosion"],
+    diaphragm_replaceable: true,
+    parts_availability: "good",
+  },
+  {
+    brand: "Irritrol",
+    models: ["205T", "700", "721", "760", "761", "R201"],
+    type: "globe",
+    flow_range_gpm: [0.25, 40],
+    pressure_range_psi: [15, 150],
+    solenoid_ohms: [20, 60],
+    visual_identifiers: ["Gray or green body", "Irritrol or Hardie name on bonnet", "Round solenoid housing"],
+    common_failure_modes: ["Diaphragm stiffening with age", "Solenoid coil open circuit", "Spring failure"],
+    diaphragm_replaceable: true,
+    parts_availability: "good",
+  },
+  {
+    brand: "Richdell",
+    models: ["200", "205", "R211", "R212", "311"],
+    type: "globe",
+    flow_range_gpm: [0.5, 30],
+    pressure_range_psi: [15, 125],
+    solenoid_ohms: [25, 70],
+    visual_identifiers: ["Older gray or beige body", "Richdell stamped on bonnet", "Often found in pre-1995 systems"],
+    common_failure_modes: ["Diaphragm hardening — most common", "Solenoid failure from age"],
+    diaphragm_replaceable: true,
+    parts_availability: "limited",
+  },
+  {
+    brand: "Orbit",
+    models: ["57253", "57100", "WaterMaster"],
+    type: "globe",
+    flow_range_gpm: [0.5, 25],
+    pressure_range_psi: [10, 125],
+    solenoid_ohms: [18, 55],
+    visual_identifiers: ["Black body with Orbit branding", "Compact housing"],
+    common_failure_modes: ["Diaphragm failure within 3-5 years", "Solenoid coil burn-out"],
+    diaphragm_replaceable: true,
+    parts_availability: "good",
+  },
+  {
+    brand: "K-Rain",
+    models: ["3000", "6000", "RPS75", "RPS100"],
+    type: "globe",
+    flow_range_gpm: [0.5, 35],
+    pressure_range_psi: [15, 125],
+    solenoid_ohms: [20, 60],
+    visual_identifiers: ["Blue or black body", "K-Rain logo on bonnet"],
+    common_failure_modes: ["Diaphragm failure", "Flow control O-ring"],
+    diaphragm_replaceable: true,
+    parts_availability: "good",
+  },
+];
+
+export interface NozzleSpec {
+  brand: string;
+  model: string;
+  type: "spray" | "rotor" | "mp_rotator" | "drip";
+  radius_ft: number;
+  gpm: number;
+  precip_rate_in_hr: number;
+  arc_options: string[];
+  matched_precip: boolean;
+  notes: string;
+}
+
+export const NOZZLE_DATABASE: NozzleSpec[] = [
+  { brand: "Hunter", model: "Pro-Spray / Fixed", type: "spray", radius_ft: 15, gpm: 2.64, precip_rate_in_hr: 1.5, arc_options: ["90°","120°","180°","360°"], matched_precip: true, notes: "Standard residential spray." },
+  { brand: "Rain Bird", model: "1800 / Fixed", type: "spray", radius_ft: 15, gpm: 2.60, precip_rate_in_hr: 1.49, arc_options: ["90°","120°","180°","360°"], matched_precip: true, notes: "Industry standard fixed spray." },
+  { brand: "Hunter", model: "MP Rotator 1000", type: "mp_rotator", radius_ft: 15, gpm: 0.42, precip_rate_in_hr: 0.4, arc_options: ["90°-210°","210°-270°","360°"], matched_precip: true, notes: "Low flow, high efficiency. 2-3x longer run times needed vs spray." },
+  { brand: "Rain Bird", model: "R-VAN 14", type: "mp_rotator", radius_ft: 14, gpm: 0.38, precip_rate_in_hr: 0.39, arc_options: ["45°-270°","360°"], matched_precip: true, notes: "Rain Bird rotary nozzle." },
+  { brand: "Hunter", model: "PGP Ultra", type: "rotor", radius_ft: 42, gpm: 3.40, precip_rate_in_hr: 0.62, arc_options: ["40°-360° adjustable"], matched_precip: false, notes: "Standard lawn rotor." },
+  { brand: "Rain Bird", model: "5000 Series", type: "rotor", radius_ft: 38, gpm: 2.80, precip_rate_in_hr: 0.63, arc_options: ["40°-360° adjustable"], matched_precip: false, notes: "Most widely installed rotor in US residential/commercial." },
+];
+
+export function calcPrecipRate(gpm: number, headSpacingFt: number, rowSpacingFt: number): number {
+  return (96.25 * gpm) / (headSpacingFt * rowSpacingFt);
+}
+
+export function calcRunTime(targetInches: number, precipRateInHr: number): number {
+  return (targetInches / precipRateInHr) * 60;
+}
+
+export const WATER_REQUIREMENTS: Record<string, { summer: number; spring_fall: number; winter: number }> = {
+  "cool_humid": { summer: 1.0, spring_fall: 0.5, winter: 0 },
+  "cool_arid": { summer: 1.5, spring_fall: 0.75, winter: 0 },
+  "transition": { summer: 1.25, spring_fall: 0.75, winter: 0.25 },
+  "warm_humid": { summer: 1.0, spring_fall: 0.5, winter: 0 },
+  "warm_arid": { summer: 2.0, spring_fall: 1.0, winter: 0.25 },
+  "desert": { summer: 2.5, spring_fall: 1.25, winter: 0.5 },
+};
+
+export function identifyValve(description: string): ValveSpec | null {
+  const d = description.toLowerCase();
+  return VALVE_DATABASE.find(v =>
+    v.brand.toLowerCase().includes(d) ||
+    v.models.some(m => m.toLowerCase().includes(d)) ||
+    v.visual_identifiers.some(i => i.toLowerCase().includes(d))
+  ) ?? null;
+}

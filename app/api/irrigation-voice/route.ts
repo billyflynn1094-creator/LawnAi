@@ -1,1 +1,31 @@
-aW1wb3J0IHsgTmV4dFJlcXVlc3QsIE5leHRSZXNwb25zZSB9IGZyb20gIm5leHQvc2VydmVyIjsKaW1wb3J0IHsgZ2VtaW5pRmxhc2ggfSBmcm9tICJAL2xpYi9nZW1pbmkiOwppbXBvcnQgeyBidWlsZEhvbWVvd25lclByb21wdCB9IGZyb20gIkAvbGliL2lycmlnYXRpb24vcHJvbXB0cyI7CgpleHBvcnQgYXN5bmMgZnVuY3Rpb24gUE9TVChyZXE6IE5leHRSZXF1ZXN0KSB7CiAgdHJ5IHsKICAgIGNvbnN0IGJvZHkgPSBhd2FpdCByZXEuanNvbigpOwogICAgY29uc3QgeyBxdWVzdGlvbiwgc3lzdGVtQ29udGV4dCB9ID0gYm9keTsKCiAgICBpZiAoIXF1ZXN0aW9uKSB7CiAgICAgIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbih7IGVycm9yOiAicXVlc3Rpb24gaXMgcmVxdWlyZWQiIH0sIHsgc3RhdHVzOiA0MDAgfSk7CiAgICB9CgogICAgY29uc3QgcHJvbXB0ID0gYnVpbGRIb21lb3duZXJQcm9tcHQoCiAgICAgIHF1ZXN0aW9uLAogICAgICBzeXN0ZW1Db250ZXh0IHx8ICJSZXNpZGVudGlhbCBpcnJpZ2F0aW9uIHN5c3RlbSwgdGVjaCBpcyBvbi1zaXRlIHdpdGggaG9tZW93bmVyIgogICAgKTsKCiAgICBjb25zdCByZXN1bHQgPSBhd2FpdCBnZW1pbmlGbGFzaC5nZW5lcmF0ZUNvbnRlbnQoW3sgdGV4dDogcHJvbXB0IH1dKTsKICAgIGNvbnN0IHRleHQgPSByZXN1bHQucmVzcG9uc2UudGV4dCgpOwoKICAgIGxldCBhbmFseXNpczsKICAgIHRyeSB7CiAgICAgIGFuYWx5c2lzID0gSlNPTi5wYXJzZSh0ZXh0KTsKICAgIH0gY2F0Y2ggewogICAgICBjb25zdCBtYXRjaCA9IHRleHQubWF0Y2goL1x7W1xzXFNdKlx9Lyk7CiAgICAgIGFuYWx5c2lzID0gbWF0Y2ggPyBKU09OLnBhcnNlKG1hdGNoWzBdKSA6IHsgdGVjaG5pY2lhbl9yZXNwb25zZTogdGV4dCwga2V5X3BvaW50czogW10gfTsKICAgIH0KCiAgICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oeyBhbmFseXNpcyB9KTsKICB9IGNhdGNoIChlcnIpIHsKICAgIGNvbnNvbGUuZXJyb3IoIltpcnJpZ2F0aW9uLXZvaWNlXSIsIGVycik7CiAgICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oCiAgICAgIHsgZXJyb3I6ICJWb2ljZSBxdWVyeSBmYWlsZWQuIFBsZWFzZSB0cnkgYWdhaW4uIiB9LAogICAgICB7IHN0YXR1czogNTAwIH0KICAgICk7CiAgfQp9Cg==
+import { NextRequest, NextResponse } from "next/server";
+import { geminiFlash } from "@/lib/gemini";
+import { buildHomeownerPrompt } from "@/lib/irrigation/prompts";
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { question, systemContext } = body;
+
+    if (!question) {
+      return NextResponse.json({ error: "question is required" }, { status: 400 });
+    }
+
+    const prompt = buildHomeownerPrompt(
+      question,
+      systemContext || "Residential irrigation system, tech is on-site with homeowner"
+    );
+
+    const result = await geminiFlash.generateContent([{ text: prompt }]);
+    const text = result.response.text();
+
+    let analysis;
+    try { analysis = JSON.parse(text); }
+    catch { const m = text.match(/\{[\s\S]*\}/); analysis = m ? JSON.parse(m[0]) : { technician_response: text, key_points: [] }; }
+
+    return NextResponse.json({ analysis });
+  } catch (err) {
+    console.error("[irrigation-voice]", err);
+    return NextResponse.json({ error: "Voice query failed. Please try again." }, { status: 500 });
+  }
+}

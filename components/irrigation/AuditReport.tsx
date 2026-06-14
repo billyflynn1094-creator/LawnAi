@@ -4,14 +4,14 @@ import { useState } from "react";
 import { ClipboardList, Plus, Trash, ChevronDown, ChevronUp, CheckCircle, AlertCircle, AlertTriangle } from "lucide-react";
 
 export interface AuditIssue {
-  id: string;
-  zone: string;
+  id?: string;
+  zone?: string;
   severity: "critical" | "moderate" | "mild";
   triage?: string;
   issue: string;
   short_fix?: string;
   cost_reality?: string;
-  resolution: string;
+  resolution?: string;
   estimated_cost?: string;
 }
 

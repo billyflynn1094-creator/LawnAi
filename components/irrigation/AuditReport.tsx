@@ -191,14 +191,14 @@ export default function AuditReport({ initialData, audit: auditProp, onNewAudit 
         ) : (
           <div className="space-y-2">
             {audit.issues.map(issue => (
-              <div key={issue.id} className={`border rounded-xl overflow-hidden ${severityBg(issue.severity)}`}>
+              <div key={issue.id ?? Math.random().toString(36)} className={`border rounded-xl overflow-hidden ${severityBg(issue.severity)}`}>
                 <button onClick={() => setExpanded(expanded === (issue.id ?? "") ? null : (issue.id ?? null))}
                   className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/3 transition-colors">
                   {severityIcon(issue.severity)}
                   <span className="flex-1 text-sm font-medium text-white">{issue.issue || "New issue"}</span>
                   <span className="text-xs text-gray-500">{issue.zone ? "Zone " + issue.zone : ""}</span>
                   {expanded === (issue.id ?? "") ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
-                  <button onClick={e => { e.stopPropagation(); removeIssue(issue.id); }} className="text-gray-600 hover:text-red-400 transition-colors ml-1">
+                  <button onClick={e => { e.stopPropagation(); removeIssue(issue.id ?? ""); }} className="text-gray-600 hover:text-red-400 transition-colors ml-1">
                     <Trash className="w-3.5 h-3.5" />
                   </button>
                 </button>
@@ -207,12 +207,12 @@ export default function AuditReport({ initialData, audit: auditProp, onNewAudit 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="text-gray-500 text-xs block mb-1">Zone</label>
-                        <input type="text" value={issue.zone} onChange={e => updateIssue(issue.id, "zone", e.target.value)}
+                        <input type="text" value={issue.zone} onChange={e => updateIssue(issue.id ?? "", "zone", e.target.value)}
                           placeholder="e.g. Zone 3" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none" />
                       </div>
                       <div>
                         <label className="text-gray-500 text-xs block mb-1">Severity</label>
-                        <select value={issue.severity} onChange={e => updateIssue(issue.id, "severity", e.target.value)}
+                        <select value={issue.severity} onChange={e => updateIssue(issue.id ?? "", "severity", e.target.value)}
                           className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none">
                           <option value="critical">Critical</option>
                           <option value="moderate">Moderate</option>
@@ -222,17 +222,17 @@ export default function AuditReport({ initialData, audit: auditProp, onNewAudit 
                     </div>
                     <div>
                       <label className="text-gray-500 text-xs block mb-1">Issue Description</label>
-                      <input type="text" value={issue.issue} onChange={e => updateIssue(issue.id, "issue", e.target.value)}
+                      <input type="text" value={issue.issue} onChange={e => updateIssue(issue.id ?? "", "issue", e.target.value)}
                         placeholder="Describe the issue" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none" />
                     </div>
                     <div>
                       <label className="text-gray-500 text-xs block mb-1">Resolution</label>
-                      <input type="text" value={issue.resolution} onChange={e => updateIssue(issue.id, "resolution", e.target.value)}
+                      <input type="text" value={issue.resolution} onChange={e => updateIssue(issue.id ?? "", "resolution", e.target.value)}
                         placeholder="What was done or recommended" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none" />
                     </div>
                     <div>
                       <label className="text-gray-500 text-xs block mb-1">Estimated Cost</label>
-                      <input type="text" value={issue.estimated_cost || ""} onChange={e => updateIssue(issue.id, "estimated_cost", e.target.value)}
+                      <input type="text" value={issue.estimated_cost || ""} onChange={e => updateIssue(issue.id ?? "", "estimated_cost", e.target.value)}
                         placeholder="e.g. $35-50 parts + labor" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none" />
                     </div>
                   </div>

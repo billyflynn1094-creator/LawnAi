@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Settings,
   ArrowUpRight,
+  Droplets,
 } from 'lucide-react';
 
 interface LocationData {
@@ -78,6 +79,15 @@ const MODULES: ModuleItem[] = [
     href: '#',
     active: false,
     badge: 'Coming Soon',
+  },
+  {
+    id: 'irrigation',
+    icon: Droplets,
+    title: 'IrrigationPro',
+    meta: 'Field Diagnostic Tool',
+    body: 'Diagnose any irrigation issue — electrical, hydraulic, controller programming, or coverage — with AI-powered field guidance for residential and commercial systems.',
+    href: '/irrigation',
+    active: true,
   },
 ];
 

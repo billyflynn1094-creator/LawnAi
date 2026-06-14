@@ -192,7 +192,7 @@ export default function AuditReport({ initialData, audit: auditProp, onNewAudit 
           <div className="space-y-2">
             {audit.issues.map(issue => (
               <div key={issue.id} className={`border rounded-xl overflow-hidden ${severityBg(issue.severity)}`}>
-                <button onClick={() => setExpanded(expanded === (issue.id ?? "") ? null : issue.id)}
+                <button onClick={() => setExpanded(expanded === (issue.id ?? "") ? null : (issue.id ?? null))}
                   className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/3 transition-colors">
                   {severityIcon(issue.severity)}
                   <span className="flex-1 text-sm font-medium text-white">{issue.issue || "New issue"}</span>

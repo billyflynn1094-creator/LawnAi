@@ -39,9 +39,8 @@ const STATE_ABBR: Record<string, string> = {
 };
 
 /**
- * Derive cool-season / warm-season / transition classification from USDA hardiness zone.
- * Zone ≤6 → cool, Zone ≥8 → warm, Zone 7 → transition.
- * Exported so prompts and the UI badge can both use it.
+ * Derive cool / warm / transition grass class from USDA hardiness zone.
+ * Zone ≤6 → cool-season, Zone ≥8 → warm-season, Zone 7 → transition.
  */
 export function deriveGrassClass(zone: string): 'cool' | 'warm' | 'transition' {
   if (!zone || zone === 'Unknown') return 'cool';
@@ -49,52 +48,80 @@ export function deriveGrassClass(zone: string): 'cool' | 'warm' | 'transition' {
   if (isNaN(num)) return 'cool';
   if (num <= 6) return 'cool';
   if (num >= 8) return 'warm';
-  return 'transition'; // zone 7
-}
-
-// ── sessionStorage geocode cache (client-side only; no-op on SSR) ─────────────
-function cacheGet(key: string): string | null {
-  if (typeof window === 'undefined') return null;
-  try { return sessionStorage.getItem(key); } catch { return null; }
-}
-function cacheSet(key: string, value: string): void {
-  if (typeof window === 'undefined') return;
-  try { sessionStorage.setItem(key, value); } catch {}
+  return 'transition';
 }
 
 /**
- * Fetch geologic/pedological soil type from USDA Web Soil Survey (no API key).
- * Returns the USDA soil series name e.g. "Sassafras sandy loam".
+ * Regional soil profile description based on state and coordinates.
+ * Returns a human-readable string (e.g. "Silt loam — Inceptisol (NJ Piedmont)")
+ * that is informative for users AND compatible with getSoilProfile() fuzzy matching.
+ * More reliable than USDA SDMDataAccess point lookup, which requires exact polygon
+ * intersection and frequently returns null on Vercel's serverless IPs.
  */
-export async function getSoilType(lat: number, lng: number): Promise<string> {
-  try {
-    const query = `
-      SELECT mapunit.muname
-      FROM mapunit
-      INNER JOIN component ON mapunit.mukey = component.mukey
-      INNER JOIN mupolygon ON mapunit.mukey = mupolygon.mukey
-      WHERE ST_Intersects(
-        mupolygon.Shape,
-        geometry::STGeomFromText('POINT(${lng} ${lat})', 4326)
-      )
-      AND component.majcompflag = 'Yes'
-      ORDER BY component.comppct_r DESC
-    `.replace(/\s+/g, ' ').trim();
+export function getRegionalSoilProfile(lat: number, lng: number, state?: string): string {
+  const s = (state ?? '').toUpperCase();
+  if (!s) return 'Loam — recommend soil test for precision';
 
-    const res = await fetch(
-      'https://SDMDataAccess.sc.egov.usda.gov/Tabular/SDMTabularService/post.rest',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query }),
-      }
-    );
-    if (!res.ok) return 'Unknown';
-    const data = await res.json();
-    return data?.Table?.[0]?.[0] ?? 'Unknown';
-  } catch {
-    return 'Unknown';
+  if (['WA', 'OR'].includes(s)) {
+    return lng < -121 ? 'Volcanic silt loam — Andisol (Pacific NW coast)' : 'Clay-loam — Inceptisol (Pacific NW inland)';
   }
+  if (s === 'CA') {
+    if (lat > 37 && lng > -122) return 'Clay loam to silt loam — Mollisol (Bay/Central Valley)';
+    if (lat < 35) return 'Sandy loam — Aridisol (Southern CA)';
+    return 'Loam to clay loam — Alfisol (Central CA)';
+  }
+  if (['AZ', 'NV', 'NM'].includes(s)) return 'Sandy loam to caliche — Aridisol (Desert SW)';
+  if (['CO', 'UT', 'WY', 'MT', 'ID'].includes(s)) return 'Loam to clay loam — Mollisol/Inceptisol (Mountain West)';
+  if (['ND', 'SD', 'KS', 'NE'].includes(s)) return 'Deep silt loam — Mollisol (Great Plains prairie)';
+  if (s === 'OK') return 'Clay loam to silt loam — Mollisol/Vertisol (Southern Plains)';
+  if (s === 'TX') {
+    if (lng > -97 && lat > 30) return 'Black clay — Vertisol (East Texas Blackland Prairie)';
+    if (lat < 29) return 'Sandy loam — Entisol (South Texas/Gulf Coast)';
+    return 'Sandy to caliche — Aridisol (West Texas)';
+  }
+  if (s === 'FL') {
+    return lat < 27
+      ? 'Sandy coastal plain — Entisol/Spodosol (South Florida flatwoods)'
+      : 'Sandy flatwoods — Spodosol (North/Central Florida)';
+  }
+  if (['GA', 'SC'].includes(s)) {
+    return lng > -81 && lat < 34
+      ? 'Sandy loam coastal plain — Ultisol (Atlantic Coastal Plain)'
+      : 'Red clay to clay loam — Ultisol (Piedmont)';
+  }
+  if (s === 'NC') {
+    return lng > -79
+      ? 'Sandy loam coastal plain — Ultisol (NC Coastal Plain)'
+      : 'Clay loam — Ultisol (NC Piedmont/Mountain)';
+  }
+  if (['AL', 'MS', 'LA'].includes(s)) return 'Silty clay loam — Ultisol/Alfisol (Deep South)';
+  if (['TN', 'AR'].includes(s)) return 'Silt loam to clay loam — Ultisol/Alfisol (Mid-South)';
+  if (['OH', 'IN', 'IL', 'IA', 'MN', 'WI', 'MI'].includes(s)) return 'Deep silt loam — Mollisol/Alfisol (Glaciated Midwest)';
+  if (s === 'MO') return 'Silt loam — Alfisol (Missouri Valley)';
+  if (['MD', 'DE'].includes(s)) return 'Silt loam to clay loam — Ultisol/Inceptisol (Mid-Atlantic)';
+  if (['KY', 'WV'].includes(s)) return 'Silt loam to clay loam — Ultisol/Alfisol (Appalachian/Border South)';
+  if (s === 'VA') {
+    return lng < -80
+      ? 'Sandy loam — Ultisol (Blue Ridge/Appalachian VA)'
+      : 'Clay loam — Ultisol (VA Piedmont)';
+  }
+  if (s === 'PA') {
+    return lat < 40.5
+      ? 'Silt loam to clay — Ultisol (SE PA Piedmont)'
+      : 'Loam to silt loam — Inceptisol (Central/North PA)';
+  }
+  if (s === 'NJ') {
+    if (lng > -74.2) return 'Sandy loam — Entisol/Ultisol (NJ Pine Barrens/Shore)';
+    if (lat > 41) return 'Glacial loam — Inceptisol (North NJ Highlands)';
+    return 'Silt loam to sandy loam — Inceptisol (NJ Piedmont/Inner Coastal Plain)';
+  }
+  if (['CT', 'MA', 'RI', 'NH', 'VT', 'ME'].includes(s)) return 'Glacial till / sandy loam — Inceptisol (New England)';
+  if (s === 'NY') {
+    return lat < 41.5 && lng > -74
+      ? 'Sandy loam — Inceptisol (Long Island/Lower Hudson)'
+      : 'Glacial loam — Alfisol/Inceptisol (Upstate NY)';
+  }
+  return 'Loam — regional estimate (recommend soil test for precision)';
 }
 
 /**
@@ -137,45 +164,53 @@ export async function getWeather(
 }
 
 /**
- * Reverse geocode to town name + state abbreviation using Nominatim OSM.
- * Results are cached in sessionStorage (keyed by rounded lat/lng) to avoid
- * re-hitting Nominatim's 1 req/sec rate limit on repeat uploads.
+ * Reverse geocode to city + 2-letter state using the NWS Points API.
+ * Primary: api.weather.gov (US gov, free, no API key, works from Vercel servers).
+ * Fallback: Nominatim OSM (may be rate-limited from cloud IPs).
  */
 export async function reverseGeocode(
   lat: number,
   lng: number
 ): Promise<{ city?: string; state?: string }> {
-  // Round to 3 decimal places (~100m grid) for cache key
-  const key = `gc:${lat.toFixed(3)},${lng.toFixed(3)}`;
-  const cached = cacheGet(key);
-  if (cached) {
-    try { return JSON.parse(cached); } catch {}
+  // ── Primary: NWS Points API ───────────────────────────────────────────────
+  try {
+    const nwsRes = await fetch(
+      `https://api.weather.gov/points/${lat.toFixed(4)},${lng.toFixed(4)}`,
+      { headers: { 'User-Agent': 'LawnAI/1.0 (lawn-ai.vercel.app)' } }
+    );
+    if (nwsRes.ok) {
+      const nwsData = await nwsRes.json();
+      const props = nwsData?.properties?.relativeLocation?.properties;
+      if (props?.city && props?.state) {
+        return { city: props.city, state: props.state };
+      }
+    }
+  } catch {
+    // fall through to Nominatim
   }
 
+  // ── Fallback: Nominatim OSM ───────────────────────────────────────────────
   try {
-    const res = await fetch(
+    const nomRes = await fetch(
       `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=10`,
       { headers: { 'User-Agent': 'LawnAI/1.0 (lawn-ai.vercel.app)' } }
     );
-    if (!res.ok) return {};
-    const data = await res.json();
-    const addr = data?.address ?? {};
-    const city =
-      addr.city ??
-      addr.town ??
-      addr.village ??
-      addr.municipality ??
-      addr.hamlet ??
-      addr.county;
-    const stateRaw: string = addr.state ?? '';
-    const state =
-      STATE_ABBR[stateRaw] ?? (stateRaw.length <= 3 ? stateRaw : undefined);
-    const result = { city, state };
-    cacheSet(key, JSON.stringify(result));
-    return result;
+    if (nomRes.ok) {
+      const data = await nomRes.json();
+      const addr = data?.address ?? {};
+      const city =
+        addr.city ?? addr.town ?? addr.village ??
+        addr.municipality ?? addr.hamlet ?? addr.county;
+      const stateRaw: string = addr.state ?? '';
+      const state =
+        STATE_ABBR[stateRaw] ?? (stateRaw.length <= 3 ? stateRaw : undefined);
+      if (city) return { city, state };
+    }
   } catch {
-    return {};
+    // both geocoders failed
   }
+
+  return {};
 }
 
 /**
@@ -212,11 +247,8 @@ function toDateStr(d: Date): string {
 }
 
 /**
- * Compare last-30-day precipitation vs a 3-year rolling average for the same
- * calendar window (years -1, -2, -3 fetched in parallel via Open-Meteo archive).
- * A 3-year average is far more statistically robust than a single prior year,
- * which can itself be an anomalous drought or flood year.
- * Returns totals in inches and % of 3-year normal.
+ * 30-day precipitation vs 3-year rolling average for the same calendar window.
+ * 3 prior years fetched in parallel — far more robust than a single prior year.
  */
 export async function getRainfallData(
   lat: number,
@@ -225,13 +257,11 @@ export async function getRainfallData(
   try {
     const today = new Date();
 
-    // Recent 30 days via forecast API (no archive lag)
     const recentFetch = fetch(
       `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
         `&daily=precipitation_sum&past_days=30&forecast_days=0&precipitation_unit=inch`
     );
 
-    // Same 30-day window for 3 prior years via archive API
     const baselineFetches = [1, 2, 3].map(yearsBack => {
       const end = new Date(today);
       end.setFullYear(today.getFullYear() - yearsBack);
@@ -255,45 +285,38 @@ export async function getRainfallData(
       (arr ?? []).reduce((s, v) => s + (v ?? 0), 0);
 
     const recentData = await recentRes.json();
-    const recent_in =
-      Math.round(sum(recentData?.daily?.precipitation_sum) * 10) / 10;
+    const recent_in = Math.round(sum(recentData?.daily?.precipitation_sum) * 10) / 10;
 
-    // Parse all baseline years that responded successfully
     const baselineTotals: number[] = [];
     for (const res of baselineResponses) {
       if (!res.ok) continue;
       try {
         const data = await res.json();
         baselineTotals.push(sum(data?.daily?.precipitation_sum));
-      } catch {
-        // skip failed years
-      }
+      } catch { /* skip */ }
     }
 
     if (baselineTotals.length === 0) return { recent_in, normal_in: 0, pct_of_normal: 100 };
-
     const normal_raw = baselineTotals.reduce((s, v) => s + v, 0) / baselineTotals.length;
     const normal_in = Math.round(normal_raw * 10) / 10;
-
     if (normal_in === 0) return { recent_in, normal_in, pct_of_normal: 100 };
-    const pct_of_normal = Math.round((recent_in / normal_in) * 100);
-    return { recent_in, normal_in, pct_of_normal };
+    return { recent_in, normal_in, pct_of_normal: Math.round((recent_in / normal_in) * 100) };
   } catch {
     return undefined;
   }
 }
 
 /**
- * Aggregate all location enrichment in parallel (7 concurrent API calls).
- * Includes grass class derivation from hardiness zone for national routing.
+ * Aggregate all location enrichment in parallel.
+ * Uses NWS geocoder (primary) with Nominatim fallback for reliable town names.
+ * Uses regional soil profile instead of USDA series point lookup.
  */
 export async function getFullLocationData(
   lat: number,
   lng: number
 ): Promise<LocationData> {
-  const [soilType, hardiness_zone, weather, geo, soilTemp, rainfall] =
+  const [hardiness_zone, weather, geo, soilTemp, rainfall] =
     await Promise.allSettled([
-      getSoilType(lat, lng),
       getHardinessZone(lat, lng),
       getWeather(lat, lng),
       reverseGeocode(lat, lng),
@@ -303,16 +326,19 @@ export async function getFullLocationData(
 
   const soilTempVal = soilTemp.status === 'fulfilled' ? soilTemp.value : {};
   const zone = hardiness_zone.status === 'fulfilled' ? hardiness_zone.value : 'Unknown';
+  const geoVal = geo.status === 'fulfilled' ? geo.value : {};
+
+  const soilType = getRegionalSoilProfile(lat, lng, geoVal.state);
 
   return {
     lat,
     lng,
-    soilType: soilType.status === 'fulfilled' ? soilType.value : 'Unknown',
+    soilType,
     hardiness_zone: zone,
     grassClass: deriveGrassClass(zone),
     weather: weather.status === 'fulfilled' ? weather.value : undefined,
-    city: geo.status === 'fulfilled' ? geo.value.city : undefined,
-    state: geo.status === 'fulfilled' ? geo.value.state : undefined,
+    city: geoVal.city,
+    state: geoVal.state,
     soil_temp_surface_f: soilTempVal.surface_f,
     soil_temp_6cm_f: soilTempVal.depth_6cm_f,
     rainfall: rainfall.status === 'fulfilled' ? rainfall.value : undefined,

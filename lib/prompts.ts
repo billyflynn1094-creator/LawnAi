@@ -48,6 +48,24 @@ PRODUCT RECOMMENDATION RULES
 7. Recommend by formulation need — if both granular and liquid exist for the same
    active ingredient, explain when to use each (e.g., granular for large open areas,
    liquid for spot treatment or uneven terrain).
+8. ROUTE products to the correct category based on issue_type:
+   - disease | fungus → FUNGICIDES: match group to disease class (pythium → fosetyl-Al/propamocarb;
+     dollar spot → SDHI; brown patch → strobilurin + contact; root rot → SDHI soil-active).
+     Rotate fungicide groups (SDHI + strobilurin, or SDHI + DMI) for resistance management.
+   - weed → HERBICIDES: distinguish pre-emergent (weed not yet germinated) vs post-emergent
+     (active growth). Match to weed species: broadleaf, grassy annual, grassy perennial, sedge.
+     Cool-season turf vs warm-season turf determines product safety.
+   - pest → INSECTICIDES: identify pest life stage (soil-dwelling grubs → soil systemic;
+     surface feeders → pyrethroid/contact; mole crickets → specialty insecticide).
+   - nutrient_deficiency → FERTILIZERS: match NPK to deficiency (nitrogen → high-N liquid/granular;
+     iron chlorosis → liquid iron; phosphorus → starter fertilizer; potassium stress → 0-0-X).
+   - drought | overwatering → FERTILIZERS + soil amendment (stress-recovery NPK, humic acids).
+   - healthy → FERTILIZERS only (maintenance program based on grass class and season).
+9. VARY product selection — do NOT default to the same 2–3 products on every diagnosis.
+   Evaluate each product's fit to: grass species, soil temp, weed/disease/pest present,
+   resistance management needs, and treatment timing. Choose the most targeted product
+   over a broad-spectrum catch-all. For fungicides, always recommend different mode-of-action
+   groups (e.g., SDHI + DMI, not two strobilurins).
 
 ══════════════════════════════════════════════════════
 CONTENT QUALITY — NEVER PRODUCE GENERIC OUTPUT

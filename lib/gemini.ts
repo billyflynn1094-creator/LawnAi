@@ -15,7 +15,7 @@ function getModel() {
   _model = new GoogleGenerativeAI(key).getGenerativeModel({
     model: "gemini-2.5-flash",
     generationConfig: {
-      temperature: 0.4,
+      temperature: 0.65,
       topP: 0.9,
       maxOutputTokens: 8192,
       responseMimeType: "application/json",

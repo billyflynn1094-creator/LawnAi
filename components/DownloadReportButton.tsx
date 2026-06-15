@@ -24,330 +24,340 @@ const FORMAT_LABEL: Record<string, string> = {
   wettable_powder: 'WP', sc: 'SC', spray_ready: 'RTU',
 };
 
-export default function DownloadReportButton({ analysis, location }: DownloadReportButtonProps) {
-  const [loading, setLoading] = useState(false);
+const FORMAT_SORT: Record<string, number> = {
+  granular: 0, liquid: 1, wdg: 2, wettable_powder: 2, sc: 2, spray_ready: 3,
+};
 
-  const handleDownload = async () => {
-    setLoading(true);
-    try {
-      const { jsPDF } = await import('jspdf');
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+function escHtml(str: unknown): string {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 
-      const W = 210;
-      const MARGIN = 18;
-      const CW = W - MARGIN * 2;
-      let y = 0;
+function row(label: string, value: unknown): string {
+  if (!value) return '';
+  return `<div class="row"><span class="label">${escHtml(label)}</span><span class="val">${escHtml(value)}</span></div>`;
+}
 
-      type RGB = [number, number, number];
-      const C = {
-        heading:   [245, 245, 240] as RGB,
-        body:      [180, 190, 175] as RGB,
-        muted:     [100, 110,  95] as RGB,
-        accent:    [130, 165, 110] as RGB,
-        bg:        [ 22,  28,  20] as RGB,
-        sep:       [ 50,  60,  45] as RGB,
-        critical:  [220,  80,  80] as RGB,
-        moderate:  [220, 140,  60] as RGB,
-        mild:      [200, 190,  60] as RGB,
-        warn:      [220, 140,  60] as RGB,
-      };
+function bullet(text: string): string {
+  return `<li>${escHtml(text)}</li>`;
+}
 
-      // Fill page background
-      const bgFill = () => {
-        doc.setFillColor(...C.bg);
-        doc.rect(0, 0, W, 297, 'F');
-      };
-      bgFill();
+function section(title: string, content: string): string {
+  if (!content.trim()) return '';
+  return `<div class="section"><h3>${escHtml(title)}</h3>${content}</div>`;
+}
 
-      const addPage = () => {
-        doc.addPage();
-        bgFill();
-        y = MARGIN;
-      };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildReportHTML(analysis: Record<string, any>, location: LocationData | null): string {
+  const diagnosis       = analysis.diagnosis        ?? {};
+  const identified      = analysis.identified       ?? {};
+  const treatment       = analysis.treatment        ?? {};
+  const elaborate       = treatment.elaborate       ?? {};
+  const rawProducts     = (treatment.products       ?? []) as Array<Record<string, string>>;
+  const grassType       = analysis.grass_type       ?? {};
+  const overviewBullets = (analysis.overview_bullets ?? []) as string[];
+  const locationFactors = analysis.location_factors ?? {};
+  const mechanical      = analysis.mechanical_practices ?? {};
+  const timeline        = (analysis.timeline        ?? []) as Array<Record<string, unknown>>;
+  const prevention      = (analysis.prevention      ?? []) as string[];
+  const soilProfile     = analysis._soil_profile    ?? {};
 
-      const checkY = (needed = 10) => { if (y + needed > 283) addPage(); };
+  const products = [...rawProducts].sort((a, b) =>
+    (FORMAT_SORT[(a.format ?? '').toLowerCase()] ?? 9) -
+    (FORMAT_SORT[(b.format ?? '').toLowerCase()] ?? 9)
+  );
 
-      const drawLine = (text: string, size: number, color: RGB, bold = false, indent = 0) => {
-        checkY(size * 0.5 + 3);
-        doc.setFontSize(size);
-        doc.setTextColor(...color);
-        doc.setFont('helvetica', bold ? 'bold' : 'normal');
-        doc.text(text, MARGIN + indent, y);
-        y += size * 0.42 + 1.8;
-      };
+  const dateStr = new Date().toLocaleDateString('en-US', {
+    year: 'numeric', month: 'long', day: 'numeric',
+  });
 
-      const drawPara = (text: string, size: number, color: RGB, indent = 0) => {
-        if (!text?.trim()) return;
-        doc.setFontSize(size);
-        doc.setTextColor(...color);
-        doc.setFont('helvetica', 'normal');
-        const lines = doc.splitTextToSize(text, CW - indent);
-        for (const l of lines) {
-          checkY(size * 0.42 + 2);
-          doc.text(l, MARGIN + indent, y);
-          y += size * 0.42 + 1.4;
-        }
-        y += 0.8;
-      };
+  const sev = (diagnosis.severity ?? '').toLowerCase();
+  const sevColors: Record<string, string> = {
+    critical: '#c0392b', moderate: '#e67e22', mild: '#f1c40f',
+  };
+  const sevColor = sevColors[sev] ?? '#7f8c8d';
 
-      const drawBullet = (text: string, size: number, color: RGB, indent = 0) => {
-        const lines = doc.splitTextToSize(text, CW - indent - 5);
-        checkY(size * 0.42 + 2);
-        doc.setFontSize(size);
-        doc.setTextColor(...color);
-        doc.setFont('helvetica', 'normal');
-        doc.text('•', MARGIN + indent, y);
-        let first = true;
-        for (const l of lines) {
-          checkY(size * 0.42 + 2);
-          doc.text(l, MARGIN + indent + 4, y);
-          y += size * 0.42 + (first ? 1.4 : 1.2);
-          first = false;
-        }
-        y += 0.5;
-      };
-
-      const sectionHead = (label: string) => {
-        checkY(12);
-        y += 2;
-        doc.setFontSize(7.5);
-        doc.setTextColor(...C.muted);
-        doc.setFont('helvetica', 'bold');
-        doc.text(label.toUpperCase(), MARGIN, y);
-        y += 4;
-        doc.setDrawColor(...C.sep);
-        doc.setLineWidth(0.3);
-        doc.line(MARGIN, y, W - MARGIN, y);
-        y += 4;
-      };
-
-      // ── HEADER BAR ──────────────────────────────────────────────────────────
-      doc.setFillColor(...C.accent);
-      doc.rect(0, 0, W, 22, 'F');
-      doc.setFontSize(15);
-      doc.setTextColor(...C.bg);
-      doc.setFont('helvetica', 'bold');
-      doc.text('LAWN AI', MARGIN, 10);
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Turf Analysis Report', MARGIN, 16.5);
-      const dateStr = new Date().toLocaleDateString('en-US', {
-        year: 'numeric', month: 'long', day: 'numeric',
-      });
-      doc.setFontSize(8);
-      doc.text(dateStr, W - MARGIN, 16.5, { align: 'right' });
-      y = 30;
-
-      // ── LOCATION ────────────────────────────────────────────────────────────
-      if (location) {
-        const locStr = [location.city, location.state].filter(Boolean).join(', ');
-        if (locStr) drawLine(locStr, 12, C.heading, true);
-        const meta: string[] = [];
-        if (location.soilType) meta.push(`Soil: ${location.soilType}`);
-        if (location.hardiness_zone) meta.push(`Zone ${location.hardiness_zone}`);
-        if (location.grassClass) {
-          const gc = location.grassClass;
-          meta.push(`${gc.charAt(0).toUpperCase() + gc.slice(1)}-season grass`);
-        }
-        if (meta.length) drawPara(meta.join('  ·  '), 8, C.muted);
-        const wx = location.weather;
-        if (wx) {
-          const wxParts = [`${wx.avg_low_f}–${wx.avg_high_f}°F air  ·  ${wx.avg_humidity}% RH  (7-day avg)`];
-          if (location.soil_temp_surface_f) wxParts.push(`Soil: ${location.soil_temp_surface_f}°F surface`);
-          if (location.rainfall) {
-            const r = location.rainfall;
-            const diff = Math.round(r.pct_of_normal - 100);
-            wxParts.push(`Rainfall: ${r.recent_in}in 7d (${diff >= 0 ? '+' : ''}${diff}% vs 3yr avg)`);
-          }
-          drawPara(wxParts.join('   '), 7.5, C.muted);
-        }
-        y += 2;
-        doc.setDrawColor(...C.sep);
-        doc.setLineWidth(0.4);
-        doc.line(MARGIN, y, W - MARGIN, y);
-        y += 6;
-      }
-
-      // ── PARSE DATA ──────────────────────────────────────────────────────────
-      const diagnosis       = analysis.diagnosis        ?? {};
-      const identified      = analysis.identified       ?? {};
-      const treatment       = analysis.treatment        ?? {};
-      const elaborate       = treatment.elaborate       ?? {};
-      const products        = (treatment.products       ?? []) as Array<Record<string, string>>;
-      const grassType       = analysis.grass_type       ?? {};
-      const overviewBullets = (analysis.overview_bullets ?? []) as string[];
-      const locationFactors = analysis.location_factors ?? {};
-      const mechanical      = analysis.mechanical_practices ?? {};
-      const timeline        = (analysis.timeline        ?? []) as Array<Record<string, unknown>>;
-      const prevention      = (analysis.prevention      ?? []) as string[];
-      const soilProfile     = analysis._soil_profile    ?? {};
-
-      const sev = (diagnosis.severity ?? 'none').toLowerCase();
-      const sevColor: RGB = sev === 'critical' ? C.critical : sev === 'moderate' ? C.moderate : sev === 'mild' ? C.mild : C.muted;
-
-      // Issue name
-      checkY(15);
-      doc.setFontSize(14);
-      doc.setTextColor(...C.heading);
-      doc.setFont('helvetica', 'bold');
-      const issueLines = doc.splitTextToSize(identified.primary ?? 'Lawn Analysis', CW);
-      for (const l of issueLines) { doc.text(l, MARGIN, y); y += 7; }
-
-      // Severity + badges
-      const badges: string[] = [];
-      if (sev && sev !== 'none') badges.push(sev.charAt(0).toUpperCase() + sev.slice(1));
-      if (diagnosis.issue_type) badges.push((diagnosis.issue_type as string).replace(/_/g, ' '));
-      if (diagnosis.spread_risk && diagnosis.spread_risk !== 'none') badges.push(`${diagnosis.spread_risk} spread risk`);
-      if (badges.length) {
-        doc.setFontSize(8); doc.setTextColor(...sevColor); doc.setFont('helvetica', 'normal');
-        doc.text(badges.join('  ·  '), MARGIN, y); y += 5;
-      }
-      if (grassType.identified) {
-        doc.setFontSize(8); doc.setTextColor(...C.muted); doc.setFont('helvetica', 'italic');
-        doc.text(`Grass: ${grassType.identified}`, MARGIN, y);
-        doc.setFont('helvetica', 'normal'); y += 5;
-      }
-      y += 2;
-
-      // ── OVERVIEW ────────────────────────────────────────────────────────────
-      if (overviewBullets.length) {
-        sectionHead('Overview');
-        for (const b of overviewBullets) drawBullet(b, 9, C.body);
-        y += 1;
-      }
-
-      // Invasive watch
-      if (locationFactors.invasive_watch && (locationFactors.invasive_watch as string).toLowerCase() !== 'null') {
-        drawPara(`⚠  ${locationFactors.invasive_watch}`, 8.5, C.warn);
-      }
-
-      // ── PRODUCTS ────────────────────────────────────────────────────────────
-      const FORMAT_SORT: Record<string, number> = { granular: 0, liquid: 1, wdg: 2, wettable_powder: 2, sc: 2, spray_ready: 3 };
-      const sortedProducts = [...products].sort((a, b) => {
-        return (FORMAT_SORT[(a.format ?? '').toLowerCase()] ?? 9) - (FORMAT_SORT[(b.format ?? '').toLowerCase()] ?? 9);
-      });
-
-      if (sortedProducts.length) {
-        sectionHead('Recommended Products');
-        for (const p of sortedProducts) {
-          checkY(18);
-          const fmt = (p.format ?? '').toLowerCase();
-          const fmtLabel = FORMAT_LABEL[fmt] ?? (fmt ? fmt.toUpperCase() : '');
-          doc.setFontSize(9.5); doc.setTextColor(...C.heading); doc.setFont('helvetica', 'bold');
-          const pName = doc.splitTextToSize(p.name, CW - 20);
-          doc.text(pName[0], MARGIN, y);
-          if (fmtLabel) {
-            doc.setFontSize(8); doc.setTextColor(...C.accent);
-            doc.text(fmtLabel, W - MARGIN, y, { align: 'right' });
-          }
-          y += 5;
-          if (p.type) { doc.setFontSize(7.5); doc.setTextColor(...C.muted); doc.setFont('helvetica', 'normal'); doc.text((p.type as string).replace(/_/g, ' ').toUpperCase(), MARGIN, y); y += 4; }
-          if (p.application_rate) { doc.setFontSize(8); doc.setTextColor(...C.body); doc.text(`Rate: ${p.application_rate}`, MARGIN, y); y += 4; }
-          if (p.timing)           { doc.setFontSize(8); doc.setTextColor(...C.body); doc.text(`Timing: ${p.timing}`, MARGIN, y); y += 4; }
-          if (p.notes) drawPara(p.notes, 8, C.muted);
-          y += 1;
-          doc.setDrawColor(...C.sep); doc.setLineWidth(0.2);
-          doc.line(MARGIN, y, W - MARGIN, y); y += 3;
-        }
-      }
-
-      // ── DETAILED CONTEXT ────────────────────────────────────────────────────
-      const elabParts = [
-        { title: 'Why It Happens',    content: elaborate.why_it_happens },
-        { title: 'How To Apply',      content: elaborate.how_to_apply },
-        { title: 'What To Watch For', content: elaborate.what_to_watch_for },
-        { title: 'Common Mistakes',   content: elaborate.common_mistakes },
-        { title: 'Long-Term Pathway', content: elaborate.long_term_pathway },
-      ].filter(e => e.content);
-
-      if (elabParts.length) {
-        sectionHead('Detailed Context');
-        for (const e of elabParts) {
-          drawLine(e.title, 9, C.accent, true);
-          drawPara(e.content!, 8.5, C.body);
-          y += 1;
-        }
-      }
-
-      // ── TIMELINE ────────────────────────────────────────────────────────────
-      if (timeline.length) {
-        sectionHead('Treatment Timeline');
-        for (const stage of timeline) {
-          checkY(15);
-          if (stage.stage) { doc.setFontSize(7.5); doc.setTextColor(...C.muted); doc.setFont('helvetica', 'bold'); doc.text((stage.stage as string).toUpperCase(), MARGIN, y); y += 4; }
-          if (stage.title) { doc.setFontSize(9); doc.setTextColor(...C.heading); doc.setFont('helvetica', 'bold'); doc.text(stage.title as string, MARGIN, y); y += 4.5; }
-          if (Array.isArray(stage.actions)) for (const a of stage.actions as string[]) drawBullet(a, 8.5, C.body);
-          if (stage.milestone) { doc.setFontSize(8); doc.setTextColor(...C.muted); doc.setFont('helvetica', 'italic'); doc.text(`✓ ${stage.milestone}`, MARGIN, y); y += 4; }
-          y += 2;
-        }
-      }
-
-      // ── PREVENTION ──────────────────────────────────────────────────────────
-      if (prevention.length) {
-        sectionHead('Prevention');
-        for (const item of prevention) drawBullet(item, 8.5, C.body);
-      }
-
-      // ── MECHANICAL PRACTICES ────────────────────────────────────────────────
-      const mechItems = [
-        { label: 'Aeration',     data: mechanical.aeration },
-        { label: 'Dethatching',  data: mechanical.dethatching },
-        { label: 'Seeding',      data: mechanical.seeding },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ].filter(m => (m.data as any)?.recommended);
-
-      if (mechItems.length) {
-        sectionHead('Mechanical Practices');
-        for (const m of mechItems) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const d = m.data as any;
-          drawLine(m.label, 9, C.accent, true);
-          if (d.timing)    drawPara(`Timing: ${d.timing}`, 8.5, C.body);
-          if (d.method)    drawPara(`Method: ${d.method}`, 8.5, C.body);
-          if (d.seed_type) drawPara(`Seed type: ${d.seed_type}`, 8.5, C.body);
-          if (d.rate)      drawPara(`Rate: ${d.rate}`, 8.5, C.body);
-          if (d.notes)     drawPara(d.notes, 8, C.muted);
-          y += 2;
-        }
-      }
-
-      // ── SOIL PROFILE ────────────────────────────────────────────────────────
-      if (soilProfile.label) {
-        sectionHead('Regional Soil Profile');
-        drawLine(soilProfile.label, 9, C.heading, true);
-        if (soilProfile.notes) drawPara(soilProfile.notes, 8.5, C.body);
-        const spMeta: string[] = [];
-        if (soilProfile.fertFrequency) spMeta.push(`Fert frequency: ${soilProfile.fertFrequency}`);
-        if (soilProfile.drainageClass)  spMeta.push(`Drainage: ${soilProfile.drainageClass}`);
-        if (spMeta.length) drawPara(spMeta.join('   ·   '), 8, C.muted);
-      }
-
-      // ── FOOTER on every page ────────────────────────────────────────────────
-      const total = doc.getNumberOfPages();
-      for (let i = 1; i <= total; i++) {
-        doc.setPage(i);
-        doc.setFontSize(7); doc.setTextColor(...C.muted);
-        doc.text(`Generated by Lawn AI  ·  lawn-ai.vercel.app  ·  ${dateStr}`, MARGIN, 291);
-        doc.text(`${i} / ${total}`, W - MARGIN, 291, { align: 'right' });
-      }
-
-      // ── SAVE ────────────────────────────────────────────────────────────────
-      const city = location?.city ? `-${location.city.replace(/\s+/g, '-')}` : '';
-      const today = new Date().toISOString().slice(0, 10);
-      doc.save(`lawn-ai-report${city}-${today}.pdf`);
-    } finally {
-      setLoading(false);
+  // ── Location block ──────────────────────────────────────────────────────────
+  let locBlock = '';
+  if (location) {
+    const locStr = [location.city, location.state].filter(Boolean).join(', ');
+    const meta: string[] = [];
+    if (location.soilType) meta.push(`Soil: ${location.soilType}`);
+    if (location.hardiness_zone) meta.push(`Zone ${location.hardiness_zone}`);
+    if (location.grassClass) {
+      const gc = location.grassClass;
+      meta.push(`${gc.charAt(0).toUpperCase() + gc.slice(1)}-season grass`);
     }
+    const wx = location.weather;
+    const wxParts: string[] = [];
+    if (wx) {
+      wxParts.push(`Air Temp: ${wx.avg_low_f}&ndash;${wx.avg_high_f}&deg;F &nbsp;&bull;&nbsp; Humidity: ${wx.avg_humidity}% RH &nbsp;<em>(7-day avg)</em>`);
+    }
+    if (location.soil_temp_surface_f) {
+      wxParts.push(`Soil Temp: ${location.soil_temp_surface_f}&deg;F surface`);
+    }
+    if (location.rainfall) {
+      const r = location.rainfall;
+      const diff = Math.round(r.pct_of_normal - 100);
+      wxParts.push(`Rainfall: ${r.recent_in}&Prime; / 7d &nbsp;(${diff >= 0 ? '+' : ''}${diff}% vs 3-yr avg)`);
+    }
+    locBlock = `
+      <div class="loc-block">
+        ${locStr ? `<div class="loc-name">${escHtml(locStr)}</div>` : ''}
+        ${meta.length ? `<div class="loc-meta">${meta.map(escHtml).join(' &nbsp;&bull;&nbsp; ')}</div>` : ''}
+        ${wxParts.map(p => `<div class="loc-wx">${p}</div>`).join('')}
+      </div>`;
+  }
+
+  // ── Overview ────────────────────────────────────────────────────────────────
+  const overviewHTML = overviewBullets.length
+    ? `<ul>${overviewBullets.map(bullet).join('')}</ul>` : '';
+
+  // ── Invasive watch ──────────────────────────────────────────────────────────
+  const invasive = locationFactors.invasive_watch as string | undefined;
+  const invasiveHTML = (invasive && invasive.toLowerCase() !== 'null' && invasive.trim())
+    ? `<div class="warn-box">&#9888; ${escHtml(invasive)}</div>` : '';
+
+  // ── Elaborate ───────────────────────────────────────────────────────────────
+  const elabParts = [
+    { title: 'Why It Happens',    val: elaborate.why_it_happens },
+    { title: 'How To Apply',      val: elaborate.how_to_apply },
+    { title: 'What To Watch For', val: elaborate.what_to_watch_for },
+    { title: 'Common Mistakes',   val: elaborate.common_mistakes },
+    { title: 'Long-Term Pathway', val: elaborate.long_term_pathway },
+  ].filter(e => e.val);
+
+  const elaborateHTML = elabParts.length ? elabParts.map(e =>
+    `<div class="elab-item"><div class="elab-title">${escHtml(e.title)}</div><p>${escHtml(e.val)}</p></div>`
+  ).join('') : '';
+
+  // ── Products ────────────────────────────────────────────────────────────────
+  const productsHTML = products.map(p => {
+    const fmt = (p.format ?? '').toLowerCase();
+    const fmtLabel = FORMAT_LABEL[fmt] ?? (fmt ? fmt.toUpperCase() : '');
+    return `
+      <div class="product">
+        <div class="product-header">
+          <span class="product-name">${escHtml(p.name)}</span>
+          ${fmtLabel ? `<span class="product-fmt">${escHtml(fmtLabel)}</span>` : ''}
+        </div>
+        ${p.type ? `<div class="product-type">${escHtml((p.type as string).replace(/_/g, ' '))}</div>` : ''}
+        ${row('Application Rate', p.application_rate)}
+        ${row('Timing', p.timing)}
+        ${p.notes ? `<p class="product-notes">${escHtml(p.notes)}</p>` : ''}
+      </div>`;
+  }).join('');
+
+  // ── Timeline ────────────────────────────────────────────────────────────────
+  const timelineHTML = timeline.map((stage) => `
+    <div class="timeline-stage">
+      ${stage.stage ? `<div class="stage-label">${escHtml(stage.stage as string)}</div>` : ''}
+      ${stage.title ? `<div class="stage-title">${escHtml(stage.title as string)}</div>` : ''}
+      ${Array.isArray(stage.actions) && (stage.actions as string[]).length
+        ? `<ul>${(stage.actions as string[]).map(bullet).join('')}</ul>` : ''}
+      ${stage.milestone ? `<div class="milestone">&#10003; ${escHtml(stage.milestone as string)}</div>` : ''}
+    </div>`).join('');
+
+  // ── Prevention ──────────────────────────────────────────────────────────────
+  const preventionHTML = prevention.length
+    ? `<ul>${prevention.map(bullet).join('')}</ul>` : '';
+
+  // ── Mechanical practices ─────────────────────────────────────────────────────
+  const mechParts = [
+    { label: 'Aeration',    d: mechanical.aeration },
+    { label: 'Dethatching', d: mechanical.dethatching },
+    { label: 'Seeding',     d: mechanical.seeding },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ].filter(m => (m.d as any)?.recommended);
+
+  const mechHTML = mechParts.map(m => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const d = m.d as any;
+    return `
+      <div class="mech-item">
+        <div class="mech-label">${escHtml(m.label)}</div>
+        ${row('Timing', d.timing)}
+        ${row('Method', d.method)}
+        ${row('Seed Type', d.seed_type)}
+        ${row('Rate', d.rate)}
+        ${d.notes ? `<p>${escHtml(d.notes)}</p>` : ''}
+      </div>`;
+  }).join('');
+
+  // ── Soil profile ────────────────────────────────────────────────────────────
+  const soilHTML = soilProfile.label ? `
+    <div class="soil-block">
+      <div class="soil-label">${escHtml(soilProfile.label)}</div>
+      ${soilProfile.notes ? `<p>${escHtml(soilProfile.notes)}</p>` : ''}
+      ${row('Fert Frequency', soilProfile.fertFrequency)}
+      ${row('Drainage', soilProfile.drainageClass)}
+    </div>` : '';
+
+  // ── Badges ──────────────────────────────────────────────────────────────────
+  const badges = [
+    sev ? `<span class="badge" style="background:${sevColor}20;color:${sevColor};border:1px solid ${sevColor}50">${sev.charAt(0).toUpperCase() + sev.slice(1)}</span>` : '',
+    diagnosis.issue_type ? `<span class="badge">${escHtml((diagnosis.issue_type as string).replace(/_/g, ' '))}</span>` : '',
+    (diagnosis.spread_risk && diagnosis.spread_risk !== 'none')
+      ? `<span class="badge badge-warn">${escHtml(diagnosis.spread_risk)} spread risk</span>` : '',
+  ].filter(Boolean).join('');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lawn AI Report &mdash; ${escHtml(identified.primary ?? 'Analysis')}</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  @page { size: A4 portrait; margin: 18mm 15mm; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+         font-size: 11px; line-height: 1.6; color: #1a2018; background: #fff; }
+
+  /* ── header ── */
+  .report-header { background: #5f8a3a; color: #fff; padding: 12px 16px; display: flex;
+    align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .header-left { display: flex; flex-direction: column; gap: 2px; }
+  .header-brand { font-size: 18px; font-weight: 800; letter-spacing: 0.08em; }
+  .header-sub   { font-size: 10px; opacity: 0.85; }
+  .header-date  { font-size: 10px; opacity: 0.85; text-align: right; }
+
+  /* ── location ── */
+  .loc-block { background: #f5f8f3; border: 1px solid #d0dcc8; border-radius: 6px;
+    padding: 10px 12px; margin-bottom: 14px; }
+  .loc-name  { font-size: 14px; font-weight: 700; color: #1a2018; margin-bottom: 3px; }
+  .loc-meta  { font-size: 10px; color: #5a6b52; margin-bottom: 4px; }
+  .loc-wx    { font-size: 10px; color: #4a5e43; }
+
+  /* ── issue header ── */
+  .issue-name  { font-size: 18px; font-weight: 800; color: #1a2018; margin-bottom: 6px; }
+  .badge-row   { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; }
+  .badge { display: inline-block; font-size: 9px; padding: 2px 8px; border-radius: 99px;
+    background: #eef3eb; color: #4a6640; border: 1px solid #c0d4b5; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.06em; }
+  .badge-warn { background: #fff3e0; color: #e67e22; border-color: #f0c080; }
+  .grass-id { font-size: 10px; color: #7a8a72; margin-bottom: 10px; }
+
+  /* ── sections ── */
+  .section { margin-bottom: 16px; break-inside: avoid; }
+  .section h3 { font-size: 8px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: #7a8a72; padding-bottom: 4px;
+    border-bottom: 1px solid #d8e4d2; margin-bottom: 8px; }
+  .section ul { padding-left: 16px; }
+  .section ul li { margin-bottom: 3px; }
+  p { margin-bottom: 6px; }
+
+  /* ── warn box ── */
+  .warn-box { background: #fff8e1; border: 1px solid #f0c040; border-radius: 5px;
+    padding: 7px 10px; font-size: 10px; color: #8a6000; margin-bottom: 10px; }
+
+  /* ── elaborate ── */
+  .elab-item { margin-bottom: 10px; break-inside: avoid; }
+  .elab-title { font-size: 10px; font-weight: 700; color: #3d5e2a; margin-bottom: 3px; }
+
+  /* ── products ── */
+  .product { border-bottom: 1px solid #e8ede4; padding: 8px 0; break-inside: avoid; }
+  .product:last-child { border-bottom: none; }
+  .product-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; }
+  .product-name { font-size: 11px; font-weight: 700; color: #1a2018; }
+  .product-fmt  { font-size: 9px; font-weight: 600; background: #eef3eb;
+    color: #4a6640; border: 1px solid #c0d4b5; border-radius: 99px; padding: 1px 7px; }
+  .product-type { font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: #8a9a82; margin-bottom: 3px; }
+  .product-notes { font-size: 10px; color: #6a7a62; font-style: italic; margin-top: 3px; }
+  .row { font-size: 10px; color: #3a4a32; margin-bottom: 2px; }
+  .label { font-weight: 600; color: #5a6a52; margin-right: 4px; }
+
+  /* ── timeline ── */
+  .timeline-stage { border-left: 2px solid #82b04a; padding-left: 10px; margin-bottom: 10px;
+    break-inside: avoid; }
+  .stage-label { font-size: 8px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: #8a9a72; }
+  .stage-title { font-size: 11px; font-weight: 700; color: #1a2018; margin-bottom: 4px; }
+  .milestone   { font-size: 10px; color: #5a7a3a; font-style: italic; margin-top: 3px; }
+
+  /* ── mechanical ── */
+  .mech-item { background: #f8faf6; border-radius: 5px; padding: 8px 10px;
+    margin-bottom: 8px; break-inside: avoid; }
+  .mech-label { font-size: 11px; font-weight: 700; color: #3d5e2a; margin-bottom: 4px; }
+
+  /* ── soil ── */
+  .soil-block { background: #f5f8f3; border: 1px solid #d0dcc8; border-radius: 5px;
+    padding: 8px 10px; }
+  .soil-label { font-size: 11px; font-weight: 700; color: #1a2018; margin-bottom: 4px; }
+
+  /* ── footer ── */
+  .report-footer { margin-top: 20px; padding-top: 8px; border-top: 1px solid #d0dcc8;
+    font-size: 9px; color: #9aaa92; display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+
+<div class="report-header">
+  <div class="header-left">
+    <div class="header-brand">LAWN AI</div>
+    <div class="header-sub">Turf Analysis Report</div>
+  </div>
+  <div class="header-date">${escHtml(dateStr)}</div>
+</div>
+
+${locBlock}
+
+<div class="issue-name">${escHtml(identified.primary ?? 'Lawn Analysis')}</div>
+${badges ? `<div class="badge-row">${badges}</div>` : ''}
+${grassType.identified ? `<div class="grass-id">Grass: ${escHtml(grassType.identified)}</div>` : ''}
+
+${overviewBullets.length ? section('Overview', overviewHTML) : ''}
+${invasiveHTML}
+${elaborateHTML ? section('Detailed Context', elaborateHTML) : ''}
+${products.length ? section('Recommended Products', productsHTML) : ''}
+${timeline.length ? section('Treatment Timeline', timelineHTML) : ''}
+${prevention.length ? section('Prevention', preventionHTML) : ''}
+${mechParts.length ? section('Mechanical Practices', mechHTML) : ''}
+${soilProfile.label ? section('Regional Soil Profile', soilHTML) : ''}
+
+<div class="report-footer">
+  <span>Generated by Lawn AI &mdash; lawn-ai.vercel.app</span>
+  <span>${escHtml(dateStr)}</span>
+</div>
+
+</body>
+</html>`;
+}
+
+export default function DownloadReportButton({ analysis, location }: DownloadReportButtonProps) {
+  const [blocked, setBlocked] = useState(false);
+
+  const handleDownload = () => {
+    setBlocked(false);
+    const html = buildReportHTML(analysis, location);
+    const win = window.open('', '_blank', 'width=900,height=700');
+    if (!win) {
+      setBlocked(true);
+      return;
+    }
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    // Give the browser a moment to render before triggering print
+    setTimeout(() => {
+      win.print();
+    }, 600);
   };
 
   return (
-    <button
-      onClick={handleDownload}
-      disabled={loading}
-      className="flex items-center gap-2 w-full justify-center px-4 py-3 rounded-xl bg-field-700/40 hover:bg-field-600/50 border border-field-600/30 text-field-200 hover:text-white text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
-    >
-      <Download size={14} className="shrink-0" />
-      {loading ? 'Generating PDF…' : 'Download Full Report PDF'}
-    </button>
+    <div className="space-y-1">
+      <button
+        onClick={handleDownload}
+        className="flex items-center gap-2 w-full justify-center px-4 py-3 rounded-xl bg-field-700/40 hover:bg-field-600/50 border border-field-600/30 text-field-200 hover:text-white text-sm font-medium transition"
+      >
+        <Download size={14} className="shrink-0" />
+        Download Full Report PDF
+      </button>
+      {blocked && (
+        <p className="text-xs text-amber-400 text-center px-2">
+          Pop-up blocked &mdash; please allow pop-ups for this site, then try again.
+        </p>
+      )}
+    </div>
   );
 }

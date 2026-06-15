@@ -69,7 +69,7 @@ export default function VideoScan() {
       } else if (!silent && a?.error) {
         setEvents(prev => [{
           id: ++eventIdRef.current,
-          result: { brief: "Couldn't read this frame — try better lighting", severity: "mild" },
+          result: { brief: "Couldn't read this frame — try better lighting", severity: "mild" as const },
           timestamp: new Date(),
         }, ...prev].slice(0, 15));
       }
@@ -77,7 +77,7 @@ export default function VideoScan() {
       if (!silent) {
         setEvents(prev => [{
           id: ++eventIdRef.current,
-          result: { brief: "Analysis failed — " + (err instanceof Error ? err.message : "Network error"), severity: "moderate" },
+          result: { brief: "Analysis failed — " + (err instanceof Error ? err.message : "Network error"), severity: "moderate" as const },
           timestamp: new Date(),
         }, ...prev].slice(0, 15));
       }

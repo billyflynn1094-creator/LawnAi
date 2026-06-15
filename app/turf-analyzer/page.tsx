@@ -66,12 +66,30 @@ export default function TurfAnalyzer() {
           setLocationLoading(false);
         }
       },
-      (err) => {
+      async (err) => {
         console.warn('Geolocation error:', err);
-        setLocationError('Location access denied.');
+        // Try a silent IP-based fallback before giving up
+        try {
+          const ipRes = await fetch('https://ipapi.co/json/');
+          if (ipRes.ok) {
+            const ipData = await ipRes.json();
+            if (ipData.latitude && ipData.longitude) {
+              const locRes = await fetch(`/api/location?lat=${ipData.latitude}&lng=${ipData.longitude}`);
+              if (locRes.ok) {
+                const data = await locRes.json();
+                setLocationData(data);
+                setLocationSource('gps');
+                setLocationLoading(false);
+                return;
+              }
+            }
+          }
+        } catch { /* IP fallback failed — show ZIP prompt */ }
+        setLocationError('Location unavailable — enter your ZIP code below.');
+        setShowZipInput(true);
         setLocationLoading(false);
       },
-      { timeout: 10000, enableHighAccuracy: true }
+      { timeout: 8000, enableHighAccuracy: false }
     );
   }, []);
 

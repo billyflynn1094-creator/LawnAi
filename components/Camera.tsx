@@ -196,12 +196,12 @@ export default function CameraCapture({ onCapture, isAnalyzing }: CameraProps) {
       )}
 
       <canvas ref={canvasRef} className="hidden" />
-      {/* Off-screen file input — display:none blocks iOS Safari programmatic click */}
+      {/* Off-screen file input — position:fixed escapes overflow:hidden clipping on iOS Safari / Android Chrome */}
       <input
         ref={fileRef}
         type="file"
         accept="image/*"
-        className="absolute -left-[9999px] -top-[9999px] w-px h-px overflow-hidden"
+        className="fixed -left-[9999px] -top-[9999px] w-px h-px"
         onChange={handleFileUpload}
       />
     </div>

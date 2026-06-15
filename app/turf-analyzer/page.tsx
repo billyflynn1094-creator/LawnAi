@@ -5,6 +5,7 @@ import Link from 'next/link';
 import CameraCapture from '@/components/Camera';
 import LocationBadge from '@/components/LocationBadge';
 import AnalysisResults from '@/components/Analysis';
+import DownloadReportButton from '@/components/DownloadReportButton';
 import { Scan, RotateCcw, ArrowLeft, MapPin, Navigation } from 'lucide-react';
 
 interface LocationData {
@@ -321,6 +322,7 @@ export default function TurfAnalyzer() {
               </div>
             )}
             <AnalysisResults analysis={analysis} />
+            <DownloadReportButton analysis={analysis} location={locationData} />
           </div>
         )}
       </div>

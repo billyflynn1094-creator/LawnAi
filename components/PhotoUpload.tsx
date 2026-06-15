@@ -32,23 +32,53 @@ function drawToCanvas(
 }
 
 /**
- * Google Photos cloud-only images return File objects with type="".
- * Read raw bytes and re-wrap as image/jpeg so decoders know the format.
+ * Normalize any tricky file type before canvas decoding:
+ *  - HEIC/HEIF → convert to JPEG via heic2any (lazy-loaded, browser-side)
+ *  - Empty type (Google Photos cloud-only) → re-wrap bytes as image/jpeg
  */
 async function normalizeBlob(file: File): Promise<Blob> {
-  if (file.type && file.type.startsWith("image/")) return file;
-  try {
-    const buffer = await file.arrayBuffer();
-    return new Blob([buffer], { type: "image/jpeg" });
-  } catch {
-    return file;
+  const rawType = (file.type || "").toLowerCase();
+  const name = (file.name || "").toLowerCase();
+
+  const isHeic =
+    rawType === "image/heic" ||
+    rawType === "image/heif" ||
+    name.endsWith(".heic") ||
+    name.endsWith(".heif");
+
+  if (isHeic) {
+    try {
+      // Dynamic import — not loaded unless a HEIC file is detected
+      const heic2any = (await import("heic2any")).default;
+      const converted = await (heic2any as Function)({
+        blob: file,
+        toType: "image/jpeg",
+        quality: 0.85,
+      });
+      return Array.isArray(converted) ? converted[0] : converted;
+    } catch (e) {
+      console.warn("heic2any conversion failed", e, { name: file.name, size: file.size, type: file.type });
+      // fall through — canvas will also fail but that's caught below
+    }
   }
+
+  // Google Photos cloud-only photos come back with type="" — re-wrap as JPEG
+  if (!rawType || !rawType.startsWith("image/")) {
+    try {
+      const buffer = await file.arrayBuffer();
+      return new Blob([buffer], { type: "image/jpeg" });
+    } catch {
+      return file;
+    }
+  }
+
+  return file;
 }
 
 async function compressToBase64(file: File): Promise<string> {
   const blob = await normalizeBlob(file);
 
-  // Strategy 1: createImageBitmap
+  // Strategy 1: createImageBitmap (most reliable on modern Android Chrome)
   if (typeof createImageBitmap !== "undefined") {
     try {
       const bitmap = await createImageBitmap(blob);
@@ -58,7 +88,7 @@ async function compressToBase64(file: File): Promise<string> {
     } catch { /* fall through */ }
   }
 
-  // Strategy 2: FileReader -> Image -> Canvas
+  // Strategy 2: FileReader → Image → Canvas
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -97,13 +127,13 @@ export default function PhotoUpload({ onCapture, isAnalyzing }: PhotoUploadProps
       const base64 = await compressToBase64(file);
       setPreviewBase64(base64);
     } catch (err) {
-      const sizeKB = Math.round(file.size / 1024);
-      const type = file.type || "no-type";
-      console.error("compress failed", err, { name: file.name, sizeKB, type });
-      setError(
-        `Could not process photo (${sizeKB} KB, ${type}). ` +
-        "Try opening Google Photos, saving the photo to your device, then uploading from Downloads."
-      );
+      // Log technical details for debugging — keep UI message simple
+      console.error("PhotoUpload compress failed", err, {
+        name: file.name,
+        sizeKB: Math.round(file.size / 1024),
+        type: file.type || "(none)",
+      });
+      setError("Couldn’t open that photo. Try taking a new shot with your camera, or save the photo to your device first and upload from Downloads.");
     } finally {
       setProcessing(false);
     }
@@ -114,7 +144,7 @@ export default function PhotoUpload({ onCapture, isAnalyzing }: PhotoUploadProps
 
   return (
     <div className="w-full mt-3">
-      {!previewBase64 && !processing && (
+      {!previewBase64 && !processing && !error && (
         <label className="relative flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-soil-800 hover:bg-soil-700 border border-field-700/40 text-field-200 text-sm font-medium cursor-pointer transition active:scale-95 select-none">
           <input
             type="file"
@@ -135,8 +165,8 @@ export default function PhotoUpload({ onCapture, isAnalyzing }: PhotoUploadProps
       )}
 
       {error && !previewBase64 && (
-        <div className="w-full rounded-xl bg-soil-800 border border-red-800/40 p-4">
-          <p className="text-red-400 text-xs mb-3 leading-relaxed">{error}</p>
+        <div className="w-full rounded-xl bg-soil-800 border border-amber-800/40 p-4">
+          <p className="text-amber-400 text-xs mb-3 leading-relaxed">{error}</p>
           <label className="relative flex items-center justify-center gap-1.5 w-full py-2.5 rounded-lg bg-soil-700 hover:bg-soil-600 text-field-200 text-sm font-medium cursor-pointer transition">
             <input
               type="file"
@@ -164,7 +194,9 @@ export default function PhotoUpload({ onCapture, isAnalyzing }: PhotoUploadProps
               <ImageIcon size={14} /> Change
             </label>
             <button onClick={handleAnalyze} disabled={isAnalyzing} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-field-500 hover:bg-field-400 disabled:opacity-60 text-white text-sm font-medium transition">
-              {isAnalyzing ? (<><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Analyzing…</>) : (<><Scan size={14} />Analyze</>)}
+              {isAnalyzing
+                ? (<><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Analyzing…</>)
+                : (<><Scan size={14} />Analyze</>)}
             </button>
           </div>
         </div>

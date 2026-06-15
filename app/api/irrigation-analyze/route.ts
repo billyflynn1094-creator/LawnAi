@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { geminiFlash, imageToGeminiPart } from "@/lib/gemini";
 import {
   IRRIGATION_SYSTEM_PROMPT,
+  buildSmartScanPrompt,
   buildDesignAssessmentPrompt,
   CONTROLLER_ID_PROMPT,
   VALVE_ID_PROMPT,
@@ -49,6 +50,9 @@ export async function POST(req: NextRequest) {
     }
 
     switch (mode) {
+      case "smart_scan":
+        userPrompt = buildSmartScanPrompt();
+        break;
       case "design_assessment":
       case "full_inspection":
         userPrompt = buildDesignAssessmentPrompt();
@@ -94,11 +98,8 @@ export async function POST(req: NextRequest) {
     } catch {
       const match = text.match(/\{[\s\S]*\}/);
       if (match) {
-        try {
-          analysis = JSON.parse(match[0]);
-        } catch {
-          analysis = { error: "Parse error", raw: text.slice(0, 500) };
-        }
+        try { analysis = JSON.parse(match[0]); }
+        catch { analysis = { error: "Parse error", raw: text.slice(0, 500) }; }
       } else {
         analysis = { error: "No JSON found", raw: text.slice(0, 500) };
       }

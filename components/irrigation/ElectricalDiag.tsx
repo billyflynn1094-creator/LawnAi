@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { Camera, ChevronDown, ChevronUp } from "lucide-react";
 import CameraResult, { type DiagResult } from "@/components/irrigation/CameraResult";
 import { SOLENOID_DATABASE, interpretOhmReading } from "@/lib/irrigation/solenoids";
 
 const SYMPTOM_OPTIONS = [
-  { value: "zone_not_on", label: "Zone not coming on — won't activate" },
+  { value: "zone_not_on",   label: "Zone not coming on — won't activate" },
   { value: "zone_stuck_on", label: "Zone stuck on — won't shut off" },
-  { value: "intermittent", label: "Zone activates intermittently" },
-  { value: "two_wire", label: "Two-wire path issue (senior tech)" },
+  { value: "intermittent",  label: "Zone activates intermittently" },
+  { value: "two_wire",      label: "Two-wire path issue (senior tech)" },
 ];
 
 interface Props {
@@ -20,6 +20,9 @@ interface Props {
 type OhmVerdict = ReturnType<typeof interpretOhmReading>;
 
 export default function ElectricalDiag({ preset = "", seniorMode = false }: Props) {
+  const [scanning, setScanning] = useState(false);
+  const [cameraResult, setCameraResult] = useState<DiagResult | null>(null);
+
   const [symptom, setSymptom] = useState(preset || "zone_not_on");
   const [ohmReading, setOhmReading] = useState("");
   const [brand, setBrand] = useState("");
@@ -29,6 +32,47 @@ export default function ElectricalDiag({ preset = "", seniorMode = false }: Prop
   const [ohmVerdict, setOhmVerdict] = useState<OhmVerdict | null>(null);
   const [expandedStep, setExpandedStep] = useState<number | null>(0);
 
+  // Camera scan of the valve or solenoid
+  const scanCamera = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.capture = "environment";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      setScanning(true);
+      setCameraResult(null);
+      setMainResult(null);
+      setSteps([]);
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const base64 = ev.target?.result as string;
+        try {
+          const res = await fetch("/api/irrigation-analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mode: "valve_id", image: base64 }),
+          });
+          const data = await res.json();
+          const a = data.analysis;
+          if (a) {
+            setCameraResult({
+              brief: a.brief ?? `${a.brand ?? "Valve"} identified`,
+              detail: a.detail ?? undefined,
+              action: a.action ?? undefined,
+              severity: a.condition === "damaged" || a.condition === "leaking" ? "critical" :
+                        a.condition === "worn" ? "moderate" : "none",
+            });
+            if (a.brand) setBrand(a.brand);
+          }
+        } catch { /* silent */ } finally { setScanning(false); }
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  };
+
   const handleOhmChange = (val: string) => {
     setOhmReading(val);
     const num = parseFloat(val);
@@ -36,9 +80,7 @@ export default function ElectricalDiag({ preset = "", seniorMode = false }: Prop
       const spec = SOLENOID_DATABASE.find(s => s.brand.toLowerCase() === brand.toLowerCase());
       if (spec) setOhmVerdict(interpretOhmReading(num, spec));
       else setOhmVerdict(null);
-    } else {
-      setOhmVerdict(null);
-    }
+    } else setOhmVerdict(null);
   };
 
   const handleBrandChange = (val: string) => {
@@ -48,9 +90,7 @@ export default function ElectricalDiag({ preset = "", seniorMode = false }: Prop
       const spec = SOLENOID_DATABASE.find(s => s.brand.toLowerCase() === val.toLowerCase());
       if (spec) setOhmVerdict(interpretOhmReading(num, spec));
       else setOhmVerdict(null);
-    } else {
-      setOhmVerdict(null);
-    }
+    } else setOhmVerdict(null);
   };
 
   const diagnose = useCallback(async () => {
@@ -88,38 +128,53 @@ export default function ElectricalDiag({ preset = "", seniorMode = false }: Prop
 
   return (
     <div className="space-y-5">
-      <div>
-        <label className="text-gray-400 text-xs uppercase tracking-wide block mb-1.5">Symptom</label>
-        <select value={symptom} onChange={e => setSymptom(e.target.value)}
-          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500/50">
-          {visibleSymptoms.map(s => <option key={s.value} value={s.value} className="bg-[#0a1f35]">{s.label}</option>)}
-        </select>
-      </div>
+      {/* PRIMARY: Camera scan */}
+      <button onClick={scanCamera} disabled={scanning}
+        className="w-full py-10 rounded-2xl border-2 border-dashed border-amber-600/40 bg-amber-900/10 hover:bg-amber-900/20 transition-all disabled:opacity-40">
+        <Camera className="w-7 h-7 text-amber-400 mx-auto mb-2" />
+        <p className="text-amber-300 text-sm font-medium">{scanning ? "Identifying valve…" : cameraResult ? "Scan again" : "Scan the valve or solenoid"}</p>
+        <p className="text-gray-500 text-xs mt-1">AI identifies brand and assesses condition</p>
+      </button>
 
-      <div>
-        <label className="text-gray-400 text-xs uppercase tracking-wide block mb-1.5">
-          Solenoid Ohm Reading <span className="text-gray-600 normal-case">(optional — multimeter on solenoid wires)</span>
-        </label>
-        <div className="flex gap-2">
-          <input type="number" value={ohmReading} onChange={e => handleOhmChange(e.target.value)} placeholder="e.g. 44"
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500/50" />
-          <select value={brand} onChange={e => handleBrandChange(e.target.value)}
-            className="bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-amber-500/50">
-            <option value="" className="bg-[#0a1f35]">Brand</option>
-            {SOLENOID_DATABASE.map(s => <option key={s.brand} value={s.brand} className="bg-[#0a1f35]">{s.brand}</option>)}
+      {cameraResult && <CameraResult result={cameraResult} title="Valve ID" />}
+
+      {/* SECONDARY: Manual entry */}
+      <div className="border-t border-white/10 pt-5 space-y-4">
+        <p className="text-gray-500 text-xs uppercase tracking-wide">Manual diagnosis</p>
+
+        <div>
+          <label className="text-gray-400 text-xs uppercase tracking-wide block mb-1.5">Symptom</label>
+          <select value={symptom} onChange={e => setSymptom(e.target.value)}
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500/50">
+            {visibleSymptoms.map(s => <option key={s.value} value={s.value} className="bg-[#0a1f35]">{s.label}</option>)}
           </select>
         </div>
-        {ohmVerdict && (
-          <div className="mt-2">
-            <CameraResult result={{ brief: ohmVerdict.verdict, detail: ohmVerdict.action, severity: ohmVerdict.severity }} />
-          </div>
-        )}
-      </div>
 
-      <button onClick={diagnose} disabled={loading}
-        className="w-full py-3.5 rounded-xl bg-amber-600/30 border border-amber-600/50 text-amber-200 font-medium text-sm hover:bg-amber-600/40 transition-colors disabled:opacity-40">
-        {loading ? "Analyzing…" : "Run Diagnosis"}
-      </button>
+        <div>
+          <label className="text-gray-400 text-xs uppercase tracking-wide block mb-1.5">
+            Solenoid Ohm Reading <span className="text-gray-600 normal-case">(optional)</span>
+          </label>
+          <div className="flex gap-2">
+            <input type="number" value={ohmReading} onChange={e => handleOhmChange(e.target.value)} placeholder="e.g. 44"
+              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500/50" />
+            <select value={brand} onChange={e => handleBrandChange(e.target.value)}
+              className="bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-amber-500/50">
+              <option value="" className="bg-[#0a1f35]">Brand</option>
+              {SOLENOID_DATABASE.map(s => <option key={s.brand} value={s.brand} className="bg-[#0a1f35]">{s.brand}</option>)}
+            </select>
+          </div>
+          {ohmVerdict && (
+            <div className="mt-2">
+              <CameraResult result={{ brief: ohmVerdict.verdict, detail: ohmVerdict.action, severity: ohmVerdict.severity }} />
+            </div>
+          )}
+        </div>
+
+        <button onClick={diagnose} disabled={loading}
+          className="w-full py-3.5 rounded-xl bg-amber-600/30 border border-amber-600/50 text-amber-200 font-medium text-sm hover:bg-amber-600/40 transition-colors disabled:opacity-40">
+          {loading ? "Analyzing…" : "Run Diagnosis"}
+        </button>
+      </div>
 
       {mainResult && (
         <div className="space-y-3">

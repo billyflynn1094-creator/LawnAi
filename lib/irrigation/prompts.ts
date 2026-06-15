@@ -16,6 +16,34 @@ Severity definitions:
 - mild: suboptimal performance or efficiency issue
 - none: operating correctly`;
 
+// SMART SCAN — universal image router
+
+export function buildSmartScanPrompt(): string {
+  return `Look at this irrigation system image and identify what you see. Diagnose any visible issues.
+
+Return JSON:
+{
+  "identified_as": "controller|valve|spray_head|rotor|rain_sensor|drip|zone_area|pipe|unknown",
+  "brand": "Hunter|Rain Bird|Toro|Rachio|Orbit|Irritrol|K-Rain|other|unknown",
+  "model": "model if identifiable, or null",
+  "condition": "good|worn|damaged|flooding|misting|clogged|tilted|broken|unknown",
+  "brief": "One sentence: what you see and the main finding",
+  "detail": "2-3 sentences: why this matters, root cause, urgency",
+  "action": "Most important immediate step",
+  "severity": "critical|moderate|mild|none",
+  "suggested_diagnostic": "electrical|hydraulic|rain_sensor|design|controller|zones|none",
+  "routing_reason": "Why this diagnostic is suggested",
+  "additional_findings": [
+    {
+      "brief": "Secondary observation",
+      "detail": "What it means",
+      "action": "What to do",
+      "severity": "mild"
+    }
+  ]
+}`;
+}
+
 // DESIGN ASSESSMENT
 
 export function buildDesignAssessmentPrompt(): string {
@@ -104,12 +132,12 @@ Return JSON:
   "bypass_status": "active|inactive|unknown",
   "overall_effectiveness": "effective|questionable|ineffective",
   "brief": "One-line overall assessment",
-  "detail": "Full explanation of location quality and what it means for system operation",
+  "detail": "Full explanation of location quality",
   "action": "Primary recommended action"
 }`;
 }
 
-// ELECTRICAL DIAGNOSIS
+// ELECTRICAL DIAGNOSIS (image-assisted or text-only)
 
 export function buildElectricalPrompt(symptom: string, ohmReading?: number, brand?: string): string {
   const ohmContext = ohmReading != null
@@ -201,7 +229,6 @@ Pressure reference:
 
 export function buildZoneAssessmentPrompt(zones: { type: string; count: number }[]): string {
   const zoneList = zones.map(z => `${z.count} ${z.type} zone(s)`).join(', ');
-
   return `Analyze this irrigation zone configuration and provide runtime recommendations.
 
 Zone breakdown: ${zoneList}

@@ -6,13 +6,16 @@ export interface LocationData {
   soilType?: string;
   hardiness_zone?: string;
   grassClass?: 'cool' | 'warm' | 'transition';
+  /** 7-day rolling averages — replaces single-snapshot weather */
   weather?: {
-    temp_f: number;
-    humidity: number;
-    condition: string;
+    avg_high_f: number;
+    avg_low_f: number;
+    avg_humidity: number;
   };
+  /** 7-day hourly average soil temperatures */
   soil_temp_surface_f?: number;
   soil_temp_6cm_f?: number;
+  /** 7-day rainfall vs same 7-day window 3-year average */
   rainfall?: {
     recent_in: number;
     normal_in: number;
@@ -53,17 +56,18 @@ export function deriveGrassClass(zone: string): 'cool' | 'warm' | 'transition' {
 
 /**
  * Regional soil profile description based on state and coordinates.
- * Returns a human-readable string (e.g. "Silt loam — Inceptisol (NJ Piedmont)")
- * that is informative for users AND compatible with getSoilProfile() fuzzy matching.
- * More reliable than USDA SDMDataAccess point lookup, which requires exact polygon
- * intersection and frequently returns null on Vercel's serverless IPs.
+ * Returns a human-readable string informative for users AND compatible with
+ * getSoilProfile() fuzzy matching. More reliable than USDA SDMDataAccess
+ * point lookup, which frequently returns null on Vercel's serverless IPs.
  */
 export function getRegionalSoilProfile(lat: number, lng: number, state?: string): string {
   const s = (state ?? '').toUpperCase();
   if (!s) return 'Loam — recommend soil test for precision';
 
   if (['WA', 'OR'].includes(s)) {
-    return lng < -121 ? 'Volcanic silt loam — Andisol (Pacific NW coast)' : 'Clay-loam — Inceptisol (Pacific NW inland)';
+    return lng < -121
+      ? 'Volcanic silt loam — Andisol (Pacific NW coast)'
+      : 'Clay-loam — Inceptisol (Pacific NW inland)';
   }
   if (s === 'CA') {
     if (lat > 37 && lng > -122) return 'Clay loam to silt loam — Mollisol (Bay/Central Valley)';
@@ -142,31 +146,6 @@ export async function getHardinessZone(lat: number, lng: number): Promise<string
 }
 
 /**
- * Fetch current weather from OpenWeatherMap (requires OPENWEATHER_API_KEY env var).
- */
-export async function getWeather(
-  lat: number,
-  lng: number
-): Promise<LocationData['weather']> {
-  const key = process.env.OPENWEATHER_API_KEY;
-  if (!key) return undefined;
-  try {
-    const res = await fetch(
-      `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${key}&units=imperial`
-    );
-    if (!res.ok) return undefined;
-    const data = await res.json();
-    return {
-      temp_f: Math.round(data.main.temp),
-      humidity: data.main.humidity,
-      condition: data.weather?.[0]?.description ?? 'Unknown',
-    };
-  } catch {
-    return undefined;
-  }
-}
-
-/**
  * Reverse geocode to city + 2-letter state using the NWS Points API.
  * Primary: api.weather.gov (US gov, free, no API key, works from Vercel servers).
  * Fallback: Nominatim OSM (may be rate-limited from cloud IPs).
@@ -216,122 +195,140 @@ export async function reverseGeocode(
   return {};
 }
 
-/**
- * Fetch real-time soil temperature from Open-Meteo (free, no API key).
- */
-export async function getSoilTemperature(
-  lat: number,
-  lng: number
-): Promise<{ surface_f?: number; depth_6cm_f?: number }> {
-  try {
-    const res = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
-        `&current=soil_temperature_0cm,soil_temperature_6cm&temperature_unit=fahrenheit`
-    );
-    if (!res.ok) return {};
-    const data = await res.json();
-    return {
-      surface_f:
-        data?.current?.soil_temperature_0cm != null
-          ? Math.round(data.current.soil_temperature_0cm)
-          : undefined,
-      depth_6cm_f:
-        data?.current?.soil_temperature_6cm != null
-          ? Math.round(data.current.soil_temperature_6cm)
-          : undefined,
-    };
-  } catch {
-    return {};
-  }
-}
-
 function toDateStr(d: Date): string {
   return d.toISOString().split('T')[0];
 }
 
+/** Utility: sum an array of nullable numbers */
+function sumArr(arr: (number | null | undefined)[]): number {
+  return (arr ?? []).reduce<number>((s, v) => s + (v ?? 0), 0);
+}
+
+/** Utility: average an array of nullable numbers, returning undefined if empty */
+function avgArr(arr: (number | null | undefined)[]): number | undefined {
+  const valid = (arr ?? []).filter((v): v is number => v != null);
+  if (valid.length === 0) return undefined;
+  return Math.round((valid.reduce((s, v) => s + v, 0) / valid.length) * 10) / 10;
+}
+
 /**
- * 30-day precipitation vs 3-year rolling average for the same calendar window.
- * 3 prior years fetched in parallel — far more robust than a single prior year.
+ * Fetch 7-day rolling averages from Open-Meteo (free, no API key required).
+ * Single request covers: air temp high/low, humidity, soil temps, and 7-day precip.
+ * Replaces the old getWeather() (OpenWeatherMap) and getSoilTemperature() calls.
  */
-export async function getRainfallData(
+async function get7DayWeatherAndSoil(
   lat: number,
   lng: number
-): Promise<LocationData['rainfall']> {
+): Promise<{
+  avg_high_f?: number;
+  avg_low_f?: number;
+  avg_humidity?: number;
+  soil_surface_f?: number;
+  soil_6cm_f?: number;
+  rainfall_7day_in: number;
+}> {
   try {
-    const today = new Date();
-
-    const recentFetch = fetch(
+    const url =
       `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
-        `&daily=precipitation_sum&past_days=30&forecast_days=0&precipitation_unit=inch`
-    );
+      `&past_days=7&forecast_days=0` +
+      `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum` +
+      `&hourly=relative_humidity_2m,soil_temperature_0cm,soil_temperature_6cm` +
+      `&temperature_unit=fahrenheit&precipitation_unit=inch&timezone=auto`;
 
-    const baselineFetches = [1, 2, 3].map(yearsBack => {
-      const end = new Date(today);
-      end.setFullYear(today.getFullYear() - yearsBack);
-      const start = new Date(end);
-      start.setDate(end.getDate() - 30);
-      return fetch(
-        `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lng}` +
-          `&start_date=${toDateStr(start)}&end_date=${toDateStr(end)}` +
-          `&daily=precipitation_sum&precipitation_unit=inch`
-      );
-    });
+    const res = await fetch(url);
+    if (!res.ok) return { rainfall_7day_in: 0 };
+    const d = await res.json();
 
-    const [recentRes, ...baselineResponses] = await Promise.all([
-      recentFetch,
-      ...baselineFetches,
-    ]);
-
-    if (!recentRes.ok) return undefined;
-
-    const sum = (arr: (number | null)[]): number =>
-      (arr ?? []).reduce<number>((s, v) => s + (v ?? 0), 0);
-
-    const recentData = await recentRes.json();
-    const recent_in = Math.round(sum(recentData?.daily?.precipitation_sum) * 10) / 10;
-
-    const baselineTotals: number[] = [];
-    for (const res of baselineResponses) {
-      if (!res.ok) continue;
-      try {
-        const data = await res.json();
-        baselineTotals.push(sum(data?.daily?.precipitation_sum));
-      } catch { /* skip */ }
-    }
-
-    if (baselineTotals.length === 0) return { recent_in, normal_in: 0, pct_of_normal: 100 };
-    const normal_raw = baselineTotals.reduce((s, v) => s + v, 0) / baselineTotals.length;
-    const normal_in = Math.round(normal_raw * 10) / 10;
-    if (normal_in === 0) return { recent_in, normal_in, pct_of_normal: 100 };
-    return { recent_in, normal_in, pct_of_normal: Math.round((recent_in / normal_in) * 100) };
+    return {
+      avg_high_f: avgArr(d?.daily?.temperature_2m_max),
+      avg_low_f: avgArr(d?.daily?.temperature_2m_min),
+      avg_humidity: avgArr(d?.hourly?.relative_humidity_2m),
+      soil_surface_f: avgArr(d?.hourly?.soil_temperature_0cm),
+      soil_6cm_f: avgArr(d?.hourly?.soil_temperature_6cm),
+      rainfall_7day_in: Math.round(sumArr(d?.daily?.precipitation_sum) * 10) / 10,
+    };
   } catch {
-    return undefined;
+    return { rainfall_7day_in: 0 };
   }
+}
+
+/**
+ * Fetch the 3-year same-window baseline precipitation totals.
+ * Each year fetches the equivalent 7-day calendar window for comparison.
+ */
+async function get7DayRainfallBaselines(
+  lat: number,
+  lng: number
+): Promise<number[]> {
+  const today = new Date();
+  const fetches = [1, 2, 3].map(yearsBack => {
+    const end = new Date(today);
+    end.setFullYear(today.getFullYear() - yearsBack);
+    const start = new Date(end);
+    start.setDate(end.getDate() - 7);
+    return fetch(
+      `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lng}` +
+        `&start_date=${toDateStr(start)}&end_date=${toDateStr(end)}` +
+        `&daily=precipitation_sum&precipitation_unit=inch`
+    );
+  });
+
+  const responses = await Promise.all(fetches);
+  const totals: number[] = [];
+  for (const res of responses) {
+    if (!res.ok) continue;
+    try {
+      const data = await res.json();
+      totals.push(sumArr(data?.daily?.precipitation_sum));
+    } catch { /* skip year */ }
+  }
+  return totals;
 }
 
 /**
  * Aggregate all location enrichment in parallel.
  * Uses NWS geocoder (primary) with Nominatim fallback for reliable town names.
  * Uses regional soil profile instead of USDA series point lookup.
+ * Weather and soil temps are 7-day rolling averages (not single snapshots).
+ * Rainfall is 7-day total vs 3-year same-calendar-window baseline.
  */
 export async function getFullLocationData(
   lat: number,
   lng: number
 ): Promise<LocationData> {
-  const [hardiness_zone, weather, geo, soilTemp, rainfall] =
+  // Run all independent fetches in parallel
+  const [hardinessResult, geoResult, wxResult, baselineResult] =
     await Promise.allSettled([
       getHardinessZone(lat, lng),
-      getWeather(lat, lng),
       reverseGeocode(lat, lng),
-      getSoilTemperature(lat, lng),
-      getRainfallData(lat, lng),
+      get7DayWeatherAndSoil(lat, lng),
+      get7DayRainfallBaselines(lat, lng),
     ]);
 
-  const soilTempVal = soilTemp.status === 'fulfilled' ? soilTemp.value : {};
-  const zone = hardiness_zone.status === 'fulfilled' ? hardiness_zone.value : 'Unknown';
-  const geoVal = geo.status === 'fulfilled' ? geo.value : {};
+  const zone = hardinessResult.status === 'fulfilled' ? hardinessResult.value : 'Unknown';
+  const geoVal = geoResult.status === 'fulfilled' ? geoResult.value : {};
+  const wx = wxResult.status === 'fulfilled' ? wxResult.value : null;
+  const baselineTotals = baselineResult.status === 'fulfilled' ? baselineResult.value : [];
 
   const soilType = getRegionalSoilProfile(lat, lng, geoVal.state);
+
+  // Build rainfall object
+  let rainfall: LocationData['rainfall'] = undefined;
+  if (wx != null) {
+    const recent_in = wx.rainfall_7day_in;
+    if (baselineTotals.length > 0) {
+      const normal_raw = baselineTotals.reduce((s, v) => s + v, 0) / baselineTotals.length;
+      const normal_in = Math.round(normal_raw * 10) / 10;
+      rainfall = {
+        recent_in,
+        normal_in,
+        pct_of_normal: normal_in > 0 ? Math.round((recent_in / normal_in) * 100) : 100,
+      };
+    } else {
+      // No baseline available — still surface the 7-day total
+      rainfall = { recent_in: wx.rainfall_7day_in, normal_in: 0, pct_of_normal: 100 };
+    }
+  }
 
   return {
     lat,
@@ -339,11 +336,18 @@ export async function getFullLocationData(
     soilType,
     hardiness_zone: zone,
     grassClass: deriveGrassClass(zone),
-    weather: weather.status === 'fulfilled' ? weather.value : undefined,
+    weather:
+      wx?.avg_high_f != null && wx?.avg_low_f != null
+        ? {
+            avg_high_f: wx.avg_high_f,
+            avg_low_f: wx.avg_low_f,
+            avg_humidity: wx.avg_humidity ?? 50,
+          }
+        : undefined,
     city: geoVal.city,
     state: geoVal.state,
-    soil_temp_surface_f: soilTempVal.surface_f,
-    soil_temp_6cm_f: soilTempVal.depth_6cm_f,
-    rainfall: rainfall.status === 'fulfilled' ? rainfall.value : undefined,
+    soil_temp_surface_f: wx?.soil_surface_f,
+    soil_temp_6cm_f: wx?.soil_6cm_f,
+    rainfall,
   };
 }

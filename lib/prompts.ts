@@ -8,7 +8,12 @@ export interface LocationContext {
   soilType?: string;
   hardiness_zone?: string;
   grassClass?: 'cool' | 'warm' | 'transition';
-  weather?: { temp_f: number; humidity: number; condition: string };
+  /** 7-day rolling averages — replaces single-snapshot weather */
+  weather?: {
+    avg_high_f: number;
+    avg_low_f: number;
+    avg_humidity: number;
+  };
   soil_temp_surface_f?: number;
   soil_temp_6cm_f?: number;
   rainfall?: { recent_in: number; normal_in: number; pct_of_normal: number };
@@ -98,14 +103,62 @@ PRE-EMERGENT CONFLICT: if pre-emergent applied within 8 weeks, seeding will fail
 RAINFALL RULES: >120% normal → delay aeration until ground firms; <80% normal → irrigate 1 inch 24h before.
 
 ══════════════════════════════════════════════════════
-STATE PRODUCT COMPLIANCE
+STATE PRODUCT COMPLIANCE — CRITICAL RESTRICTIONS
 ══════════════════════════════════════════════════════
-- CA: Prop 65; chlorpyrifos banned; prefer organic/low-toxicity alternatives
-- NY/NJ: Phosphorus fertilizer restricted on established lawns (new seeding OK); notify neighbors before pesticide application
-- MD/CT: Phosphorus restrictions similar to NY; bay/watershed buffer zone requirements
-- FL: Fertilizer blackout June–September in coastal counties; nitrogen near waterways restricted
-- OR/WA: Buffer zones near waterways; some pre-emergents restricted near salmon habitat
-When applicable, add: "⚠️ Verify [state] compliance — check your state Dept. of Agriculture for current restrictions."
+Always add to relevant product notes: "⚠️ Verify [STATE] current regulations — check state Dept. of Agriculture."
+The label is federal law under FIFRA; state restrictions are ADDITIONAL and often stricter.
+
+── PHOSPHORUS-FREE LAWN RULE ─────────────────────────
+No phosphorus fertilizer on established turf without a current soil test confirming deficiency.
+Applies in: CT, IL, ME, MD, MI, MN, NJ, NY, VA, WI — use 0-P or low-P formulations for maintenance.
+Exception: new seeding/sodding — starter phosphorus is permitted in most of these states.
+Chesapeake Bay watershed (MD, VA, PA, DE): also comply with buffer zone requirements (10–35 ft from water).
+
+── CHLORPYRIFOS ──────────────────────────────────────
+BANNED/PROHIBITED: CA (2020), HI (2023), NY (2021), OR, WA — do not recommend under any circumstances.
+RESTRICTED (significant use limits): IL, MA — verify current registration status before recommending.
+
+── NEONICOTINOIDS (imidacloprid, clothianidin, thiamethoxam, dinotefuran, acetamiprid) ──────
+- MD: Cannot apply to plants attractive to pollinators; no foliar neonics near bloom; outdoor broadcast restricted
+- CT: Outdoor foliar applications restricted June–Aug; cannot apply to flowering trees/shrubs in bloom
+- ME: Pollinator protection requirements; verify current labeling
+- MN: Commercial applicators must follow pollinator protection plans; avoid application during bloom periods
+- Note: Arena 50 WDG (clothianidin), Acelepryn (chlorantraniliprole — NOT a neonic, safe) — distinguish carefully
+
+── FERTILIZER BLACKOUT PERIODS ───────────────────────
+- FL: June 1–Sept 30 — NO nitrogen or phosphorus applications in coastal counties (Miami-Dade, Broward,
+  Palm Beach, Sarasota, Pinellas, Hillsborough, Volusia, etc.); verify specific county ordinance
+- MD: Nov 15–Mar 1 — no fertilizer applications; Oct 15 trigger for no fall P without soil test
+- VA: Dec 1–Feb 15 — no nitrogen or phosphorus applications statewide
+- DE: Nov 16–Mar 1 — no turf fertilizer applications
+- PA: Nov 15–Feb 28 — no phosphorus without soil test; nitrogen restricted near waterways Oct–Mar
+
+── WATERWAY / BUFFER ZONE REQUIREMENTS ──────────────
+- OR, WA: 60-ft no-spray buffer from salmon-bearing streams; many pre-emergents and herbicides
+  require aquatic buffer on label — ALWAYS CHECK LABEL near any waterway
+- CA: Department of Pesticide Regulation (DPR) buffer requirements; 25–50 ft minimum near waterways;
+  Prop 65 warning required for certain pesticides; many products require CA-specific registration
+- Chesapeake Bay states (MD, VA, PA, DE, WV): 10–35 ft buffer from perennial waterways/wetlands
+- FL: Indian River Lagoon, Lake Okeechobee special management zones — zero discharge fertilizer areas
+- TX (Edwards Aquifer Recharge Zone, south-central TX): Restricted use of herbicides/insecticides
+  in recharge zone; verify Austin/San Antonio area registrations
+- All states: Observe all label buffer distances — failure = federal FIFRA violation
+
+── PESTICIDE NEIGHBOR NOTIFICATION ──────────────────
+Required BEFORE commercial pesticide applications in:
+IL (24 hr), ME (24 hr written), MD (24 hr), MN (commercial applicator prenotification),
+NJ (24 hr), NY (commercial lawn care law), WA (24 hr for certain pesticides)
+Schools/parks: CT, IL, ME, MD, NY restrict pesticide use on school grounds — IPM required
+
+── STATE-SPECIFIC NOTES ──────────────────────────────
+- CA: DPR registration is SEPARATE from EPA; many turf products are not CA-registered; prefer
+  minimum-risk pesticides (FIFRA 25(b)); always include Prop 65 warning where required
+- FL: Fertilizer-free zones near waterways; separate county ordinances supersede state law in some areas
+- HI: Island ecosystem sensitivity — broader restricted-use list than federal; many actives not registered
+- AK: Pristine watershed protections; verify all products are AK-registered before recommending
+- TX (Gulf Coast / near waterways): Coordinate with TCEQ water quality requirements
+- NE, IA, KS: Nitrogen management programs near drinking water source areas (NRCS requirements)
+- All states: Follow EPA FIFRA — the pesticide label IS the law. Recommend only EPA-registered products.
 
 ══════════════════════════════════════════════════════
 RESPONSE FORMAT — VALID JSON ONLY, NO MARKDOWN
@@ -205,6 +258,14 @@ export function buildAnalysisPrompt(location: LocationContext): string {
     location.grassClass === 'transition' ? 'TRANSITION ZONE (cool + warm season grasses both possible)' :
     'COOL-SEASON';
 
+  const rainfallContext = location.rainfall
+    ? location.rainfall.pct_of_normal >= 120
+      ? 'ABOVE normal — elevated fungal pressure; delay aeration until ground firms'
+      : location.rainfall.pct_of_normal < 80
+      ? 'BELOW normal — drought stress likely; irrigate before mechanical work'
+      : 'near-normal moisture'
+    : '';
+
   const parts = [
     `Analyze the attached lawn/turf image with precision. Provide professional-grade recommendations.`,
     ``,
@@ -223,19 +284,13 @@ export function buildAnalysisPrompt(location: LocationContext): string {
       ? `- Regional Soil Profile: ${location.soilType} — adjust application rates accordingly; recommend professional soil test for precision`
       : '- Soil: Regional average (loam assumed) — recommend a soil test for precision.',
     location.weather
-      ? `- Air Temp: ${location.weather.temp_f}°F | Humidity: ${location.weather.humidity}% | Conditions: ${location.weather.condition}`
+      ? `- Air Temp (7-day avg): High ${location.weather.avg_high_f}°F / Low ${location.weather.avg_low_f}°F | Avg Humidity: ${location.weather.avg_humidity}%`
       : '',
     location.soil_temp_surface_f != null
-      ? `- Soil Temp: ${location.soil_temp_surface_f}°F surface${location.soil_temp_6cm_f != null ? ` / ${location.soil_temp_6cm_f}°F at 6cm depth` : ''} — use for growth activity, pre-emergent timing, seeding/aeration eligibility`
+      ? `- Soil Temp (7-day avg): ${location.soil_temp_surface_f}°F surface${location.soil_temp_6cm_f != null ? ` / ${location.soil_temp_6cm_f}°F at 6cm depth` : ''} — use for growth activity, pre-emergent timing, seeding/aeration eligibility`
       : '',
     location.rainfall
-      ? `- 30-Day Rainfall: ${location.rainfall.recent_in}in vs ${location.rainfall.normal_in}in 3-year average (${location.rainfall.pct_of_normal}% of normal) — ${
-          location.rainfall.pct_of_normal >= 120
-            ? 'ABOVE normal — elevated fungal pressure; delay aeration until ground firms'
-            : location.rainfall.pct_of_normal < 80
-            ? 'BELOW normal — drought stress likely; irrigate before mechanical work'
-            : 'near-normal moisture'
-        }`
+      ? `- 7-Day Rainfall: ${location.rainfall.recent_in}in vs ${location.rainfall.normal_in}in 3-year avg (${location.rainfall.pct_of_normal}% of normal) — ${rainfallContext}`
       : '',
     `- Current Month: ${new Date().toLocaleString('default', { month: 'long' })}`,
     ``,

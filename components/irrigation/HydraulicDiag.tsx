@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Camera } from "lucide-react";
+import { Camera, Upload } from "lucide-react";
 import CameraResult, { type DiagResult } from "@/components/irrigation/CameraResult";
 
 const SYMPTOM_OPTIONS = [
@@ -13,25 +13,21 @@ const SYMPTOM_OPTIONS = [
   { value: "backflow_issue",    label: "Backflow device — reduced system pressure" },
 ];
 
-interface Props {
-  preset?: string;
-}
+interface Props { preset?: string; }
 
 export default function HydraulicDiag({ preset = "" }: Props) {
-  const [scanning, setScanning] = useState(false);
+  const [scanning, setScanning]         = useState(false);
   const [cameraResult, setCameraResult] = useState<DiagResult | null>(null);
+  const [symptom, setSymptom]           = useState(preset || "low_pressure");
+  const [loading, setLoading]           = useState(false);
+  const [mainResult, setMainResult]     = useState<DiagResult | null>(null);
+  const [steps, setSteps]               = useState<DiagResult[]>([]);
 
-  const [symptom, setSymptom] = useState(preset || "low_pressure");
-  const [loading, setLoading] = useState(false);
-  const [mainResult, setMainResult] = useState<DiagResult | null>(null);
-  const [steps, setSteps] = useState<DiagResult[]>([]);
-
-  // Camera scan of the head or zone
-  const scanCamera = () => {
+  const openInput = (useCamera: boolean) => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
-    input.capture = "environment";
+    if (useCamera) input.capture = "environment";
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
@@ -50,18 +46,30 @@ export default function HydraulicDiag({ preset = "" }: Props) {
           });
           const data = await res.json();
           const a = data.analysis;
-          if (a) {
+          if (a && !a.error) {
             setCameraResult({
               brief: a.brief ?? "Scan complete",
               detail: a.detail ?? undefined,
               action: a.action ?? undefined,
               severity: (a.severity as DiagResult["severity"]) ?? "mild",
             });
-            // Auto-populate symptom if AI suggests a diagnostic
             if (a.condition === "misting" || a.condition === "clogged") setSymptom("high_pressure");
-            if (a.condition === "damaged" || a.condition === "broken") setSymptom("broken_head");
+            else if (a.condition === "damaged" || a.condition === "broken") setSymptom("broken_head");
+          } else {
+            setCameraResult({
+              brief: "Couldn't analyze this image",
+              detail: data.error ?? "Try better lighting, get closer to the head or problem area, or upload a photo from your gallery.",
+              action: "Select a symptom manually below",
+              severity: "mild",
+            });
           }
-        } catch { /* silent */ } finally { setScanning(false); }
+        } catch (err) {
+          setCameraResult({
+            brief: "Scan failed — " + (err instanceof Error ? err.message : "Network error"),
+            detail: "Check your connection or upload a photo from your gallery.",
+            severity: "moderate",
+          });
+        } finally { setScanning(false); }
       };
       reader.readAsDataURL(file);
     };
@@ -90,25 +98,35 @@ export default function HydraulicDiag({ preset = "" }: Props) {
           severity: (s.severity as DiagResult["severity"]) ?? "mild",
         })));
       }
-    } catch { /* silent */ } finally { setLoading(false); }
+    } catch (err) {
+      setMainResult({ brief: "Diagnosis failed — " + (err instanceof Error ? err.message : "Network error"), severity: "moderate" });
+    } finally { setLoading(false); }
   }, [symptom]);
 
   return (
     <div className="space-y-5">
-      {/* PRIMARY: Camera scan */}
-      <button onClick={scanCamera} disabled={scanning}
-        className="w-full py-10 rounded-2xl border-2 border-dashed border-blue-600/40 bg-blue-900/10 hover:bg-blue-900/20 transition-all disabled:opacity-40">
-        <Camera className="w-7 h-7 text-blue-400 mx-auto mb-2" />
-        <p className="text-blue-300 text-sm font-medium">{scanning ? "Analyzing…" : cameraResult ? "Scan again" : "Scan the head or zone"}</p>
-        <p className="text-gray-500 text-xs mt-1">AI identifies head type and spray pattern issues</p>
-      </button>
+      {/* PRIMARY: Camera + upload */}
+      <div className="space-y-2">
+        <button onClick={() => openInput(true)} disabled={scanning}
+          className="w-full py-9 rounded-2xl border-2 border-dashed border-blue-600/40 bg-blue-900/10 hover:bg-blue-900/20 transition-all disabled:opacity-40">
+          <Camera className="w-7 h-7 text-blue-400 mx-auto mb-2" />
+          <p className="text-blue-300 text-sm font-medium">{scanning ? "Analyzing…" : cameraResult ? "Take another photo" : "Take a photo of the head or zone"}</p>
+          <p className="text-gray-500 text-xs mt-1">AI identifies head type and spray pattern issues</p>
+        </button>
+        {!scanning && (
+          <button onClick={() => openInput(false)}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-white/10 bg-white/3 hover:border-blue-600/30 hover:text-blue-300 text-gray-400 text-sm transition-all">
+            <Upload className="w-4 h-4" />
+            Upload from gallery
+          </button>
+        )}
+      </div>
 
       {cameraResult && <CameraResult result={cameraResult} title="What AI sees" />}
 
       {/* SECONDARY: Manual entry */}
       <div className="border-t border-white/10 pt-5 space-y-4">
         <p className="text-gray-500 text-xs uppercase tracking-wide">Manual diagnosis</p>
-
         <div>
           <label className="text-gray-400 text-xs uppercase tracking-wide block mb-1.5">Hydraulic symptom</label>
           <select value={symptom} onChange={e => setSymptom(e.target.value)}
@@ -116,12 +134,10 @@ export default function HydraulicDiag({ preset = "" }: Props) {
             {SYMPTOM_OPTIONS.map(s => <option key={s.value} value={s.value} className="bg-[#0a1f35]">{s.label}</option>)}
           </select>
         </div>
-
         <div className="bg-white/3 border border-white/10 rounded-xl p-3">
           <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Pressure reference</p>
           <p className="text-xs text-gray-400">Static: 50-80 PSI · Spray: 30-45 PSI · Rotor: 35-50 PSI · Drip: 15-30 PSI</p>
         </div>
-
         <button onClick={diagnose} disabled={loading}
           className="w-full py-3.5 rounded-xl bg-blue-600/30 border border-blue-600/50 text-blue-200 font-medium text-sm hover:bg-blue-600/40 transition-colors disabled:opacity-40">
           {loading ? "Analyzing…" : "Run Diagnosis"}

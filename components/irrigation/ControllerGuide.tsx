@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Camera, ChevronDown, ChevronUp, CheckCircle } from "lucide-react";
+import { Camera, Upload, ChevronDown, ChevronUp, CheckCircle } from "lucide-react";
 import { CONTROLLER_DATABASE, type ControllerGuide as ControllerGuideType } from "@/lib/irrigation/controllers";
 import CameraResult, { type DiagResult } from "@/components/irrigation/CameraResult";
 
@@ -15,20 +15,14 @@ const TASK_LABELS: Record<string, string> = {
 function findControllerFromScan(brand: string, model?: string | null): ControllerGuideType | null {
   const b = brand.toLowerCase();
   const m = (model ?? "").toLowerCase();
-
-  // Exact brand + model/alias match
   const exact = CONTROLLER_DATABASE.find(c =>
     c.brand.toLowerCase() === b &&
-    (
-      c.model.toLowerCase() === m ||
-      c.aliases.some(a => a.toLowerCase() === m) ||
-      (m.length > 2 && c.model.toLowerCase().includes(m)) ||
-      (m.length > 2 && c.aliases.some(a => a.toLowerCase().includes(m)))
-    )
+    (c.model.toLowerCase() === m ||
+     c.aliases.some(a => a.toLowerCase() === m) ||
+     (m.length > 2 && c.model.toLowerCase().includes(m)) ||
+     (m.length > 2 && c.aliases.some(a => a.toLowerCase().includes(m))))
   );
   if (exact) return exact;
-
-  // Brand-only fallback — return first (most prominent) for that brand
   return CONTROLLER_DATABASE.find(c =>
     c.brand.toLowerCase() === b || c.brand.toLowerCase().includes(b)
   ) ?? null;
@@ -37,17 +31,17 @@ function findControllerFromScan(brand: string, model?: string | null): Controlle
 type ScanResult = DiagResult & { brand?: string; model?: string | null; confidence?: string };
 
 export default function ControllerGuide() {
-  const [scanning, setScanning]       = useState(false);
-  const [scanResult, setScanResult]   = useState<ScanResult | null>(null);
-  const [controller, setController]   = useState<ControllerGuideType | null>(null);
+  const [scanning, setScanning]         = useState(false);
+  const [scanResult, setScanResult]     = useState<ScanResult | null>(null);
+  const [controller, setController]     = useState<ControllerGuideType | null>(null);
   const [selectedTask, setSelectedTask] = useState<keyof ControllerGuideType["programming"]>("set_time");
   const [expandedStep, setExpandedStep] = useState<number | null>(0);
 
-  const scanCamera = () => {
+  const openInput = (useCamera: boolean) => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
-    input.capture = "environment";
+    if (useCamera) input.capture = "environment";
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
@@ -65,27 +59,50 @@ export default function ControllerGuide() {
           });
           const data = await res.json();
           const a = data.analysis;
-          if (a) {
+
+          if (a && !a.error) {
+            const brand = a.brand as string | undefined;
+            const isKnown = brand && brand !== "other" && brand !== "unknown";
+
             setScanResult({
-              brief: a.brief ?? `${a.brand ?? "Controller"} identified`,
-              detail: a.detail ?? undefined,
-              action: a.action ?? undefined,
-              severity: "none" as const,
-              brand: a.brand,
+              brief: a.brief ?? (isKnown ? `${brand} identified` : "Controller not recognized"),
+              detail: a.detail ?? (!isKnown ? "This brand or model is not yet in the database. Try a clearer photo showing the brand name and model number, or select your brand from the list below." : undefined),
+              action: a.action ?? (!isKnown ? "Select your brand manually below" : undefined),
+              severity: isKnown ? "none" : "mild",
+              brand,
               model: a.model,
               confidence: a.confidence,
             });
-            // Auto-load guide if brand is recognizable
-            if (a.brand && a.brand !== "other" && a.brand !== "unknown") {
-              const match = findControllerFromScan(a.brand, a.model);
+
+            if (isKnown) {
+              const match = findControllerFromScan(brand!, a.model);
               if (match) {
                 setController(match);
                 setSelectedTask("set_time");
                 setExpandedStep(0);
               }
+              // brand known but not in DB → scanResult visible, brand picker below
             }
+          } else {
+            // API returned error or empty analysis
+            setScanResult({
+              brief: "Couldn't read this controller",
+              detail: data.error ?? "The AI couldn't identify this image. Try better lighting, get closer to the controller label, or upload a photo from your gallery.",
+              action: "Try again or select your brand below",
+              severity: "moderate",
+            });
           }
-        } catch { /* silent */ } finally { setScanning(false); }
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : "Network error";
+          setScanResult({
+            brief: "Scan failed — " + msg,
+            detail: "Check your connection and try again, or upload a photo from your gallery.",
+            action: "Select your brand manually below",
+            severity: "moderate",
+          });
+        } finally {
+          setScanning(false);
+        }
       };
       reader.readAsDataURL(file);
     };
@@ -94,13 +111,11 @@ export default function ControllerGuide() {
 
   const BRANDS = [...new Set(CONTROLLER_DATABASE.map(c => c.brand))];
 
-  // ── GUIDE LOADED ──────────────────────────────────────────
+  // ── GUIDE LOADED ──
   if (controller) {
     const steps = controller.programming[selectedTask] ?? [];
     return (
       <div className="space-y-5">
-
-        {/* Identity bar */}
         <div className="flex items-center gap-3 p-3.5 rounded-xl bg-emerald-900/15 border border-emerald-700/30">
           <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
           <div className="flex-1 min-w-0">
@@ -111,54 +126,39 @@ export default function ControllerGuide() {
               {controller.two_wire ? " · Two-wire" : ""}
             </p>
           </div>
-          <button
-            onClick={() => { setController(null); setScanResult(null); }}
-            className="text-xs text-gray-500 hover:text-gray-300 border border-white/10 hover:border-white/20 px-2.5 py-1 rounded-lg transition-colors flex-shrink-0"
-          >
+          <button onClick={() => { setController(null); setScanResult(null); }}
+            className="text-xs text-gray-500 hover:text-gray-300 border border-white/10 hover:border-white/20 px-2.5 py-1 rounded-lg transition-colors flex-shrink-0">
             Change
           </button>
         </div>
 
-        {/* Task selector */}
         <div>
           <p className="text-gray-500 text-xs uppercase tracking-wide mb-2">What do you need to do?</p>
           <div className="grid grid-cols-2 gap-2">
             {(Object.keys(TASK_LABELS) as Array<keyof typeof TASK_LABELS>).map(task => (
               <button key={task}
-                onClick={() => {
-                  setSelectedTask(task as keyof ControllerGuideType["programming"]);
-                  setExpandedStep(0);
-                }}
+                onClick={() => { setSelectedTask(task as keyof ControllerGuideType["programming"]); setExpandedStep(0); }}
                 className={`py-2.5 px-3 rounded-xl border text-xs font-medium text-left transition-all ${
                   selectedTask === task
                     ? "border-blue-500/60 bg-blue-900/25 text-blue-200"
                     : "border-white/10 bg-white/3 text-gray-400 hover:border-white/20 hover:text-gray-200"
-                }`}
-              >
+                }`}>
                 {TASK_LABELS[task]}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Steps accordion */}
         <div className="space-y-2">
           {steps.map((step, i) => (
             <div key={i} className="border border-white/10 rounded-xl overflow-hidden">
-              <button
-                onClick={() => setExpandedStep(expandedStep === i ? null : i)}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-white/3 hover:bg-white/6 text-left transition-colors"
-              >
+              <button onClick={() => setExpandedStep(expandedStep === i ? null : i)}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-white/3 hover:bg-white/6 text-left transition-colors">
                 <span className={`w-6 h-6 rounded-full text-xs flex items-center justify-center font-bold flex-shrink-0 transition-colors ${
                   expandedStep === i ? "bg-blue-500/30 text-blue-300" : "bg-white/8 text-gray-400"
-                }`}>
-                  {step.step}
-                </span>
+                }`}>{step.step}</span>
                 <span className="flex-1 text-sm text-white font-medium">{step.title}</span>
-                {expandedStep === i
-                  ? <ChevronUp className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                  : <ChevronDown className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                }
+                {expandedStep === i ? <ChevronUp className="w-4 h-4 text-gray-500 flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-500 flex-shrink-0" />}
               </button>
               {expandedStep === i && (
                 <div className="px-4 py-3 border-t border-white/10 space-y-2">
@@ -171,11 +171,8 @@ export default function ControllerGuide() {
           ))}
         </div>
 
-        {/* Scan again — small secondary */}
-        <button
-          onClick={scanCamera}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-white/15 text-gray-500 text-sm hover:border-blue-500/30 hover:text-blue-400 transition-all"
-        >
+        <button onClick={() => openInput(true)}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-white/15 text-gray-500 text-sm hover:border-blue-500/30 hover:text-blue-400 transition-all">
           <Camera className="w-4 h-4" />
           Scan a different controller
         </button>
@@ -183,36 +180,37 @@ export default function ControllerGuide() {
     );
   }
 
-  // ── HOME / SCAN ───────────────────────────────────────────
+  // ── HOME / SCAN ──
   return (
     <div className="space-y-5">
+      <div className="space-y-2">
+        <button onClick={() => openInput(true)} disabled={scanning}
+          className="w-full py-12 rounded-2xl border-2 border-dashed border-blue-500/40 bg-blue-900/10 hover:bg-blue-900/20 transition-all disabled:opacity-50 active:scale-[0.98]">
+          <Camera className="w-9 h-9 text-blue-400 mx-auto mb-3" />
+          <p className="text-blue-200 font-semibold text-base">
+            {scanning ? "Identifying controller…" : "Take a photo"}
+          </p>
+          <p className="text-gray-500 text-sm mt-1">AI identifies brand and model — guide loads automatically</p>
+        </button>
 
-      {/* PRIMARY: Big camera scan */}
-      <button
-        onClick={scanCamera}
-        disabled={scanning}
-        className="w-full py-14 rounded-2xl border-2 border-dashed border-blue-500/40 bg-blue-900/10 hover:bg-blue-900/20 transition-all disabled:opacity-50 active:scale-[0.98]"
-      >
-        <Camera className="w-10 h-10 text-blue-400 mx-auto mb-3" />
-        <p className="text-blue-200 font-semibold text-base">
-          {scanning ? "Identifying controller…" : "Scan your controller"}
-        </p>
-        <p className="text-gray-500 text-sm mt-1">
-          AI identifies brand and model — guide loads automatically
-        </p>
-      </button>
+        {!scanning && (
+          <button onClick={() => openInput(false)}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-white/10 bg-white/3 hover:border-blue-500/30 hover:bg-blue-900/8 text-gray-400 hover:text-blue-300 text-sm transition-all">
+            <Upload className="w-4 h-4" />
+            Upload from gallery
+          </button>
+        )}
+      </div>
 
-      {/* Scan result when AI found something but no DB match */}
       {scanResult && !controller && (
         <div className="space-y-3">
-          <CameraResult result={scanResult} title={scanResult.brand ?? "Scan result"} />
-          <p className="text-gray-500 text-xs text-center">
-            No exact guide found for this model — select your brand below
-          </p>
+          <CameraResult result={scanResult} title={scanResult.brand && scanResult.brand !== "unknown" && scanResult.brand !== "other" ? scanResult.brand : "Scan result"} />
+          {scanResult.severity !== "moderate" && (
+            <p className="text-gray-500 text-xs text-center">No exact guide found — select your brand below</p>
+          )}
         </div>
       )}
 
-      {/* FALLBACK: Brand / model picker */}
       <div>
         <p className="text-gray-600 text-xs uppercase tracking-wide mb-3">Or select manually</p>
         <div className="space-y-3">
@@ -221,10 +219,8 @@ export default function ControllerGuide() {
             return (
               <div key={brand}>
                 {models.length === 1 ? (
-                  <button
-                    onClick={() => { setController(models[0]); setSelectedTask("set_time"); setExpandedStep(0); }}
-                    className="w-full flex items-center gap-4 p-3.5 rounded-xl border border-white/10 bg-white/3 hover:border-blue-500/40 hover:bg-blue-900/10 text-left transition-all"
-                  >
+                  <button onClick={() => { setController(models[0]); setSelectedTask("set_time"); setExpandedStep(0); }}
+                    className="w-full flex items-center gap-4 p-3.5 rounded-xl border border-white/10 bg-white/3 hover:border-blue-500/40 hover:bg-blue-900/10 text-left transition-all">
                     <div className="flex-1">
                       <p className="text-white text-sm font-medium">{brand}</p>
                       <p className="text-gray-500 text-xs">{models[0].model} · {models[0].zones_max} zones</p>
@@ -236,11 +232,8 @@ export default function ControllerGuide() {
                     <p className="text-gray-500 text-xs font-medium uppercase tracking-wide px-1 mb-1.5">{brand}</p>
                     <div className="space-y-1.5">
                       {models.map(m => (
-                        <button
-                          key={m.model}
-                          onClick={() => { setController(m); setSelectedTask("set_time"); setExpandedStep(0); }}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border border-white/10 bg-white/3 hover:border-blue-500/40 hover:bg-blue-900/10 text-left transition-all"
-                        >
+                        <button key={m.model} onClick={() => { setController(m); setSelectedTask("set_time"); setExpandedStep(0); }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border border-white/10 bg-white/3 hover:border-blue-500/40 hover:bg-blue-900/10 text-left transition-all">
                           <div className="flex-1">
                             <p className="text-white text-sm font-medium">{m.model}</p>
                             <p className="text-gray-500 text-xs">{m.zones_max} zones{m.wifi ? " · WiFi" : ""}{m.two_wire ? " · Two-wire" : ""}</p>

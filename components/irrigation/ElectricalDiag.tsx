@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Camera, ChevronDown, ChevronUp } from "lucide-react";
+import { Camera, Upload, ChevronDown, ChevronUp } from "lucide-react";
 import CameraResult, { type DiagResult } from "@/components/irrigation/CameraResult";
 import { SOLENOID_DATABASE, interpretOhmReading } from "@/lib/irrigation/solenoids";
 
@@ -20,24 +20,22 @@ interface Props {
 type OhmVerdict = ReturnType<typeof interpretOhmReading>;
 
 export default function ElectricalDiag({ preset = "", seniorMode = false }: Props) {
-  const [scanning, setScanning] = useState(false);
+  const [scanning, setScanning]         = useState(false);
   const [cameraResult, setCameraResult] = useState<DiagResult | null>(null);
-
-  const [symptom, setSymptom] = useState(preset || "zone_not_on");
-  const [ohmReading, setOhmReading] = useState("");
-  const [brand, setBrand] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [mainResult, setMainResult] = useState<DiagResult | null>(null);
-  const [steps, setSteps] = useState<DiagResult[]>([]);
-  const [ohmVerdict, setOhmVerdict] = useState<OhmVerdict | null>(null);
+  const [symptom, setSymptom]           = useState(preset || "zone_not_on");
+  const [ohmReading, setOhmReading]     = useState("");
+  const [brand, setBrand]               = useState("");
+  const [loading, setLoading]           = useState(false);
+  const [mainResult, setMainResult]     = useState<DiagResult | null>(null);
+  const [steps, setSteps]               = useState<DiagResult[]>([]);
+  const [ohmVerdict, setOhmVerdict]     = useState<OhmVerdict | null>(null);
   const [expandedStep, setExpandedStep] = useState<number | null>(0);
 
-  // Camera scan of the valve or solenoid
-  const scanCamera = () => {
+  const openInput = (useCamera: boolean) => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
-    input.capture = "environment";
+    if (useCamera) input.capture = "environment";
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
@@ -56,17 +54,30 @@ export default function ElectricalDiag({ preset = "", seniorMode = false }: Prop
           });
           const data = await res.json();
           const a = data.analysis;
-          if (a) {
+          if (a && !a.error) {
             setCameraResult({
               brief: a.brief ?? `${a.brand ?? "Valve"} identified`,
               detail: a.detail ?? undefined,
               action: a.action ?? undefined,
-              severity: a.condition === "damaged" || a.condition === "leaking" ? "critical" :
-                        a.condition === "worn" ? "moderate" : "none",
+              severity: a.condition === "damaged" || a.condition === "leaking" ? "critical"
+                      : a.condition === "worn" ? "moderate" : "none",
             });
-            if (a.brand) setBrand(a.brand);
+            if (a.brand && a.brand !== "other" && a.brand !== "unknown") setBrand(a.brand);
+          } else {
+            setCameraResult({
+              brief: "Couldn't identify valve from this image",
+              detail: data.error ?? "Try better lighting or upload a photo from your gallery. You can still run diagnosis manually below.",
+              action: "Enter brand and symptom manually",
+              severity: "mild",
+            });
           }
-        } catch { /* silent */ } finally { setScanning(false); }
+        } catch (err) {
+          setCameraResult({
+            brief: "Scan failed — " + (err instanceof Error ? err.message : "Network error"),
+            detail: "Check your connection or upload a photo instead.",
+            severity: "moderate",
+          });
+        } finally { setScanning(false); }
       };
       reader.readAsDataURL(file);
     };
@@ -121,20 +132,31 @@ export default function ElectricalDiag({ preset = "", seniorMode = false }: Prop
         })));
         setExpandedStep(0);
       }
-    } catch { /* silent */ } finally { setLoading(false); }
+    } catch (err) {
+      setMainResult({ brief: "Diagnosis failed — " + (err instanceof Error ? err.message : "Network error"), severity: "moderate" });
+    } finally { setLoading(false); }
   }, [symptom, ohmReading, brand]);
 
   const visibleSymptoms = seniorMode ? SYMPTOM_OPTIONS : SYMPTOM_OPTIONS.filter(s => s.value !== "two_wire");
 
   return (
     <div className="space-y-5">
-      {/* PRIMARY: Camera scan */}
-      <button onClick={scanCamera} disabled={scanning}
-        className="w-full py-10 rounded-2xl border-2 border-dashed border-amber-600/40 bg-amber-900/10 hover:bg-amber-900/20 transition-all disabled:opacity-40">
-        <Camera className="w-7 h-7 text-amber-400 mx-auto mb-2" />
-        <p className="text-amber-300 text-sm font-medium">{scanning ? "Identifying valve…" : cameraResult ? "Scan again" : "Scan the valve or solenoid"}</p>
-        <p className="text-gray-500 text-xs mt-1">AI identifies brand and assesses condition</p>
-      </button>
+      {/* PRIMARY: Camera + upload */}
+      <div className="space-y-2">
+        <button onClick={() => openInput(true)} disabled={scanning}
+          className="w-full py-9 rounded-2xl border-2 border-dashed border-amber-600/40 bg-amber-900/10 hover:bg-amber-900/20 transition-all disabled:opacity-40">
+          <Camera className="w-7 h-7 text-amber-400 mx-auto mb-2" />
+          <p className="text-amber-300 text-sm font-medium">{scanning ? "Identifying valve…" : cameraResult ? "Take another photo" : "Take a photo of the valve"}</p>
+          <p className="text-gray-500 text-xs mt-1">AI identifies brand and assesses condition</p>
+        </button>
+        {!scanning && (
+          <button onClick={() => openInput(false)}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-white/10 bg-white/3 hover:border-amber-600/30 hover:text-amber-300 text-gray-400 text-sm transition-all">
+            <Upload className="w-4 h-4" />
+            Upload from gallery
+          </button>
+        )}
+      </div>
 
       {cameraResult && <CameraResult result={cameraResult} title="Valve ID" />}
 

@@ -9,6 +9,31 @@ export const runtime = 'nodejs';
 // Vercel's default limit is 10s — raise to 60s to prevent timeout crashes.
 export const maxDuration = 60;
 
+/**
+ * Robustly extract the JSON object from a Gemini response string.
+ * Handles:
+ *  - Plain JSON (no fences)
+ *  - ```json ... ``` fences (with or without preamble text before the fence)
+ *  - Preamble / postamble text without fences — falls back to first { ... last }
+ */
+function extractJson(raw: string): string {
+  // Strategy 1: content inside the first ``` fence block
+  const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fenceMatch) {
+    return fenceMatch[1].trim();
+  }
+
+  // Strategy 2: outermost { } block (handles preamble/postamble text without fences)
+  const firstBrace = raw.indexOf('{');
+  const lastBrace = raw.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    return raw.slice(firstBrace, lastBrace + 1).trim();
+  }
+
+  // Strategy 3: return as-is and let JSON.parse throw its own error
+  return raw.trim();
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -29,12 +54,7 @@ export async function POST(req: NextRequest) {
     ]);
 
     const text = result.response.text().trim();
-
-    // Strip any accidental markdown fences
-    const cleaned = text
-      .replace(/^```(?:json)?\s*/i, '')
-      .replace(/\s*```$/, '')
-      .trim();
+    const cleaned = extractJson(text);
 
     try {
       const analysis = JSON.parse(cleaned);
@@ -49,7 +69,8 @@ export async function POST(req: NextRequest) {
       };
 
       return NextResponse.json({ analysis });
-    } catch {
+    } catch (parseErr) {
+      console.error('[analyze] JSON.parse failed:', parseErr, '\nCleaned text:', cleaned.slice(0, 500));
       // Return raw text with parse_error flag so UI can still display it
       return NextResponse.json({
         analysis: { raw: cleaned, parse_error: true },

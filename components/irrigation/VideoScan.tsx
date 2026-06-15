@@ -327,7 +327,7 @@ export default function VideoScan() {
 
       {/* Stable video input — off-screen to avoid iOS Safari display:none bug */}
       <input ref={videoInputRef} type="file" accept="video/*"
-        className="absolute -left-[9999px] -top-[9999px] w-px h-px overflow-hidden"
+        className="fixed -left-[9999px] -top-[9999px] w-px h-px"
         onChange={handleVideoUpload} />
     </div>
   );

@@ -151,10 +151,10 @@ export default function DesignScan() {
 
       {/* Stable file inputs — off-screen to avoid iOS Safari display:none bug */}
       <input ref={cameraInputRef} type="file" accept="image/*" capture="environment"
-        className="absolute -left-[9999px] -top-[9999px] w-px h-px overflow-hidden"
+        className="fixed -left-[9999px] -top-[9999px] w-px h-px"
         onChange={handlePickerChange} />
       <input ref={galleryInputRef} type="file" accept="image/*"
-        className="absolute -left-[9999px] -top-[9999px] w-px h-px overflow-hidden"
+        className="fixed -left-[9999px] -top-[9999px] w-px h-px"
         onChange={handlePickerChange} />
     </div>
   );

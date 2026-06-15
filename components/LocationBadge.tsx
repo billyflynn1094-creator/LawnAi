@@ -137,12 +137,12 @@ export default function LocationBadge({
         <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-soil-800 text-field-200 text-xs">
           <Thermometer size={12} className="text-straw-300 shrink-0" />
           <span>
-            {location.weather.avg_low_f}–{location.weather.avg_high_f}°F air
+            {location.weather.avg_low_f}–{location.weather.avg_high_f}°F air · 7d avg
           </span>
         </div>
       )}
 
-      {/* Soil temp (7-day avg) — immediately after air temp */}
+      {/* Soil temp — 7-day avg */}
       {location.soil_temp_surface_f != null && (
         <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-soil-800 text-field-200 text-xs">
           <Layers size={12} className="text-straw-400 shrink-0" />
@@ -150,8 +150,8 @@ export default function LocationBadge({
             {location.soil_temp_surface_f}°F soil
             {location.soil_temp_6cm_f != null &&
             location.soil_temp_6cm_f !== location.soil_temp_surface_f
-              ? ` / ${location.soil_temp_6cm_f}°F @ 6cm`
-              : ""}
+              ? ` / ${location.soil_temp_6cm_f}°F @6cm · 7d avg`
+              : " · 7d avg"}
           </span>
         </div>
       )}
@@ -160,7 +160,7 @@ export default function LocationBadge({
       {location.weather && (
         <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-soil-800 text-field-200 text-xs">
           <Droplets size={12} className="text-blue-400 shrink-0" />
-          <span>{location.weather.avg_humidity}% RH</span>
+          <span>{location.weather.avg_humidity}% RH · 7d avg</span>
         </div>
       )}
 
@@ -171,7 +171,7 @@ export default function LocationBadge({
         >
           <CloudRain size={12} className="shrink-0" />
           <span>
-            {rain.recent_in}in
+            {rain.recent_in}in 7d
             {rain.normal_in > 0 && (
               <>
                 {" "}

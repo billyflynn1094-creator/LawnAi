@@ -19,7 +19,8 @@ interface LocationData {
   soilType?: string;
   hardiness_zone?: string;
   grassClass?: "cool" | "warm" | "transition";
-  weather?: { temp_f: number; humidity: number; condition: string };
+  /** 7-day rolling averages */
+  weather?: { avg_high_f: number; avg_low_f: number; avg_humidity: number };
   soil_temp_surface_f?: number;
   soil_temp_6cm_f?: number;
   rainfall?: { recent_in: number; normal_in: number; pct_of_normal: number };
@@ -131,15 +132,17 @@ export default function LocationBadge({
         </div>
       )}
 
-      {/* Air temperature */}
+      {/* Air temperature — 7-day avg high / low */}
       {location.weather && (
         <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-soil-800 text-field-200 text-xs">
           <Thermometer size={12} className="text-straw-300 shrink-0" />
-          <span>{location.weather.temp_f}°F air</span>
+          <span>
+            {location.weather.avg_low_f}–{location.weather.avg_high_f}°F air
+          </span>
         </div>
       )}
 
-      {/* Soil temp — immediately after air temp */}
+      {/* Soil temp (7-day avg) — immediately after air temp */}
       {location.soil_temp_surface_f != null && (
         <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-soil-800 text-field-200 text-xs">
           <Layers size={12} className="text-straw-400 shrink-0" />
@@ -153,15 +156,15 @@ export default function LocationBadge({
         </div>
       )}
 
-      {/* Humidity */}
+      {/* Humidity — 7-day avg */}
       {location.weather && (
         <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-soil-800 text-field-200 text-xs">
           <Droplets size={12} className="text-blue-400 shrink-0" />
-          <span>{location.weather.humidity}% RH</span>
+          <span>{location.weather.avg_humidity}% RH</span>
         </div>
       )}
 
-      {/* 30-day rainfall vs 3-year average */}
+      {/* 7-day rainfall vs 3-year average */}
       {rain && (
         <div
           className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs ${rainColor}`}

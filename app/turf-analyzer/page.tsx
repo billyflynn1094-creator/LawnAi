@@ -14,7 +14,8 @@ interface LocationData {
   state?: string;
   soilType?: string;
   hardiness_zone?: string;
-  weather?: { temp_f: number; humidity: number; condition: string };
+  /** 7-day rolling averages */
+  weather?: { avg_high_f: number; avg_low_f: number; avg_humidity: number };
 }
 
 type AppState = 'idle' | 'analyzing' | 'results' | 'error';

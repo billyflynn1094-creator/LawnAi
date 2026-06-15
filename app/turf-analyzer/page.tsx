@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import CameraCapture from '@/components/Camera';
+import PhotoUpload from '@/components/PhotoUpload';
 import LocationBadge from '@/components/LocationBadge';
 import AnalysisResults from '@/components/Analysis';
 import DownloadReportButton from '@/components/DownloadReportButton';
@@ -280,6 +281,10 @@ export default function TurfAnalyzer() {
         {/* Camera — idle & analyzing */}
         {appState !== 'results' && (
           <CameraCapture
+            onCapture={handleCapture}
+            isAnalyzing={appState === 'analyzing'}
+          />
+          <PhotoUpload
             onCapture={handleCapture}
             isAnalyzing={appState === 'analyzing'}
           />

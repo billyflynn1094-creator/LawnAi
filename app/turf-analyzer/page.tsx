@@ -280,14 +280,16 @@ export default function TurfAnalyzer() {
 
         {/* Camera — idle & analyzing */}
         {appState !== 'results' && (
-          <CameraCapture
-            onCapture={handleCapture}
-            isAnalyzing={appState === 'analyzing'}
-          />
-          <PhotoUpload
-            onCapture={handleCapture}
-            isAnalyzing={appState === 'analyzing'}
-          />
+          <>
+            <CameraCapture
+              onCapture={handleCapture}
+              isAnalyzing={appState === 'analyzing'}
+            />
+            <PhotoUpload
+              onCapture={handleCapture}
+              isAnalyzing={appState === 'analyzing'}
+            />
+          </>
         )}
 
         {/* Idle prompt */}

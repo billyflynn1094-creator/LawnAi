@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Camera, Upload } from "lucide-react";
 import CameraResult, { type DiagResult } from "@/components/irrigation/CameraResult";
 
@@ -18,14 +18,12 @@ export default function RainSensorDiag() {
   const [cameraResult, setCameraResult] = useState<DiagResult | null>(null);
   const [checks, setChecks]           = useState<Record<string, boolean | null>>({});
 
-  const openInput = (useCamera: boolean) => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-    if (useCamera) input.capture = "environment";
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePickerChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
       setScanning(true);
       setCameraResult(null);
       const reader = new FileReader();
@@ -63,8 +61,14 @@ export default function RainSensorDiag() {
         } finally { setScanning(false); }
       };
       reader.readAsDataURL(file);
-    };
-    input.click();
+  };
+
+  const openInput = (useCamera: boolean) => {
+    const ref = useCamera ? cameraInputRef : galleryInputRef;
+    if (ref.current) {
+      ref.current.value = "";
+      ref.current.click();
+    }
   };
 
   const toggle = (id: string, val: boolean) => setChecks(c => ({ ...c, [id]: val }));
@@ -137,6 +141,14 @@ export default function RainSensorDiag() {
           )}
         </div>
       )}
+
+      {/* Stable file inputs — off-screen to avoid iOS Safari display:none bug */}
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment"
+        className="absolute -left-[9999px] -top-[9999px] w-px h-px overflow-hidden"
+        onChange={handlePickerChange} />
+      <input ref={galleryInputRef} type="file" accept="image/*"
+        className="absolute -left-[9999px] -top-[9999px] w-px h-px overflow-hidden"
+        onChange={handlePickerChange} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Camera, Upload, ChevronDown, ChevronUp } from "lucide-react";
 import CameraResult, { type DiagResult } from "@/components/irrigation/CameraResult";
 import { SOLENOID_DATABASE, interpretOhmReading } from "@/lib/irrigation/solenoids";
@@ -31,14 +31,12 @@ export default function ElectricalDiag({ preset = "", seniorMode = false }: Prop
   const [ohmVerdict, setOhmVerdict]     = useState<OhmVerdict | null>(null);
   const [expandedStep, setExpandedStep] = useState<number | null>(0);
 
-  const openInput = (useCamera: boolean) => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-    if (useCamera) input.capture = "environment";
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePickerChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
       setScanning(true);
       setCameraResult(null);
       setMainResult(null);
@@ -80,8 +78,14 @@ export default function ElectricalDiag({ preset = "", seniorMode = false }: Prop
         } finally { setScanning(false); }
       };
       reader.readAsDataURL(file);
-    };
-    input.click();
+  };
+
+  const openInput = (useCamera: boolean) => {
+    const ref = useCamera ? cameraInputRef : galleryInputRef;
+    if (ref.current) {
+      ref.current.value = "";
+      ref.current.click();
+    }
   };
 
   const handleOhmChange = (val: string) => {
@@ -225,6 +229,14 @@ export default function ElectricalDiag({ preset = "", seniorMode = false }: Prop
           )}
         </div>
       )}
+
+      {/* Stable file inputs — off-screen to avoid iOS Safari display:none bug */}
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment"
+        className="absolute -left-[9999px] -top-[9999px] w-px h-px overflow-hidden"
+        onChange={handlePickerChange} />
+      <input ref={galleryInputRef} type="file" accept="image/*"
+        className="absolute -left-[9999px] -top-[9999px] w-px h-px overflow-hidden"
+        onChange={handlePickerChange} />
     </div>
   );
 }

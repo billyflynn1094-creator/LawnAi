@@ -61,14 +61,26 @@ export default function CameraCapture({ onCapture, isAnalyzing }: CameraProps) {
     setMode("preview");
   }, []);
 
+  const openFilePicker = () => {
+    if (fileRef.current) {
+      fileRef.current.value = ""; // allow re-selecting same file
+      fileRef.current.click();
+    }
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
       const base64 = ev.target?.result as string;
-      setPreview(base64);
-      setMode("preview");
+      if (base64) {
+        setPreview(base64);
+        setMode("preview");
+      }
+    };
+    reader.onerror = () => {
+      setCameraError("Failed to read image. Please try a different photo.");
     };
     reader.readAsDataURL(file);
   };
@@ -110,7 +122,7 @@ export default function CameraCapture({ onCapture, isAnalyzing }: CameraProps) {
           {/* Controls */}
           <div className="absolute bottom-0 inset-x-0 p-4 flex items-center justify-between bg-gradient-to-t from-soil-900/80 to-transparent">
             <button
-              onClick={() => fileRef.current?.click()}
+              onClick={openFilePicker}
               className="p-3 rounded-full bg-soil-800/80 text-field-200 hover:bg-soil-700 transition"
               aria-label="Upload photo"
             >
@@ -140,7 +152,7 @@ export default function CameraCapture({ onCapture, isAnalyzing }: CameraProps) {
           <Camera className="text-field-600" size={48} />
           <p className="text-field-200 text-sm">{cameraError}</p>
           <button
-            onClick={() => fileRef.current?.click()}
+            onClick={openFilePicker}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-field-600 hover:bg-field-500 text-white text-sm font-medium transition"
           >
             <ImagePlus size={16} />
@@ -184,11 +196,12 @@ export default function CameraCapture({ onCapture, isAnalyzing }: CameraProps) {
       )}
 
       <canvas ref={canvasRef} className="hidden" />
+      {/* Off-screen file input — display:none blocks iOS Safari programmatic click */}
       <input
         ref={fileRef}
         type="file"
         accept="image/*"
-        className="hidden"
+        className="absolute -left-[9999px] -top-[9999px] w-px h-px overflow-hidden"
         onChange={handleFileUpload}
       />
     </div>

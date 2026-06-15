@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Camera, Upload, ChevronDown, ChevronUp, CheckCircle } from "lucide-react";
 import { CONTROLLER_DATABASE, type ControllerGuide as ControllerGuideType } from "@/lib/irrigation/controllers";
 import CameraResult, { type DiagResult } from "@/components/irrigation/CameraResult";
@@ -37,14 +37,12 @@ export default function ControllerGuide() {
   const [selectedTask, setSelectedTask] = useState<keyof ControllerGuideType["programming"]>("set_time");
   const [expandedStep, setExpandedStep] = useState<number | null>(0);
 
-  const openInput = (useCamera: boolean) => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-    if (useCamera) input.capture = "environment";
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePickerChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
       setScanning(true);
       setScanResult(null);
       setController(null);
@@ -105,8 +103,14 @@ export default function ControllerGuide() {
         }
       };
       reader.readAsDataURL(file);
-    };
-    input.click();
+  };
+
+  const openInput = (useCamera: boolean) => {
+    const ref = useCamera ? cameraInputRef : galleryInputRef;
+    if (ref.current) {
+      ref.current.value = "";
+      ref.current.click();
+    }
   };
 
   const BRANDS = [...new Set(CONTROLLER_DATABASE.map(c => c.brand))];
@@ -249,6 +253,14 @@ export default function ControllerGuide() {
           })}
         </div>
       </div>
+
+      {/* Stable file inputs — off-screen to avoid iOS Safari display:none bug */}
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment"
+        className="absolute -left-[9999px] -top-[9999px] w-px h-px overflow-hidden"
+        onChange={handlePickerChange} />
+      <input ref={galleryInputRef} type="file" accept="image/*"
+        className="absolute -left-[9999px] -top-[9999px] w-px h-px overflow-hidden"
+        onChange={handlePickerChange} />
     </div>
   );
 }

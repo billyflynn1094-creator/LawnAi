@@ -27,6 +27,7 @@ export default function VideoScan() {
   const autoIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const analyzingRef    = useRef(false);
   const eventIdRef      = useRef(0);
+  const videoInputRef   = useRef<HTMLInputElement>(null);
 
   const captureFrame = useCallback((): string | null => {
     const v = videoRef.current;
@@ -130,29 +131,30 @@ export default function VideoScan() {
     analyzingRef.current = false;
   }, []);
 
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
+    const url = URL.createObjectURL(file);
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+      videoRef.current.src = url;
+      videoRef.current.load();
+      videoRef.current.muted = true;
+      await videoRef.current.play().catch(() => {});
+    }
+    setMode("upload");
+    setAutoMode(false);
+    setEvents([]);
+    setFrameCount(0);
+  };
+
   const openUpload = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "video/*";
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      streamRef.current?.getTracks().forEach(t => t.stop());
-      streamRef.current = null;
-      const url = URL.createObjectURL(file);
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-        videoRef.current.src = url;
-        videoRef.current.load();
-        videoRef.current.muted = true;
-        await videoRef.current.play().catch(() => {});
-      }
-      setMode("upload");
-      setAutoMode(false);
-      setEvents([]);
-      setFrameCount(0);
-    };
-    input.click();
+    if (videoInputRef.current) {
+      videoInputRef.current.value = "";
+      videoInputRef.current.click();
+    }
   };
 
   return (
@@ -322,6 +324,11 @@ export default function VideoScan() {
           Auto mode runs the same live stream interface AR glasses will connect to. Future versions will overlay findings directly in your field of view.
         </p>
       </div>
+
+      {/* Stable video input — off-screen to avoid iOS Safari display:none bug */}
+      <input ref={videoInputRef} type="file" accept="video/*"
+        className="absolute -left-[9999px] -top-[9999px] w-px h-px overflow-hidden"
+        onChange={handleVideoUpload} />
     </div>
   );
 }

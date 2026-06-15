@@ -161,16 +161,10 @@ export default function TurfAnalyzer() {
     <main className="min-h-screen pb-16">
 
       {/* ── HEADER ── */}
-      <header className="sticky top-0 z-10 bg-field-900/90 backdrop-blur-lg border-b border-white/5">
+      <header className="sticky top-12 z-10 bg-field-900/90 backdrop-blur-lg border-b border-white/5">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <Link
-              href="/"
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-field-200 hover:text-white hover:bg-field-800/60 transition-all"
-              aria-label="Back to home"
-            >
-              <ArrowLeft size={17} />
-            </Link>
+
             <div className="flex items-center gap-2">
               <Scan size={15} className="text-field-400" />
               <span className="font-display text-[15px] text-white tracking-[0.12em]">

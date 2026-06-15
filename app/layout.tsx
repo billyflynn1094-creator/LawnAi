@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Outfit } from "next/font/google";
 import "./globals.css";
+import NavBar from "@/components/NavBar";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -34,7 +35,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${cormorant.variable} ${outfit.variable}`}>
-      <body className="min-h-screen bg-grass-gradient">{children}</body>
+      <body className="min-h-screen bg-grass-gradient"><NavBar />{children}</body>
     </html>
   );
 }

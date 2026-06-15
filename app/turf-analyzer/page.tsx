@@ -5,7 +5,7 @@ import Link from 'next/link';
 import CameraCapture from '@/components/Camera';
 import LocationBadge from '@/components/LocationBadge';
 import AnalysisResults from '@/components/Analysis';
-import { Scan, RotateCcw, ArrowLeft } from 'lucide-react';
+import { Scan, RotateCcw, ArrowLeft, MapPin, Navigation } from 'lucide-react';
 
 interface LocationData {
   lat: number;
@@ -16,14 +16,24 @@ interface LocationData {
   hardiness_zone?: string;
   /** 7-day rolling averages */
   weather?: { avg_high_f: number; avg_low_f: number; avg_humidity: number };
+  soil_temp_surface_f?: number;
+  soil_temp_6cm_f?: number;
+  rainfall?: { recent_in: number; normal_in: number; pct_of_normal: number };
 }
 
 type AppState = 'idle' | 'analyzing' | 'results' | 'error';
+type LocationSource = 'gps' | 'zip';
 
 export default function TurfAnalyzer() {
   const [locationData, setLocationData] = useState<LocationData | null>(null);
   const [locationLoading, setLocationLoading] = useState(true);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [locationSource, setLocationSource] = useState<LocationSource>('gps');
+
+  const [zipInput, setZipInput] = useState('');
+  const [zipLoading, setZipLoading] = useState(false);
+  const [zipError, setZipError] = useState<string | null>(null);
+  const [showZipInput, setShowZipInput] = useState(false);
 
   const [appState, setAppState] = useState<AppState>('idle');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -47,8 +57,10 @@ export default function TurfAnalyzer() {
           if (!res.ok) throw new Error('Location enrichment failed');
           const data = await res.json();
           setLocationData(data);
+          setLocationSource('gps');
         } catch {
           setLocationData({ lat, lng });
+          setLocationSource('gps');
         } finally {
           setLocationLoading(false);
         }
@@ -61,6 +73,40 @@ export default function TurfAnalyzer() {
       { timeout: 10000, enableHighAccuracy: true }
     );
   }, []);
+
+  const fetchLocationByZip = async (zip: string) => {
+    if (!/^\d{5}$/.test(zip)) {
+      setZipError('Please enter a valid 5-digit ZIP code.');
+      return;
+    }
+    setZipLoading(true);
+    setZipError(null);
+    try {
+      const geoRes = await fetch(`https://api.zippopotam.us/us/${zip}`);
+      if (!geoRes.ok) throw new Error('ZIP code not found.');
+      const geoData = await geoRes.json();
+      const lat = parseFloat(geoData.places[0]['latitude']);
+      const lng = parseFloat(geoData.places[0]['longitude']);
+      const locationRes = await fetch(`/api/location?lat=${lat}&lng=${lng}`);
+      if (!locationRes.ok) throw new Error('Location enrichment failed');
+      const data = await locationRes.json();
+      setLocationData(data);
+      setLocationSource('zip');
+      setShowZipInput(false);
+      setZipInput('');
+    } catch (err) {
+      setZipError(err instanceof Error ? err.message : 'Could not find that ZIP code.');
+    } finally {
+      setZipLoading(false);
+    }
+  };
+
+  const revertToGps = () => {
+    setShowZipInput(false);
+    setZipInput('');
+    setZipError(null);
+    fetchLocation();
+  };
 
   useEffect(() => { fetchLocation(); }, [fetchLocation]);
 
@@ -145,12 +191,78 @@ export default function TurfAnalyzer() {
       <div className="max-w-lg mx-auto px-4 pt-5 space-y-4">
 
         {/* Location context */}
-        <LocationBadge
-          location={locationData}
-          loading={locationLoading}
-          error={locationError}
-          onRetry={fetchLocation}
-        />
+        <div className="space-y-2">
+          <LocationBadge
+            location={locationData}
+            loading={locationLoading}
+            error={locationError}
+            onRetry={fetchLocation}
+          />
+
+          {/* Location source indicator + change controls */}
+          {!locationLoading && (
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-1.5 text-xs text-field-400">
+                {locationSource === 'gps' ? (
+                  <>
+                    <Navigation size={11} className="text-field-500" />
+                    <span>GPS location</span>
+                  </>
+                ) : (
+                  <>
+                    <MapPin size={11} className="text-sky-400" />
+                    <span className="text-sky-400">Manual ZIP</span>
+                  </>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {locationSource === 'zip' && (
+                  <button
+                    onClick={revertToGps}
+                    className="text-xs text-field-300 hover:text-white transition-colors flex items-center gap-1"
+                  >
+                    <Navigation size={10} /> Use my GPS ↩
+                  </button>
+                )}
+                <button
+                  onClick={() => { setShowZipInput(v => !v); setZipError(null); }}
+                  className="text-xs text-field-300 hover:text-white transition-colors flex items-center gap-1"
+                >
+                  <MapPin size={10} /> Change ZIP
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ZIP code input panel */}
+          {showZipInput && (
+            <div className="rounded-xl bg-field-800/50 border border-white/8 p-3 space-y-2">
+              <p className="text-xs text-field-300 font-medium">Enter ZIP code to change location</p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={5}
+                  placeholder="e.g. 08502"
+                  value={zipInput}
+                  onChange={e => { setZipInput(e.target.value.replace(/\D/g, '')); setZipError(null); }}
+                  onKeyDown={e => { if (e.key === 'Enter') fetchLocationByZip(zipInput); }}
+                  className="flex-1 rounded-lg bg-field-900/80 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-field-500 focus:outline-none focus:border-field-400 transition-colors"
+                />
+                <button
+                  onClick={() => fetchLocationByZip(zipInput)}
+                  disabled={zipLoading || zipInput.length !== 5}
+                  className="px-4 py-2 rounded-lg bg-field-600 text-white text-sm font-medium hover:bg-field-500 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                >
+                  {zipLoading ? '…' : 'Go'}
+                </button>
+              </div>
+              {zipError && (
+                <p className="text-xs text-red-400">{zipError}</p>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Camera — idle & analyzing */}
         {appState !== 'results' && (

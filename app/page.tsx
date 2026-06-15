@@ -23,7 +23,7 @@ interface LocationData {
   soilType?: string;
   hardiness_zone?: string;
   grassClass?: 'cool' | 'warm' | 'transition';
-  weather?: { temp_f: number; humidity: number; condition: string };
+  weather?: { avg_high_f: number; avg_low_f: number; avg_humidity: number };
   soil_temp_surface_f?: number;
   soil_temp_6cm_f?: number;
   rainfall?: { recent_in: number; normal_in: number; pct_of_normal: number };
@@ -65,7 +65,7 @@ const MODULES: ModuleItem[] = [
     icon: BookOpen,
     title: 'Product Catalog',
     meta: 'Pro Recommendations',
-    body: 'Curated turf protection products from Syngenta, Bayer (Envu), BASF, Nufarm, and Corteva — granular and liquid options for precision treatment.',
+    body: 'Curated turf protection products from Syngenta, Bayer (Envu), BASF, Nufarm, and Corteva â granular and liquid options for precision treatment.',
     href: '#',
     active: false,
     badge: 'Coming Soon',
@@ -85,7 +85,7 @@ const MODULES: ModuleItem[] = [
     icon: Droplets,
     title: 'IrrigationPro',
     meta: 'Field Diagnostic Tool',
-    body: 'Diagnose any irrigation issue — electrical, hydraulic, controller programming, or coverage — with AI-powered field guidance for residential and commercial systems.',
+    body: 'Diagnose any irrigation issue â electrical, hydraulic, controller programming, or coverage â with AI-powered field guidance for residential and commercial systems.',
     href: '/irrigation',
     active: true,
   },
@@ -130,7 +130,7 @@ export default function CoverPage() {
   return (
     <main className="min-h-screen flex flex-col overflow-x-hidden">
 
-      {/* ── HEADER ── */}
+      {/* ââ HEADER ââ */}
       <header className="sticky top-0 z-20 bg-field-900/90 backdrop-blur-lg border-b border-white/5">
         <div className="max-w-lg mx-auto px-4 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -152,7 +152,7 @@ export default function CoverPage() {
         </div>
       </header>
 
-      {/* ── HERO ── */}
+      {/* ââ HERO ââ */}
       <div className="relative px-5 pt-10 pb-8 max-w-lg mx-auto w-full">
         {/* Atmospheric glow orbs */}
         <div
@@ -164,7 +164,7 @@ export default function CoverPage() {
           style={{ background: 'radial-gradient(circle, rgba(42,82,32,0.12) 0%, transparent 70%)' }}
         />
 
-        {/* Eyebrow — decorative, lighter green OK */}
+        {/* Eyebrow â decorative, lighter green OK */}
         <p
           className="animate-entry text-field-200 text-[10px] tracking-[0.35em] uppercase font-semibold mb-3"
           style={{ animationDelay: '0ms' }}
@@ -182,12 +182,12 @@ export default function CoverPage() {
           <span className="text-field-400">Elevated.</span>
         </h1>
 
-        {/* Sub-tagline — max contrast */}
+        {/* Sub-tagline â max contrast */}
         <p
           className="animate-entry text-field-50 text-[13px] leading-relaxed max-w-[300px] mb-6"
           style={{ animationDelay: '160ms' }}
         >
-          AI diagnostics and expert guidance — calibrated to your location, soil profile, and live weather conditions.
+          AI diagnostics and expert guidance â calibrated to your location, soil profile, and live weather conditions.
         </p>
 
         {/* Location data */}
@@ -201,7 +201,7 @@ export default function CoverPage() {
         </div>
       </div>
 
-      {/* ── DIVIDER ── */}
+      {/* ââ DIVIDER ââ */}
       <div
         className="animate-entry max-w-lg mx-auto px-5 pb-4 w-full"
         style={{ animationDelay: '320ms' }}
@@ -213,7 +213,7 @@ export default function CoverPage() {
         </div>
       </div>
 
-      {/* ── MODULE CARDS ── */}
+      {/* ââ MODULE CARDS ââ */}
       <div className="flex-1 max-w-lg mx-auto px-4 pb-10 w-full space-y-2.5">
         {MODULES.map((mod, i) => {
           const Icon = mod.icon;
@@ -246,9 +246,9 @@ export default function CoverPage() {
                       className="shrink-0 mt-1 text-field-300 group-hover:text-white group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-all"
                     />
                   </div>
-                  {/* Meta label — decorative, green accent OK */}
+                  {/* Meta label â decorative, green accent OK */}
                   <p className="text-field-300 text-[9px] tracking-[0.22em] uppercase font-bold mb-2">{mod.meta}</p>
-                  {/* Body — near-white for legibility */}
+                  {/* Body â near-white for legibility */}
                   <p className="text-field-50 text-[13px] leading-relaxed">{mod.body}</p>
                   <div className="mt-3 inline-flex items-center gap-1 text-field-200 text-[11px] font-semibold tracking-wide group-hover:text-white transition-colors">
                     Open Module <ChevronRight size={10} className="group-hover:translate-x-0.5 transition-transform" />
@@ -269,7 +269,7 @@ export default function CoverPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between mb-0.5">
-                  {/* Inactive title — still needs to be readable */}
+                  {/* Inactive title â still needs to be readable */}
                   <span className="font-display text-[1.3rem] text-field-100 leading-tight">{mod.title}</span>
                   {mod.badge && (
                     <span className="shrink-0 text-[8px] px-2 py-0.5 rounded-full bg-field-800/60 border border-field-700/30 text-field-200 font-bold tracking-widest uppercase">
@@ -277,9 +277,9 @@ export default function CoverPage() {
                     </span>
                   )}
                 </div>
-                {/* Meta — decorative */}
+                {/* Meta â decorative */}
                 <p className="text-field-300 text-[9px] tracking-[0.22em] uppercase font-bold mb-2">{mod.meta}</p>
-                {/* Inactive body — still readable */}
+                {/* Inactive body â still readable */}
                 <p className="text-field-100 text-[13px] leading-relaxed">{mod.body}</p>
               </div>
             </div>
@@ -287,13 +287,13 @@ export default function CoverPage() {
         })}
       </div>
 
-      {/* ── FOOTER ── */}
+      {/* ââ FOOTER ââ */}
       <div className="max-w-lg mx-auto px-5 pb-8 w-full">
         <div className="border-t border-field-700/40 pt-4 flex items-center justify-between">
           <span className="text-field-200 text-[10px] tracking-wide">Powered by Gemini AI</span>
           <div className="flex items-center gap-1.5">
             <div className="w-1.5 h-1.5 rounded-full bg-field-400 animate-pulse" />
-            <span className="text-field-200 text-[10px] tracking-wide">v1.0 · US Coverage</span>
+            <span className="text-field-200 text-[10px] tracking-wide">v1.0 Â· US Coverage</span>
           </div>
         </div>
       </div>

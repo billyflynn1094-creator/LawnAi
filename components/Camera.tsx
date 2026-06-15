@@ -149,7 +149,8 @@ export default function CameraCapture({ onCapture, isAnalyzing }: CameraProps) {
   };
 
   return (
-    <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-soil-900 shadow-2xl">
+    <>
+      <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-soil-900 shadow-2xl">
       {/* Live camera */}
       {mode === "camera" && !cameraError && (
         <>
@@ -244,15 +245,33 @@ export default function CameraCapture({ onCapture, isAnalyzing }: CameraProps) {
         </>
       )}
 
-      <canvas ref={canvasRef} className="hidden" />
-      {/* Off-screen file input — position:fixed escapes overflow:hidden clipping on iOS Safari / Android Chrome */}
+        <canvas ref={canvasRef} className="hidden" />
+      </div>
+
+      {/*
+        File input OUTSIDE the overflow-hidden container, positioned at top:0 left:0 (in-viewport).
+        Android Chrome silently drops onChange when the input is at -9999px (off-viewport).
+        Keeping it at 0,0 — invisible and 1×1 px — ensures the OS file-result callback reaches
+        the element so React fires onChange. pointer-events:none prevents accidental taps;
+        programmatic .click() works regardless of pointer-events.
+      */}
       <input
         ref={fileRef}
         type="file"
         accept="image/*"
-        className="fixed -left-[9999px] -top-[9999px] w-px h-px"
+        tabIndex={-1}
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "1px",
+          height: "1px",
+          opacity: 0,
+          pointerEvents: "none",
+        }}
         onChange={handleFileUpload}
       />
-    </div>
+    </>
   );
 }

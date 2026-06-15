@@ -15,9 +15,23 @@ export default function CameraCapture({ onCapture, isAnalyzing }: CameraProps) {
   const streamRef = useRef<MediaStream | null>(null);
 
   const [mode, setMode] = useState<"camera" | "preview">("camera");
+
+  // preview: base64 data URL (camera capture) OR blob URL (file upload — avoids data: size limit on Android Chrome)
   const [preview, setPreview] = useState<string | null>(null);
+  // Source of current preview — determines how to handle Analyze
+  const [previewSource, setPreviewSource] = useState<"camera" | "file" | null>(null);
+  // Stored File for uploads; converted to base64 only when Analyze is tapped
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
+
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
+
+  // Revoke a blob URL if it came from a file upload
+  const revokeBlobUrl = useCallback((url: string | null, source: "camera" | "file" | null) => {
+    if (url && source === "file") {
+      URL.revokeObjectURL(url);
+    }
+  }, []);
 
   const startCamera = useCallback(async () => {
     try {
@@ -46,6 +60,16 @@ export default function CameraCapture({ onCapture, isAnalyzing }: CameraProps) {
     };
   }, [startCamera]);
 
+  // Cleanup blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (preview && previewSource === "file") {
+        URL.revokeObjectURL(preview);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const capture = useCallback(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -58,6 +82,8 @@ export default function CameraCapture({ onCapture, isAnalyzing }: CameraProps) {
     ctx.drawImage(video, 0, 0);
     const base64 = canvas.toDataURL("image/jpeg", 0.85);
     setPreview(base64);
+    setPreviewSource("camera");
+    setPreviewFile(null);
     setMode("preview");
   }, []);
 
@@ -71,28 +97,51 @@ export default function CameraCapture({ onCapture, isAnalyzing }: CameraProps) {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const base64 = ev.target?.result as string;
-      if (base64) {
-        setPreview(base64);
-        setMode("preview");
-      }
-    };
-    reader.onerror = () => {
-      setCameraError("Failed to read image. Please try a different photo.");
-    };
-    reader.readAsDataURL(file);
+
+    // Revoke previous blob URL before creating a new one
+    revokeBlobUrl(preview, previewSource);
+
+    // Use createObjectURL for display — avoids the ~2-4MB data: URL rendering
+    // limit on Android Chrome that causes a black screen with large camera photos
+    const blobUrl = URL.createObjectURL(file);
+    setPreview(blobUrl);
+    setPreviewSource("file");
+    setPreviewFile(file);
+    setMode("preview");
   };
 
   const retake = () => {
+    // Revoke blob URL if present
+    revokeBlobUrl(preview, previewSource);
     setPreview(null);
+    setPreviewSource(null);
+    setPreviewFile(null);
     setMode("camera");
     startCamera();
   };
 
   const analyze = () => {
-    if (preview) onCapture(preview);
+    if (!preview) return;
+
+    if (previewSource === "camera") {
+      // Camera capture: preview IS already a small, reliable base64 data URL
+      onCapture(preview);
+    } else if (previewSource === "file" && previewFile) {
+      // File upload: read the stored File as base64 now (only on Analyze tap)
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const base64 = ev.target?.result as string;
+        if (base64) {
+          onCapture(base64);
+        } else {
+          setCameraError("Failed to read image. Please try a different photo.");
+        }
+      };
+      reader.onerror = () => {
+        setCameraError("Failed to read image. Please try a different photo.");
+      };
+      reader.readAsDataURL(previewFile);
+    }
   };
 
   const flipCamera = () => {

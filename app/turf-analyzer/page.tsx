@@ -7,7 +7,7 @@ import PhotoUpload from '@/components/PhotoUpload';
 import LocationBadge from '@/components/LocationBadge';
 import AnalysisResults from '@/components/Analysis';
 import DownloadReportButton from '@/components/DownloadReportButton';
-import { Scan, RotateCcw, ArrowLeft, MapPin, Navigation } from 'lucide-react';
+import { Scan, RotateCcw, ArrowLeft, MapPin, Navigation, ScanSearch, AlertCircle } from 'lucide-react';
 
 interface LocationData {
   lat: number;
@@ -23,7 +23,7 @@ interface LocationData {
   rainfall?: { recent_in: number; normal_in: number; pct_of_normal: number };
 }
 
-type AppState = 'idle' | 'analyzing' | 'results' | 'error';
+type AppState = 'idle' | 'analyzing' | 'needs_more_photo' | 'results' | 'error';
 type LocationSource = 'gps' | 'zip';
 
 export default function TurfAnalyzer() {
@@ -42,6 +42,8 @@ export default function TurfAnalyzer() {
   const [analysis, setAnalysis] = useState<any>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [photoRequest, setPhotoRequest] = useState<Record<string, any> | null>(null);
 
   const fetchLocation = useCallback(() => {
     setLocationLoading(true);
@@ -156,6 +158,11 @@ export default function TurfAnalyzer() {
         throw new Error(errMsg);
       }
       const data = await res.json();
+      if (data.analysis?.needs_more_photo === true) {
+        setPhotoRequest(data.analysis.photo_request ?? {});
+        setAppState('needs_more_photo');
+        return;
+      }
       setAnalysis(data.analysis);
       setAppState('results');
       setTimeout(() => {
@@ -169,11 +176,41 @@ export default function TurfAnalyzer() {
     }
   };
 
+  const handleSecondCapture = async (base64: string) => {
+    setAppState('analyzing');
+    setErrorMessage(null);
+    try {
+      const res = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: capturedImage,
+          image2: base64,
+          location: locationData ?? { lat: 0, lng: 0 },
+        }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error ?? `Server error (${res.status})`);
+      }
+      const data = await res.json();
+      setAnalysis(data.analysis);
+      setAppState('results');
+      setTimeout(() => {
+        document.getElementById('results')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+      setAppState('error');
+    }
+  };
+
   const reset = () => {
     setAppState('idle');
     setAnalysis(null);
     setCapturedImage(null);
     setErrorMessage(null);
+    setPhotoRequest(null);
   };
 
   return (
@@ -279,7 +316,7 @@ export default function TurfAnalyzer() {
         </div>
 
         {/* Camera — idle & analyzing */}
-        {appState !== 'results' && (
+        {appState !== 'results' && appState !== 'needs_more_photo' && (
           <>
             <CameraCapture
               onCapture={handleCapture}
@@ -311,6 +348,73 @@ export default function TurfAnalyzer() {
               className="px-5 py-2 rounded-xl bg-field-600 text-white text-sm hover:bg-field-500 transition"
             >
               Try again
+            </button>
+          </div>
+        )}
+
+        {/* Needs-more-photo state */}
+        {appState === 'needs_more_photo' && photoRequest && (
+          <div className="space-y-4">
+            {/* Minimized original photo */}
+            {capturedImage && (
+              <div className="flex items-center gap-3 rounded-xl bg-field-800/40 border border-field-700/30 p-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={capturedImage}
+                  alt="Original photo"
+                  className="w-16 h-16 rounded-lg object-cover shrink-0 opacity-70"
+                />
+                <div className="min-w-0">
+                  <p className="text-[10px] text-field-500 uppercase tracking-wide font-medium mb-0.5">Original photo</p>
+                  <p className="text-xs text-field-400 leading-relaxed line-clamp-2">{photoRequest.why}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Directions card */}
+            <div className="rounded-2xl bg-soil-800/60 border border-amber-700/30 overflow-hidden">
+              <div className="px-4 py-3 flex items-start gap-3">
+                <AlertCircle size={16} className="text-amber-400 shrink-0 mt-0.5" />
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-amber-300">One more photo needed</p>
+                  <p className="text-xs text-field-300 leading-relaxed">{photoRequest.directions}</p>
+                  {Array.isArray(photoRequest.focus_areas) && photoRequest.focus_areas.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {(photoRequest.focus_areas as string[]).map((area: string, i: number) => (
+                        <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-amber-900/30 text-amber-300 border border-amber-700/30 font-medium">
+                          {area}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Second photo capture */}
+            <div className="rounded-2xl bg-soil-800/60 border border-field-600/30 overflow-hidden">
+              <div className="px-4 pt-3.5 pb-2 flex items-center gap-2">
+                <ScanSearch size={14} className="text-field-400" />
+                <span className="text-xs font-semibold text-field-300 uppercase tracking-wide">Detail photo</span>
+              </div>
+              <div className="px-4 pb-4 space-y-3">
+                <CameraCapture
+                  onCapture={handleSecondCapture}
+                  isAnalyzing={appState === 'analyzing'}
+                />
+                <PhotoUpload
+                  onCapture={handleSecondCapture}
+                  isAnalyzing={appState === 'analyzing'}
+                />
+              </div>
+            </div>
+
+            {/* Cancel */}
+            <button
+              onClick={reset}
+              className="flex items-center gap-1.5 text-field-400 hover:text-field-200 text-xs transition mx-auto"
+            >
+              <RotateCcw size={11} /> Start over
             </button>
           </div>
         )}

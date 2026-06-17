@@ -11,10 +11,6 @@ export const maxDuration = 60;
 
 /**
  * Robustly extract the JSON object from a Gemini response string.
- * Handles:
- *  - Plain JSON (no fences)
- *  - ```json ... ``` fences (with or without preamble text before the fence)
- *  - Preamble / postamble text without fences — falls back to first { ... last }
  */
 function extractJson(raw: string): string {
   // Strategy 1: content inside the first ``` fence block
@@ -22,48 +18,63 @@ function extractJson(raw: string): string {
   if (fenceMatch) {
     return fenceMatch[1].trim();
   }
-
-  // Strategy 2: outermost { } block (handles preamble/postamble text without fences)
+  // Strategy 2: outermost { } block
   const firstBrace = raw.indexOf('{');
   const lastBrace = raw.lastIndexOf('}');
   if (firstBrace !== -1 && lastBrace > firstBrace) {
     return raw.slice(firstBrace, lastBrace + 1).trim();
   }
-
-  // Strategy 3: return as-is and let JSON.parse throw its own error
   return raw.trim();
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { image, location } = body as { image: string; location: LocationContext };
+    const { image, image2, location } = body as {
+      image: string;
+      image2?: string;
+      location: LocationContext;
+    };
 
     if (!image) {
       return NextResponse.json({ error: 'No image provided' }, { status: 400 });
     }
 
-    const imagePart = imageToGeminiPart(image);
+    const hasSecondImage = Boolean(image2);
+    const imagePart  = imageToGeminiPart(image);
     const systemPrompt = buildSystemPrompt();
-    const userPrompt = buildAnalysisPrompt(location ?? { lat: 0, lng: 0 });
+    const userPrompt   = buildAnalysisPrompt(location ?? { lat: 0, lng: 0 }, hasSecondImage);
 
-    const result = await geminiFlash.generateContent([
+    // Build content parts — include second image when provided
+    const contentParts: Parameters<typeof geminiFlash.generateContent>[0] = [
       { text: systemPrompt },
       { text: userPrompt },
       imagePart,
-    ]);
+    ];
 
-    const text = result.response.text().trim();
+    if (hasSecondImage && image2) {
+      const image2Part = imageToGeminiPart(image2);
+      contentParts.push(image2Part);
+      contentParts.push({ text: 'The image above is the close-up detail photo. Use both images together for a definitive diagnosis.' });
+    }
+
+    const result = await geminiFlash.generateContent(contentParts);
+    const text    = result.response.text().trim();
     const cleaned = extractJson(text);
 
     try {
       const analysis = JSON.parse(cleaned);
 
+      // If Gemini requests more detail, pass the request straight through to the UI
+      if (analysis.needs_more_photo === true) {
+        return NextResponse.json({ analysis });
+      }
+
       // Attach regional soil profile for UI display
       const soilProfile = getSoilProfile(location?.soilType);
       analysis._soil_profile = {
-        label: soilProfile.label,
-        notes: soilProfile.notes,
+        label:         soilProfile.label,
+        notes:         soilProfile.notes,
         fertFrequency: soilProfile.fertFrequency,
         drainageClass: soilProfile.drainageClass,
       };
@@ -71,7 +82,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ analysis });
     } catch (parseErr) {
       console.error('[analyze] JSON.parse failed:', parseErr, '\nCleaned text:', cleaned.slice(0, 500));
-      // Return raw text with parse_error flag so UI can still display it
       return NextResponse.json({
         analysis: { raw: cleaned, parse_error: true },
       });

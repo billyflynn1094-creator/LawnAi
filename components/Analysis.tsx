@@ -31,6 +31,9 @@ interface ElaborateData {
 
 interface Product {
   name: string;
+  manufacturer?: string;
+  equivalent_product?: string;
+  equivalent_manufacturer?: string;
   sku?: string;
   catalog_name?: string;
   format?: string;
@@ -38,6 +41,12 @@ interface Product {
   application_rate?: string;
   timing?: string;
   notes?: string;
+}
+
+interface AsWellProductGroup {
+  category?: string;
+  label?: string;
+  products?: Product[];
 }
 
 interface TimelineStage {
@@ -192,10 +201,21 @@ function ProductRow({ product }: { product: Product }) {
           {product.notes && (
             <p className="text-xs text-field-400 leading-relaxed mt-0.5">{product.notes}</p>
           )}
-          {!product.sku && (
-            <p className="text-[10px] text-field-600 italic mt-1">
-              Source through your local professional turf distributor.
+          {product.manufacturer && (
+            <p className="text-[10px] text-field-500 mt-0.5">
+              <span className="text-field-600">Mfr:</span> {product.manufacturer}
             </p>
+          )}
+          {product.equivalent_product && (
+            <div className="mt-2 pt-2 border-t border-field-800/40">
+              <p className="text-[10px] text-field-500 uppercase tracking-wide font-medium mb-0.5">Or equivalent</p>
+              <p className="text-xs text-field-400">
+                {product.equivalent_product}
+                {product.equivalent_manufacturer && (
+                  <span className="text-field-600"> ({product.equivalent_manufacturer})</span>
+                )}
+              </p>
+            </div>
           )}
         </div>
       )}
@@ -215,6 +235,85 @@ function MechBlock({ icon, title, practice }: { icon: ReactNode; title: string; 
         {practice.rate    && <p className="text-xs text-field-400">Rate: {practice.rate}</p>}
         {practice.notes   && <p className="text-xs text-field-500 leading-relaxed mt-0.5">{practice.notes}</p>}
       </div>
+    </div>
+  );
+}
+
+// ── AsWellSection ─────────────────────────────────────────────────────────
+
+const CATEGORY_LABEL: Record<string, string> = {
+  herbicide:   'Herbicide',
+  insecticide: 'Insecticide',
+  fungicide:   'Fungicide',
+  fertilizer:  'Fertilizer',
+};
+
+function AsWellSection({ groups }: { groups: AsWellProductGroup[] }) {
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
+  if (!groups.length) return null;
+
+  return (
+    <div className="rounded-2xl bg-soil-800/60 border border-field-800/40 overflow-hidden">
+      <div className="px-4 pt-3.5 pb-1 flex items-center gap-2">
+        <FlaskConical size={13} className="text-field-500" />
+        <span className="text-xs font-semibold text-field-300 uppercase tracking-wide">As Well</span>
+        <span className="text-[10px] text-field-600 ml-0.5">additional products to consider</span>
+      </div>
+      {groups.map((group, gi) => {
+        const catLabel = CATEGORY_LABEL[(group.category ?? '').toLowerCase()] ?? (group.category ?? 'Products');
+        const isOpen = openIdx === gi;
+        return (
+          <div key={gi} className="border-t border-field-800/30">
+            <button
+              onClick={() => setOpenIdx(isOpen ? null : gi)}
+              className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-field-800/10 transition"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-xs font-semibold text-field-300 shrink-0">{catLabel}</span>
+                {group.label && (
+                  <span className="text-[10px] text-field-600 truncate">{group.label}</span>
+                )}
+              </div>
+              {isOpen
+                ? <ChevronUp size={12} className="text-field-500 shrink-0" />
+                : <ChevronDown size={12} className="text-field-500 shrink-0" />}
+            </button>
+            {isOpen && group.products && group.products.length > 0 && (
+              <div className="px-4 pb-3">
+                {group.products.map((p, pi) => {
+                  const fmt = (p.format ?? '').toLowerCase();
+                  const fmtLabel = FORMAT_LABEL[fmt] ?? (fmt ? fmt.toUpperCase() : '');
+                  return (
+                    <div key={pi} className="border-b border-field-800/20 last:border-b-0 py-2.5">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-field-200 font-medium">{p.name}</span>
+                        {fmtLabel && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-field-800/60 text-field-400 border border-field-700/30 shrink-0 ml-2">
+                            {fmtLabel}
+                          </span>
+                        )}
+                      </div>
+                      {p.manufacturer && <p className="text-[10px] text-field-600">Mfr: {p.manufacturer}</p>}
+                      {p.application_rate && (
+                        <p className="text-xs text-field-400 mt-0.5"><span className="text-field-500">Rate:</span> {p.application_rate}</p>
+                      )}
+                      {p.timing && (
+                        <p className="text-xs text-field-400"><span className="text-field-500">Timing:</span> {p.timing}</p>
+                      )}
+                      {p.equivalent_product && (
+                        <p className="text-xs text-field-500 mt-1">
+                          <span className="text-field-600">Or equivalent:</span> {p.equivalent_product}
+                          {p.equivalent_manufacturer && ` (${p.equivalent_manufacturer})`}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -242,6 +341,7 @@ export default function AnalysisResults({ analysis }: { analysis: AnalysisData }
   const treatment:         AnalysisData        = analysis.treatment        ?? {};
   const elaborate:         ElaborateData       = treatment.elaborate       ?? {};
   const products:          Product[]           = treatment.products        ?? [];
+  const asWellGroups:      AsWellProductGroup[] = (treatment.as_well_products ?? []) as AsWellProductGroup[];
   const mechanical:        MechanicalPractices = analysis.mechanical_practices ?? {};
   const timeline:          TimelineStage[]     = analysis.timeline         ?? [];
   const prevention:        string[]            = analysis.prevention       ?? [];
@@ -375,6 +475,11 @@ export default function AnalysisResults({ analysis }: { analysis: AnalysisData }
             {sortedProducts.map((p, i) => <ProductRow key={i} product={p} />)}
           </div>
         </div>
+      )}
+
+      {/* ── As Well products card ──────────────────────────────────── */}
+      {asWellGroups.length > 0 && (
+        <AsWellSection groups={asWellGroups} />
       )}
 
       {/* ── See full plan card ────────────────────────────────────── */}

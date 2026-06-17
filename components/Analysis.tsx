@@ -154,61 +154,6 @@ function ElaborateSub({ title, content }: { title: string; content?: string }) {
       {open && (
         <p className="pb-3 text-xs text-field-400 leading-relaxed">{content}</p>
       )}
-
-      {/* ── Second Opinion ──────────────────────────────────────── */}
-      {onSecondOpinion && (
-        <div className="mt-4">
-          {!secondOpinionData && (
-            <button
-              onClick={onSecondOpinion}
-              disabled={secondOpinionLoading}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl
-                border border-field-700/60 bg-field-900/40 hover:bg-field-800/60
-                text-field-300 hover:text-field-100 text-sm font-medium
-                transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {secondOpinionLoading ? (
-                <>
-                  <span className="inline-block w-3.5 h-3.5 border-2 border-field-400 border-t-transparent rounded-full animate-spin" />
-                  <span>Getting second opinion...</span>
-                </>
-              ) : (
-                <>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                  <span>Get Second Opinion</span>
-                </>
-              )}
-            </button>
-          )}
-
-          {secondOpinionData && (
-            <div className="space-y-3 mt-2">
-              {/* Why second opinion was chosen — only shown when diagnosis differs */}
-              {secondOpinionData.second_opinion_reasoning && (
-                <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
-                  <p className="text-[10px] text-amber-400 uppercase tracking-widest font-semibold mb-1.5">
-                    Why Second Opinion Was Selected
-                  </p>
-                  <p className="text-sm text-amber-100/80 leading-relaxed">
-                    {secondOpinionData.second_opinion_reasoning}
-                  </p>
-                </div>
-              )}
-
-              {/* Full second opinion results */}
-              <div className="rounded-xl border border-field-700/40 bg-field-900/20 overflow-hidden">
-                <div className="px-4 py-2.5 border-b border-field-800/60 flex items-center gap-2">
-                  <span className="text-[10px] text-field-400 uppercase tracking-widest font-semibold">Second Opinion Analysis</span>
-                </div>
-                <div className="p-1">
-                  <AnalysisResults analysis={secondOpinionData as AnalysisData} />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
     </div>
   );
 }
@@ -274,61 +219,6 @@ function ProductRow({ product }: { product: Product }) {
           )}
         </div>
       )}
-
-      {/* ── Second Opinion ──────────────────────────────────────── */}
-      {onSecondOpinion && (
-        <div className="mt-4">
-          {!secondOpinionData && (
-            <button
-              onClick={onSecondOpinion}
-              disabled={secondOpinionLoading}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl
-                border border-field-700/60 bg-field-900/40 hover:bg-field-800/60
-                text-field-300 hover:text-field-100 text-sm font-medium
-                transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {secondOpinionLoading ? (
-                <>
-                  <span className="inline-block w-3.5 h-3.5 border-2 border-field-400 border-t-transparent rounded-full animate-spin" />
-                  <span>Getting second opinion...</span>
-                </>
-              ) : (
-                <>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                  <span>Get Second Opinion</span>
-                </>
-              )}
-            </button>
-          )}
-
-          {secondOpinionData && (
-            <div className="space-y-3 mt-2">
-              {/* Why second opinion was chosen — only shown when diagnosis differs */}
-              {secondOpinionData.second_opinion_reasoning && (
-                <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
-                  <p className="text-[10px] text-amber-400 uppercase tracking-widest font-semibold mb-1.5">
-                    Why Second Opinion Was Selected
-                  </p>
-                  <p className="text-sm text-amber-100/80 leading-relaxed">
-                    {secondOpinionData.second_opinion_reasoning}
-                  </p>
-                </div>
-              )}
-
-              {/* Full second opinion results */}
-              <div className="rounded-xl border border-field-700/40 bg-field-900/20 overflow-hidden">
-                <div className="px-4 py-2.5 border-b border-field-800/60 flex items-center gap-2">
-                  <span className="text-[10px] text-field-400 uppercase tracking-widest font-semibold">Second Opinion Analysis</span>
-                </div>
-                <div className="p-1">
-                  <AnalysisResults analysis={secondOpinionData as AnalysisData} />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
     </div>
   );
 }
@@ -345,61 +235,6 @@ function MechBlock({ icon, title, practice }: { icon: ReactNode; title: string; 
         {practice.rate    && <p className="text-xs text-field-400">Rate: {practice.rate}</p>}
         {practice.notes   && <p className="text-xs text-field-500 leading-relaxed mt-0.5">{practice.notes}</p>}
       </div>
-
-      {/* ── Second Opinion ──────────────────────────────────────── */}
-      {onSecondOpinion && (
-        <div className="mt-4">
-          {!secondOpinionData && (
-            <button
-              onClick={onSecondOpinion}
-              disabled={secondOpinionLoading}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl
-                border border-field-700/60 bg-field-900/40 hover:bg-field-800/60
-                text-field-300 hover:text-field-100 text-sm font-medium
-                transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {secondOpinionLoading ? (
-                <>
-                  <span className="inline-block w-3.5 h-3.5 border-2 border-field-400 border-t-transparent rounded-full animate-spin" />
-                  <span>Getting second opinion...</span>
-                </>
-              ) : (
-                <>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                  <span>Get Second Opinion</span>
-                </>
-              )}
-            </button>
-          )}
-
-          {secondOpinionData && (
-            <div className="space-y-3 mt-2">
-              {/* Why second opinion was chosen — only shown when diagnosis differs */}
-              {secondOpinionData.second_opinion_reasoning && (
-                <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
-                  <p className="text-[10px] text-amber-400 uppercase tracking-widest font-semibold mb-1.5">
-                    Why Second Opinion Was Selected
-                  </p>
-                  <p className="text-sm text-amber-100/80 leading-relaxed">
-                    {secondOpinionData.second_opinion_reasoning}
-                  </p>
-                </div>
-              )}
-
-              {/* Full second opinion results */}
-              <div className="rounded-xl border border-field-700/40 bg-field-900/20 overflow-hidden">
-                <div className="px-4 py-2.5 border-b border-field-800/60 flex items-center gap-2">
-                  <span className="text-[10px] text-field-400 uppercase tracking-widest font-semibold">Second Opinion Analysis</span>
-                </div>
-                <div className="p-1">
-                  <AnalysisResults analysis={secondOpinionData as AnalysisData} />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
     </div>
   );
 }
@@ -479,61 +314,6 @@ function AsWellSection({ groups }: { groups: AsWellProductGroup[] }) {
           </div>
         );
       })}
-
-      {/* ── Second Opinion ──────────────────────────────────────── */}
-      {onSecondOpinion && (
-        <div className="mt-4">
-          {!secondOpinionData && (
-            <button
-              onClick={onSecondOpinion}
-              disabled={secondOpinionLoading}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl
-                border border-field-700/60 bg-field-900/40 hover:bg-field-800/60
-                text-field-300 hover:text-field-100 text-sm font-medium
-                transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {secondOpinionLoading ? (
-                <>
-                  <span className="inline-block w-3.5 h-3.5 border-2 border-field-400 border-t-transparent rounded-full animate-spin" />
-                  <span>Getting second opinion...</span>
-                </>
-              ) : (
-                <>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                  <span>Get Second Opinion</span>
-                </>
-              )}
-            </button>
-          )}
-
-          {secondOpinionData && (
-            <div className="space-y-3 mt-2">
-              {/* Why second opinion was chosen — only shown when diagnosis differs */}
-              {secondOpinionData.second_opinion_reasoning && (
-                <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
-                  <p className="text-[10px] text-amber-400 uppercase tracking-widest font-semibold mb-1.5">
-                    Why Second Opinion Was Selected
-                  </p>
-                  <p className="text-sm text-amber-100/80 leading-relaxed">
-                    {secondOpinionData.second_opinion_reasoning}
-                  </p>
-                </div>
-              )}
-
-              {/* Full second opinion results */}
-              <div className="rounded-xl border border-field-700/40 bg-field-900/20 overflow-hidden">
-                <div className="px-4 py-2.5 border-b border-field-800/60 flex items-center gap-2">
-                  <span className="text-[10px] text-field-400 uppercase tracking-widest font-semibold">Second Opinion Analysis</span>
-                </div>
-                <div className="p-1">
-                  <AnalysisResults analysis={secondOpinionData as AnalysisData} />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
     </div>
   );
 }
@@ -841,18 +621,14 @@ export default function AnalysisResults({
         </div>
       )}
 
-
-      {/* ── Second Opinion ──────────────────────────────────────── */}
+      {/* ── Second Opinion ─────────────────────────────────────── */}
       {onSecondOpinion && (
-        <div className="mt-4">
+        <div className="mt-6">
           {!secondOpinionData && (
             <button
               onClick={onSecondOpinion}
               disabled={secondOpinionLoading}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl
-                border border-field-700/60 bg-field-900/40 hover:bg-field-800/60
-                text-field-300 hover:text-field-100 text-sm font-medium
-                transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-field-700/60 bg-field-900/40 hover:bg-field-800/60 text-field-300 hover:text-field-100 text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {secondOpinionLoading ? (
                 <>
@@ -869,8 +645,7 @@ export default function AnalysisResults({
           )}
 
           {secondOpinionData && (
-            <div className="space-y-3 mt-2">
-              {/* Why second opinion was chosen — only shown when diagnosis differs */}
+            <div className="space-y-3">
               {secondOpinionData.second_opinion_reasoning && (
                 <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
                   <p className="text-[10px] text-amber-400 uppercase tracking-widest font-semibold mb-1.5">
@@ -881,8 +656,6 @@ export default function AnalysisResults({
                   </p>
                 </div>
               )}
-
-              {/* Full second opinion results */}
               <div className="rounded-xl border border-field-700/40 bg-field-900/20 overflow-hidden">
                 <div className="px-4 py-2.5 border-b border-field-800/60 flex items-center gap-2">
                   <span className="text-[10px] text-field-400 uppercase tracking-widest font-semibold">Second Opinion Analysis</span>

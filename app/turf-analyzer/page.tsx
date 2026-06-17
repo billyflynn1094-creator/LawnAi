@@ -320,11 +320,11 @@ export default function TurfAnalyzer() {
           <>
             <CameraCapture
               onCapture={handleCapture}
-              isAnalyzing={appState === 'analyzing'}
+              isAnalyzing={(appState as string) === 'analyzing'}
             />
             <PhotoUpload
               onCapture={handleCapture}
-              isAnalyzing={appState === 'analyzing'}
+              isAnalyzing={(appState as string) === 'analyzing'}
             />
           </>
         )}
@@ -400,11 +400,11 @@ export default function TurfAnalyzer() {
               <div className="px-4 pb-4 space-y-3">
                 <CameraCapture
                   onCapture={handleSecondCapture}
-                  isAnalyzing={appState === 'analyzing'}
+                  isAnalyzing={(appState as string) === 'analyzing'}
                 />
                 <PhotoUpload
                   onCapture={handleSecondCapture}
-                  isAnalyzing={appState === 'analyzing'}
+                  isAnalyzing={(appState as string) === 'analyzing'}
                 />
               </div>
             </div>

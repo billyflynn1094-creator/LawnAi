@@ -30,10 +30,12 @@ function extractJson(raw: string): string {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { image, image2, location } = body as {
+    const { image, image2, location, isSecondOpinion, originalDiagnosis } = body as {
       image: string;
       image2?: string;
       location: LocationContext;
+      isSecondOpinion?: boolean;
+      originalDiagnosis?: string;
     };
 
     if (!image) {
@@ -43,7 +45,7 @@ export async function POST(req: NextRequest) {
     const hasSecondImage = Boolean(image2);
     const imagePart  = imageToGeminiPart(image);
     const systemPrompt = buildSystemPrompt();
-    const userPrompt   = buildAnalysisPrompt(location ?? { lat: 0, lng: 0 }, hasSecondImage);
+    const userPrompt   = buildAnalysisPrompt(location ?? { lat: 0, lng: 0 }, hasSecondImage, isSecondOpinion, originalDiagnosis);
 
     // Build content parts — include second image when provided
     const contentParts: Parameters<typeof geminiFlash.generateContent>[0] = [
@@ -56,6 +58,10 @@ export async function POST(req: NextRequest) {
       const image2Part = imageToGeminiPart(image2);
       contentParts.push(image2Part);
       contentParts.push({ text: 'The image above is the close-up detail photo. Use both images together for a definitive diagnosis.' });
+    }
+
+    if (isSecondOpinion) {
+      contentParts.push({ text: 'IMPORTANT: This is a SECOND OPINION request. Re-examine the image(s) completely independently with deeper scrutiny. If your diagnosis differs from the prior analysis, populate second_opinion_reasoning explaining the visual evidence that supports your diagnosis.' });
     }
 
     const result = await geminiFlash.generateContent(contentParts);

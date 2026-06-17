@@ -131,15 +131,38 @@ Only use this protocol when you genuinely cannot distinguish between diagnoses t
 require different treatment paths. Make your best diagnosis when confidence is moderate.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECOND OPINION PROTOCOL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+When isSecondOpinion is true in the request, you are performing a deeper independent re-analysis.
+
+Rules:
+1. Re-examine the image(s) completely independently — do not anchor to the prior diagnosis.
+2. Look harder: examine leaf lesion edges, root collar, soil line, thatch depth cues,
+   turf density patterns, halo patterns, and any subtle color gradations in the image.
+3. If your diagnosis DIFFERS from the prior analysis:
+   - Populate "second_opinion_reasoning" with 2–3 sentences explaining WHAT specific visual
+     evidence you identified that differs from or was missed in the original analysis,
+     and WHY your diagnosis is more accurate.
+   - Example: "The original analysis identified dollar spot, but closer examination reveals
+     irregular smoke-ring mycelium patterns and rapid-spreading circular patches consistent
+     with Pythium blight rather than the smaller hourglass lesions of dollar spot. The water-soaked
+     margin visible at the patch edge is the key differentiating feature."
+4. If your diagnosis is THE SAME as the prior analysis:
+   - Set "second_opinion_reasoning" to null.
+   - You may still provide deeper detail in treatment recommendations.
+5. Always produce the full JSON analysis structure regardless of whether the diagnosis changed.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CONTENT QUALITY — NEVER PRODUCE GENERIC OUTPUT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 - Every sentence must be SPECIFIC to what you actually see in the image.
 - Name the exact species, disease, pest, or condition — never vague language.
-- COMMON INDUSTRY NAMES: For every named disease, weed, insect, or invasive grass, ALWAYS follow the scientific/technical name with the common green industry name in parentheses so contractors can identify it instantly. Examples:
-    Disease:  "Rhizoctonia solani (Brown Patch)", "Sclerotinia homoeocarpa (Dollar Spot)", "Microdochium nivale (Pink Snow Mold)", "Pythium aphanidermatum (Pythium Blight)"
-    Weed:     "Poa annua (Annual Bluegrass)", "Digitaria sanguinalis (Large Crabgrass)", "Cyperus esculentus (Yellow Nutsedge)", "Taraxacum officinale (Dandelion)"
-    Pest:     "Popillia japonica (Japanese Beetle)", "Spodoptera frugiperda (Fall Armyworm)", "Blissus leucopterus (Chinch Bug)", "Scapteriscus vicinus (Mole Cricket)"
-    Invasive: "Poa trivialis (Rough Bluegrass)", "Cynodon dactylon (Bermudagrass)", "Paspalum dilatatum (Dallisgrass)", "Eremochloa ophiuroides (Centipedegrass invasion)"
+- COMMON INDUSTRY NAMES: For every named disease, weed, insect, or invasive grass, ALWAYS follow the scientific/technical name with ALL known common green industry and regional trade names in parentheses, separated by commas. Include every name a contractor might recognize — do not limit to just one. Examples:
+    Disease:  "Rhizoctonia solani (Brown Patch, Large Patch)", "Sclerotinia homoeocarpa (Dollar Spot, Dollar Spot Blight)", "Microdochium nivale (Pink Snow Mold, Microdochium Patch)", "Pythium aphanidermatum (Pythium Blight, Grease Spot, Cottony Blight)"
+    Weed:     "Poa annua (Annual Bluegrass, Annual Poa, Winter Grass)", "Digitaria sanguinalis (Large Crabgrass, Hairy Crabgrass, Duck Grass, Finger Grass)", "Cyperus esculentus (Yellow Nutsedge, Nutsedge, Nutgrass)", "Taraxacum officinale (Dandelion, Common Dandelion, Blowball)"
+    Pest:     "Popillia japonica (Japanese Beetle, Japanese Beetle Grub)", "Spodoptera frugiperda (Fall Armyworm, FAW)", "Blissus leucopterus (Chinch Bug, Hairy Chinch Bug)", "Scapteriscus vicinus (Mole Cricket, Tawny Mole Cricket)"
+    Invasive: "Poa trivialis (Rough Bluegrass, Rough-Stalked Bluegrass)", "Cynodon dactylon (Bermudagrass, Wiregrass, Devilgrass)", "Paspalum dilatatum (Dallisgrass, Water Grass, Sticky Heads)", "Digitaria ischaemum (Smooth Crabgrass, Small Crabgrass)"
 - Reference actual soil temp, rainfall status, and grass class in every recommendation.
 - The elaborate sections must be actionable, educational content a new applicator can follow step-by-step.
 - Bullets must be scannable — 1 sentence each, specific and actionable.
@@ -229,7 +252,7 @@ RESPONSE FORMAT — VALID JSON ONLY, NO MARKDOWN
     "notes": "visual identification traits, current soil-temp growth status, typical maintenance needs for this species"
   },
   "identified": {
-    "primary": "Scientific/technical name (Common green industry name) — ALWAYS include common name in parentheses. Examples: 'Rhizoctonia solani (Brown Patch)', 'Poa annua (Annual Bluegrass)', 'Popillia japonica (Japanese Beetle grub)', 'Sclerotinia homoeocarpa (Dollar Spot)', 'Agrostis stolonifera (Creeping Bentgrass)'",
+    "primary": "Scientific/technical name (Common name 1, Common name 2, ...) — include ALL known common green industry and regional trade names in parentheses separated by commas. Use every name a contractor might recognize. Examples: 'Digitaria sanguinalis (Large Crabgrass, Hairy Crabgrass, Duck Grass)', 'Poa annua (Annual Bluegrass, Annual Poa, Winter Grass)', 'Rhizoctonia solani (Brown Patch, Large Patch in warm-season)', 'Sclerotinia homoeocarpa (Dollar Spot, Dollar Spot Blight)', 'Popillia japonica (Japanese Beetle, Japanese Beetle Grub)', 'Cyperus esculentus (Yellow Nutsedge, Nutsedge, Nutgrass)'",
     "description": "2–3 sentences specific to the image"
   },
   "diagnosis": {
@@ -328,7 +351,7 @@ Never include markdown, backticks, or prose outside the JSON object.
 `.trim();
 }
 
-export function buildAnalysisPrompt(location: LocationContext, hasSecondImage = false): string {
+export function buildAnalysisPrompt(location: LocationContext, hasSecondImage = false, isSecondOpinion = false, originalDiagnosis?: string): string {
   const grassClassLabel =
     location.grassClass === 'warm' ? 'WARM-SEASON' :
     location.grassClass === 'transition' ? 'TRANSITION ZONE (cool + warm season grasses both possible)' :
@@ -379,6 +402,13 @@ export function buildAnalysisPrompt(location: LocationContext, hasSecondImage = 
     `Apply MECHANICAL PRACTICE DECISION RULES using the grass class above.`,
     `Apply STATE PRODUCT COMPLIANCE rules for ${location.state ?? "this state"} to any relevant product.`,
   ];
+
+  if (isSecondOpinion) {
+    parts.push(
+      '',
+      `SECOND OPINION REQUEST: A prior analysis identified: "${originalDiagnosis ?? 'unknown'}". Re-examine the image(s) completely independently with deeper scrutiny. If your diagnosis differs, populate second_opinion_reasoning with the specific visual evidence that supports your diagnosis. If your diagnosis is the same, set second_opinion_reasoning to null.`
+    );
+  }
 
   return parts.filter(Boolean).join('\n');
 }

@@ -41,9 +41,12 @@ export default function TurfAnalyzer() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [analysis, setAnalysis] = useState<any>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [capturedImage2, setCapturedImage2] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [photoRequest, setPhotoRequest] = useState<Record<string, any> | null>(null);
+  const [secondOpinionData, setSecondOpinionData] = useState<Record<string, any> | null>(null);
+  const [secondOpinionLoading, setSecondOpinionLoading] = useState(false);
 
   const fetchLocation = useCallback(() => {
     setLocationLoading(true);
@@ -177,6 +180,7 @@ export default function TurfAnalyzer() {
   };
 
   const handleSecondCapture = async (base64: string) => {
+    setCapturedImage2(base64);
     setAppState('analyzing');
     setErrorMessage(null);
     try {
@@ -205,12 +209,42 @@ export default function TurfAnalyzer() {
     }
   };
 
+  const handleSecondOpinion = async () => {
+    if (!capturedImage || !analysis) return;
+    setSecondOpinionLoading(true);
+    setSecondOpinionData(null);
+    try {
+      const res = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: capturedImage,
+          ...(capturedImage2 ? { image2: capturedImage2 } : {}),
+          location: locationData ?? { lat: 0, lng: 0 },
+          isSecondOpinion: true,
+          originalDiagnosis: (analysis as any)?.identified?.primary ?? 'unknown',
+        }),
+      });
+      const json = await res.json();
+      if (json?.analysis && !json.analysis.needs_more_photo) {
+        setSecondOpinionData(json.analysis);
+      }
+    } catch (e) {
+      console.error('[second opinion]', e);
+    } finally {
+      setSecondOpinionLoading(false);
+    }
+  };
+
   const reset = () => {
     setAppState('idle');
     setAnalysis(null);
     setCapturedImage(null);
+    setCapturedImage2(null);
     setErrorMessage(null);
     setPhotoRequest(null);
+    setSecondOpinionData(null);
+    setSecondOpinionLoading(false);
   };
 
   return (
@@ -444,7 +478,12 @@ export default function TurfAnalyzer() {
                 </div>
               </div>
             )}
-            <AnalysisResults analysis={analysis} />
+            <AnalysisResults
+                analysis={analysis}
+                secondOpinionData={secondOpinionData}
+                secondOpinionLoading={secondOpinionLoading}
+                onSecondOpinion={handleSecondOpinion}
+              />
             <DownloadReportButton analysis={analysis} location={locationData} />
           </div>
         )}

@@ -6,6 +6,8 @@ import { Camera, RefreshCw, ImagePlus, X } from "lucide-react";
 interface CameraCaptureProps {
   onCapture: (base64: string) => void;
   isAnalyzing: boolean;
+  /** When true, camera fills its parent container height (use in flex layouts) */
+  fill?: boolean;
 }
 
 /** Revoke an object URL only if the source is "file" (blob URL). */
@@ -15,7 +17,7 @@ function revokeBlobUrl(url: string | null, source: string | null) {
   }
 }
 
-export default function CameraCapture({ onCapture, isAnalyzing }: CameraCaptureProps) {
+export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -96,9 +98,7 @@ export default function CameraCapture({ onCapture, isAnalyzing }: CameraCaptureP
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     revokeBlobUrl(preview, previewSource);
-
     const blobUrl = URL.createObjectURL(file);
     setPreview(blobUrl);
     setPreviewSource("file");
@@ -164,9 +164,7 @@ export default function CameraCapture({ onCapture, isAnalyzing }: CameraCaptureP
             {/* Analyzing overlay */}
             {isAnalyzing && (
               <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-3">
-                <div
-                  className="w-10 h-10 rounded-full border-[3px] border-green-400 border-t-transparent animate-spin"
-                />
+                <div className="w-10 h-10 rounded-full border-[3px] border-green-400 border-t-transparent animate-spin" />
                 <p className="text-white text-sm font-medium">Analyzing your turf…</p>
               </div>
             )}
@@ -177,16 +175,16 @@ export default function CameraCapture({ onCapture, isAnalyzing }: CameraCaptureP
             <div className="px-4 pb-10 pt-3 flex gap-3">
               <button
                 onClick={retake}
-                className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-white/10 text-white hover:bg-white/20 transition text-sm font-medium"
+                className="flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl bg-white/10 text-white hover:bg-white/20 transition text-base font-medium"
               >
-                <X size={17} />
+                <X size={18} />
                 Retake
               </button>
               <button
                 onClick={analyze}
-                className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-green-600 hover:bg-green-500 active:bg-green-700 text-white transition text-sm font-semibold shadow-lg"
+                className="flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl bg-green-600 hover:bg-green-500 active:bg-green-700 text-white transition text-base font-semibold shadow-lg"
               >
-                <Camera size={17} />
+                <Camera size={18} />
                 Analyze
               </button>
             </div>
@@ -194,8 +192,8 @@ export default function CameraCapture({ onCapture, isAnalyzing }: CameraCaptureP
         </div>
       )}
 
-      {/* ── Camera window (always rendered, hidden under overlay when preview is active) ── */}
-      <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-soil-900 shadow-2xl">
+      {/* ── Camera window ── */}
+      <div className={`relative w-full rounded-2xl overflow-hidden bg-soil-900 shadow-2xl ${fill ? "h-full" : "aspect-[4/3]"}`}>
 
         {/* Live camera */}
         {mode === "camera" && !cameraError && (
@@ -219,24 +217,24 @@ export default function CameraCapture({ onCapture, isAnalyzing }: CameraCaptureP
             <div className="absolute bottom-0 inset-x-0 p-4 flex items-center justify-between bg-gradient-to-t from-soil-900/80 to-transparent">
               <button
                 onClick={openFilePicker}
-                className="p-3 rounded-full bg-soil-800/80 text-field-200 hover:bg-soil-700 transition"
+                className="p-3.5 rounded-full bg-soil-800/80 text-field-200 hover:bg-soil-700 transition"
                 aria-label="Upload photo from gallery"
               >
-                <ImagePlus size={20} />
+                <ImagePlus size={22} />
               </button>
               <button
                 onClick={capture}
-                className="w-16 h-16 rounded-full bg-field-400 hover:bg-field-300 border-4 border-field-200 transition shadow-lg active:scale-95"
+                className="w-18 h-18 w-[4.5rem] h-[4.5rem] rounded-full bg-field-400 hover:bg-field-300 border-4 border-field-200 transition shadow-lg active:scale-95"
                 aria-label="Capture photo"
               >
-                <Camera className="mx-auto text-soil-900" size={24} />
+                <Camera className="mx-auto text-soil-900" size={26} />
               </button>
               <button
                 onClick={flipCamera}
-                className="p-3 rounded-full bg-soil-800/80 text-field-200 hover:bg-soil-700 transition"
+                className="p-3.5 rounded-full bg-soil-800/80 text-field-200 hover:bg-soil-700 transition"
                 aria-label="Flip camera"
               >
-                <RefreshCw size={20} />
+                <RefreshCw size={22} />
               </button>
             </div>
           </>
@@ -245,13 +243,13 @@ export default function CameraCapture({ onCapture, isAnalyzing }: CameraCaptureP
         {/* Camera error fallback */}
         {cameraError && mode === "camera" && (
           <div className="flex flex-col items-center justify-center h-full gap-4 p-6 text-center">
-            <Camera className="text-field-600" size={48} />
+            <Camera className="text-field-600" size={52} />
             <p className="text-field-200 text-sm">{cameraError}</p>
             <button
               onClick={openFilePicker}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-field-600 hover:bg-field-500 text-white text-sm font-medium transition"
+              className="flex items-center gap-2 px-5 py-3 rounded-xl bg-field-600 hover:bg-field-500 text-white text-base font-medium transition"
             >
-              <ImagePlus size={16} />
+              <ImagePlus size={18} />
               Upload a photo instead
             </button>
           </div>
@@ -261,8 +259,8 @@ export default function CameraCapture({ onCapture, isAnalyzing }: CameraCaptureP
       </div>
 
       {/*
-        File input OUTSIDE the overflow-hidden container, positioned at top:0 left:0 (in-viewport).
-        Android Chrome silently drops onChange when the input is at -9999px (off-viewport).
+        File input OUTSIDE the overflow-hidden container.
+        Fixed at top:0 left:0 (in-viewport) so Android Chrome fires onChange reliably.
       */}
       <input
         ref={fileRef}

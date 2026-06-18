@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
 import CameraCapture from '@/components/Camera';
 import LocationBadge from '@/components/LocationBadge';
 import AnalysisResults from '@/components/Analysis';
 import DownloadReportButton from '@/components/DownloadReportButton';
-import { Scan, RotateCcw, ArrowLeft, MapPin, Navigation, ScanSearch, AlertCircle } from 'lucide-react';
+import { Scan, RotateCcw, MapPin, Navigation, ScanSearch, AlertCircle } from 'lucide-react';
 
 interface LocationData {
   lat: number;
@@ -16,9 +15,7 @@ interface LocationData {
   soilType?: string;
   hardiness_zone?: string;
   grassClass?: 'cool' | 'warm' | 'transition';
-  /** 7-day rolling averages */
   weather?: { avg_high_f: number; avg_low_f: number; avg_humidity: number };
-  /** 3-year historical averages */
   weather_hist?: { avg_high_f: number; avg_low_f: number; avg_humidity: number };
   soil_temp_surface_f?: number;
   soil_temp_6cm_f?: number;
@@ -29,12 +26,111 @@ interface LocationData {
 type AppState = 'idle' | 'analyzing' | 'needs_more_photo' | 'results' | 'error';
 type LocationSource = 'gps' | 'zip';
 
+/** Shared location sidebar used in both layout modes */
+function LocationPanel({
+  locationData,
+  locationLoading,
+  locationError,
+  locationSource,
+  showZipInput,
+  zipInput,
+  zipLoading,
+  zipError,
+  onRetry,
+  onToggleZip,
+  onZipChange,
+  onZipSubmit,
+  onRevertGps,
+}: {
+  locationData: LocationData | null;
+  locationLoading: boolean;
+  locationError: string | null;
+  locationSource: LocationSource;
+  showZipInput: boolean;
+  zipInput: string;
+  zipLoading: boolean;
+  zipError: string | null;
+  onRetry: () => void;
+  onToggleZip: () => void;
+  onZipChange: (v: string) => void;
+  onZipSubmit: () => void;
+  onRevertGps: () => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <LocationBadge
+        location={locationData}
+        loading={locationLoading}
+        error={locationError}
+        onRetry={onRetry}
+      />
+      {!locationLoading && (
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-1.5 text-xs text-field-400">
+            {locationSource === 'gps' ? (
+              <>
+                <Navigation size={11} className="text-field-500" />
+                <span>GPS</span>
+              </>
+            ) : (
+              <>
+                <MapPin size={11} className="text-sky-400" />
+                <span className="text-sky-400">Manual ZIP</span>
+              </>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {locationSource === 'zip' && (
+              <button
+                onClick={onRevertGps}
+                className="text-xs text-field-300 hover:text-white transition-colors flex items-center gap-1"
+              >
+                <Navigation size={10} /> Use GPS
+              </button>
+            )}
+            <button
+              onClick={onToggleZip}
+              className="text-xs text-field-300 hover:text-white transition-colors flex items-center gap-1"
+            >
+              <MapPin size={10} /> Change ZIP
+            </button>
+          </div>
+        </div>
+      )}
+      {showZipInput && (
+        <div className="rounded-xl bg-field-800/50 border border-white/8 p-3 space-y-2">
+          <p className="text-xs text-field-300 font-medium">Enter ZIP code to change location</p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={5}
+              placeholder="e.g. 08502"
+              value={zipInput}
+              onChange={e => onZipChange(e.target.value.replace(/\D/g, ''))}
+              onKeyDown={e => { if (e.key === 'Enter') onZipSubmit(); }}
+              className="flex-1 rounded-lg bg-field-900/80 border border-white/10 px-3 py-2.5 text-sm text-white placeholder:text-field-500 focus:outline-none focus:border-field-400 transition-colors"
+            />
+            <button
+              onClick={onZipSubmit}
+              disabled={zipLoading || zipInput.length !== 5}
+              className="px-4 py-2 rounded-lg bg-field-600 text-white text-sm font-medium hover:bg-field-500 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            >
+              {zipLoading ? '…' : 'Go'}
+            </button>
+          </div>
+          {zipError && <p className="text-xs text-red-400">{zipError}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function TurfAnalyzer() {
   const [locationData, setLocationData] = useState<LocationData | null>(null);
   const [locationLoading, setLocationLoading] = useState(true);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locationSource, setLocationSource] = useState<LocationSource>('gps');
-
   const [zipInput, setZipInput] = useState('');
   const [zipLoading, setZipLoading] = useState(false);
   const [zipError, setZipError] = useState<string | null>(null);
@@ -92,7 +188,7 @@ export default function TurfAnalyzer() {
               }
             }
           }
-        } catch { /* IP fallback failed — show ZIP prompt */ }
+        } catch { /* IP fallback failed */ }
         setLocationError('Location unavailable — enter your ZIP code below.');
         setShowZipInput(true);
         setLocationLoading(false);
@@ -248,10 +344,72 @@ export default function TurfAnalyzer() {
     setSecondOpinionLoading(false);
   };
 
+  const locationPanelProps = {
+    locationData,
+    locationLoading,
+    locationError,
+    locationSource,
+    showZipInput,
+    zipInput,
+    zipLoading,
+    zipError,
+    onRetry: fetchLocation,
+    onToggleZip: () => { setShowZipInput(v => !v); setZipError(null); },
+    onZipChange: (v: string) => { setZipInput(v); setZipError(null); },
+    onZipSubmit: () => fetchLocationByZip(zipInput),
+    onRevertGps: revertToGps,
+  };
+
+  // ── Capture mode: idle or analyzing ─────────────────────────────────────
+  const isCaptureMode = appState === 'idle' || (appState as string) === 'analyzing';
+
+  if (isCaptureMode) {
+    return (
+      // Fill the viewport below the global nav (global nav = top-0, h-12 = 3rem)
+      <main className="flex flex-col overflow-hidden" style={{ height: 'calc(100dvh - 3rem)' }}>
+
+        {/* Local header */}
+        <header className="shrink-0 bg-field-900/90 backdrop-blur-lg border-b border-white/5">
+          <div className="max-w-lg mx-auto px-4 py-3 flex items-center">
+            <Scan size={15} className="text-field-400 mr-2" />
+            <span className="font-display text-[15px] text-white tracking-[0.12em]">
+              Turf<span className="text-field-400">Analyzer</span>
+            </span>
+          </div>
+        </header>
+
+        {/* Body: env panel + camera fills remaining height */}
+        <div className="flex-1 flex flex-col min-h-0 max-w-lg mx-auto w-full px-4 pt-3 gap-3 pb-3">
+
+          {/* Environmental panel */}
+          <div className="shrink-0">
+            <LocationPanel {...locationPanelProps} />
+          </div>
+
+          {/* Camera: fills all remaining height */}
+          <div className="flex-1 min-h-0">
+            <CameraCapture
+              fill
+              onCapture={handleCapture}
+              isAnalyzing={(appState as string) === 'analyzing'}
+            />
+          </div>
+
+          {/* Idle hint */}
+          {appState === 'idle' && (
+            <p className="shrink-0 text-center text-sm text-field-400 pb-1">
+              Point camera at any turf issue for instant, location-aware guidance
+            </p>
+          )}
+        </div>
+      </main>
+    );
+  }
+
+  // ── Scroll mode: error / needs_more_photo / results ──────────────────────
   return (
     <main className="min-h-screen pb-16">
 
-      {/* ── HEADER ── */}
       <header className="sticky top-12 z-10 bg-field-900/90 backdrop-blur-lg border-b border-white/5">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -271,96 +429,10 @@ export default function TurfAnalyzer() {
         </div>
       </header>
 
-      <div className="max-w-lg mx-auto px-4 pt-4 space-y-3">
+      <div className="max-w-lg mx-auto px-4 pt-4 space-y-4">
 
-        {/* ── Environmental bar ── */}
-        <div className="space-y-2">
-          <LocationBadge
-            location={locationData}
-            loading={locationLoading}
-            error={locationError}
-            onRetry={fetchLocation}
-          />
-
-          {/* Location source indicator + change controls */}
-          {!locationLoading && (
-            <div className="flex items-center justify-between px-1">
-              <div className="flex items-center gap-1.5 text-xs text-field-400">
-                {locationSource === 'gps' ? (
-                  <>
-                    <Navigation size={11} className="text-field-500" />
-                    <span>GPS</span>
-                  </>
-                ) : (
-                  <>
-                    <MapPin size={11} className="text-sky-400" />
-                    <span className="text-sky-400">Manual ZIP</span>
-                  </>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                {locationSource === 'zip' && (
-                  <button
-                    onClick={revertToGps}
-                    className="text-xs text-field-300 hover:text-white transition-colors flex items-center gap-1"
-                  >
-                    <Navigation size={10} /> Use GPS
-                  </button>
-                )}
-                <button
-                  onClick={() => { setShowZipInput(v => !v); setZipError(null); }}
-                  className="text-xs text-field-300 hover:text-white transition-colors flex items-center gap-1"
-                >
-                  <MapPin size={10} /> Change ZIP
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ZIP code input panel */}
-          {showZipInput && (
-            <div className="rounded-xl bg-field-800/50 border border-white/8 p-3 space-y-2">
-              <p className="text-xs text-field-300 font-medium">Enter ZIP code to change location</p>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={5}
-                  placeholder="e.g. 08502"
-                  value={zipInput}
-                  onChange={e => { setZipInput(e.target.value.replace(/\D/g, '')); setZipError(null); }}
-                  onKeyDown={e => { if (e.key === 'Enter') fetchLocationByZip(zipInput); }}
-                  className="flex-1 rounded-lg bg-field-900/80 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-field-500 focus:outline-none focus:border-field-400 transition-colors"
-                />
-                <button
-                  onClick={() => fetchLocationByZip(zipInput)}
-                  disabled={zipLoading || zipInput.length !== 5}
-                  className="px-4 py-2 rounded-lg bg-field-600 text-white text-sm font-medium hover:bg-field-500 disabled:opacity-40 disabled:cursor-not-allowed transition"
-                >
-                  {zipLoading ? '…' : 'Go'}
-                </button>
-              </div>
-              {zipError && (
-                <p className="text-xs text-red-400">{zipError}</p>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* ── Camera — idle & analyzing ── */}
-        {appState !== 'results' && appState !== 'needs_more_photo' && (
-          <CameraCapture
-            onCapture={handleCapture}
-            isAnalyzing={(appState as string) === 'analyzing'}
-          />
-        )}
-
-        {/* Idle hint */}
-        {appState === 'idle' && (
-          <p className="text-center text-field-400 text-xs leading-relaxed px-4">
-            Point camera at any turf issue — weeds, disease, bare patches — for location-aware guidance.
-          </p>
-        )}
+        {/* Environmental panel always visible in scroll mode */}
+        <LocationPanel {...locationPanelProps} />
 
         {/* Error state */}
         {appState === 'error' && (
@@ -368,17 +440,16 @@ export default function TurfAnalyzer() {
             <p className="text-red-200 text-sm">{errorMessage}</p>
             <button
               onClick={reset}
-              className="px-5 py-2 rounded-xl bg-field-600 text-white text-sm hover:bg-field-500 transition"
+              className="px-5 py-2.5 rounded-xl bg-field-600 text-white text-sm hover:bg-field-500 transition"
             >
               Try again
             </button>
           </div>
         )}
 
-        {/* ── Needs-more-photo state ── */}
+        {/* Needs-more-photo state */}
         {appState === 'needs_more_photo' && photoRequest && (
           <div className="space-y-4">
-            {/* Minimized original photo */}
             {capturedImage && (
               <div className="flex items-center gap-3 rounded-xl bg-field-800/40 border border-field-700/30 p-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -394,7 +465,6 @@ export default function TurfAnalyzer() {
               </div>
             )}
 
-            {/* Directions card */}
             <div className="rounded-2xl bg-soil-800/60 border border-amber-700/30 overflow-hidden">
               <div className="px-4 py-3 flex items-start gap-3">
                 <AlertCircle size={16} className="text-amber-400 shrink-0 mt-0.5" />
@@ -414,7 +484,6 @@ export default function TurfAnalyzer() {
               </div>
             </div>
 
-            {/* Second photo capture */}
             <div className="rounded-2xl bg-soil-800/60 border border-field-600/30 overflow-hidden">
               <div className="px-4 pt-3.5 pb-2 flex items-center gap-2">
                 <ScanSearch size={14} className="text-field-400" />
@@ -428,7 +497,6 @@ export default function TurfAnalyzer() {
               </div>
             </div>
 
-            {/* Cancel */}
             <button
               onClick={reset}
               className="flex items-center gap-1.5 text-field-400 hover:text-field-200 text-xs transition mx-auto"
@@ -438,7 +506,7 @@ export default function TurfAnalyzer() {
           </div>
         )}
 
-        {/* ── Results state ── */}
+        {/* Results state */}
         {appState === 'results' && (
           <div id="results" className="space-y-4">
             {capturedImage && (

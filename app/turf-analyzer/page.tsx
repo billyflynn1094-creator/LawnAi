@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import CameraCapture from '@/components/Camera';
-import PhotoUpload from '@/components/PhotoUpload';
 import LocationBadge from '@/components/LocationBadge';
 import AnalysisResults from '@/components/Analysis';
 import DownloadReportButton from '@/components/DownloadReportButton';
@@ -16,10 +15,14 @@ interface LocationData {
   state?: string;
   soilType?: string;
   hardiness_zone?: string;
+  grassClass?: 'cool' | 'warm' | 'transition';
   /** 7-day rolling averages */
   weather?: { avg_high_f: number; avg_low_f: number; avg_humidity: number };
+  /** 3-year historical averages */
+  weather_hist?: { avg_high_f: number; avg_low_f: number; avg_humidity: number };
   soil_temp_surface_f?: number;
   soil_temp_6cm_f?: number;
+  soil_temp_hist_f?: number;
   rainfall?: { recent_in: number; normal_in: number; pct_of_normal: number };
 }
 
@@ -74,7 +77,6 @@ export default function TurfAnalyzer() {
       },
       async (err) => {
         console.warn('Geolocation error:', err);
-        // Try a silent IP-based fallback before giving up
         try {
           const ipRes = await fetch('https://ipapi.co/json/');
           if (ipRes.ok) {
@@ -155,7 +157,6 @@ export default function TurfAnalyzer() {
           const err = await res.json();
           errMsg = err.error ?? errMsg;
         } catch {
-          // Non-JSON error body (e.g. Vercel timeout page)
           errMsg = `Server error (${res.status}) — please try again`;
         }
         throw new Error(errMsg);
@@ -253,14 +254,11 @@ export default function TurfAnalyzer() {
       {/* ── HEADER ── */}
       <header className="sticky top-12 z-10 bg-field-900/90 backdrop-blur-lg border-b border-white/5">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-
-            <div className="flex items-center gap-2">
-              <Scan size={15} className="text-field-400" />
-              <span className="font-display text-[15px] text-white tracking-[0.12em]">
-                Turf<span className="text-field-400">Analyzer</span>
-              </span>
-            </div>
+          <div className="flex items-center gap-2">
+            <Scan size={15} className="text-field-400" />
+            <span className="font-display text-[15px] text-white tracking-[0.12em]">
+              Turf<span className="text-field-400">Analyzer</span>
+            </span>
           </div>
           {appState === 'results' && (
             <button
@@ -273,9 +271,9 @@ export default function TurfAnalyzer() {
         </div>
       </header>
 
-      <div className="max-w-lg mx-auto px-4 pt-5 space-y-4">
+      <div className="max-w-lg mx-auto px-4 pt-4 space-y-3">
 
-        {/* Location context */}
+        {/* ── Environmental bar ── */}
         <div className="space-y-2">
           <LocationBadge
             location={locationData}
@@ -291,7 +289,7 @@ export default function TurfAnalyzer() {
                 {locationSource === 'gps' ? (
                   <>
                     <Navigation size={11} className="text-field-500" />
-                    <span>GPS location</span>
+                    <span>GPS</span>
                   </>
                 ) : (
                   <>
@@ -306,7 +304,7 @@ export default function TurfAnalyzer() {
                     onClick={revertToGps}
                     className="text-xs text-field-300 hover:text-white transition-colors flex items-center gap-1"
                   >
-                    <Navigation size={10} /> Use my GPS ↩
+                    <Navigation size={10} /> Use GPS
                   </button>
                 )}
                 <button
@@ -349,28 +347,19 @@ export default function TurfAnalyzer() {
           )}
         </div>
 
-        {/* Camera — idle & analyzing */}
+        {/* ── Camera — idle & analyzing ── */}
         {appState !== 'results' && appState !== 'needs_more_photo' && (
-          <>
-            <CameraCapture
-              onCapture={handleCapture}
-              isAnalyzing={(appState as string) === 'analyzing'}
-            />
-            <PhotoUpload
-              onCapture={handleCapture}
-              isAnalyzing={(appState as string) === 'analyzing'}
-            />
-          </>
+          <CameraCapture
+            onCapture={handleCapture}
+            isAnalyzing={(appState as string) === 'analyzing'}
+          />
         )}
 
-        {/* Idle prompt */}
+        {/* Idle hint */}
         {appState === 'idle' && (
-          <div className="text-center py-2">
-            <p className="text-field-50 text-sm leading-relaxed">
-              Point your camera at any turf issue — weeds, disease, bare patches,
-              discoloration — and get instant, location-aware guidance.
-            </p>
-          </div>
+          <p className="text-center text-field-400 text-xs leading-relaxed px-4">
+            Point camera at any turf issue — weeds, disease, bare patches — for location-aware guidance.
+          </p>
         )}
 
         {/* Error state */}
@@ -386,7 +375,7 @@ export default function TurfAnalyzer() {
           </div>
         )}
 
-        {/* Needs-more-photo state */}
+        {/* ── Needs-more-photo state ── */}
         {appState === 'needs_more_photo' && photoRequest && (
           <div className="space-y-4">
             {/* Minimized original photo */}
@@ -431,12 +420,8 @@ export default function TurfAnalyzer() {
                 <ScanSearch size={14} className="text-field-400" />
                 <span className="text-xs font-semibold text-field-300 uppercase tracking-wide">Detail photo</span>
               </div>
-              <div className="px-4 pb-4 space-y-3">
+              <div className="px-4 pb-4">
                 <CameraCapture
-                  onCapture={handleSecondCapture}
-                  isAnalyzing={(appState as string) === 'analyzing'}
-                />
-                <PhotoUpload
                   onCapture={handleSecondCapture}
                   isAnalyzing={(appState as string) === 'analyzing'}
                 />
@@ -453,7 +438,7 @@ export default function TurfAnalyzer() {
           </div>
         )}
 
-        {/* Results state */}
+        {/* ── Results state ── */}
         {appState === 'results' && (
           <div id="results" className="space-y-4">
             {capturedImage && (
@@ -479,11 +464,11 @@ export default function TurfAnalyzer() {
               </div>
             )}
             <AnalysisResults
-                analysis={analysis}
-                secondOpinionData={secondOpinionData}
-                secondOpinionLoading={secondOpinionLoading}
-                onSecondOpinion={handleSecondOpinion}
-              />
+              analysis={analysis}
+              secondOpinionData={secondOpinionData}
+              secondOpinionLoading={secondOpinionLoading}
+              onSecondOpinion={handleSecondOpinion}
+            />
             <DownloadReportButton analysis={analysis} location={locationData} />
           </div>
         )}

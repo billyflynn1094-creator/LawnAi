@@ -70,22 +70,17 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // FileReader.readAsDataURL — NOT URL.createObjectURL.
-    // On Android, photos from Messages/Gmail/Drive/WhatsApp are backed by
-    // content-provider URIs. URL.createObjectURL on those fails silently
-    // (img.onerror fires immediately). FileReader reads raw bytes from the
-    // file descriptor directly, bypassing the blob-URL system entirely.
-    // Works for every Android file source including received attachments.
+    // FileReader.readAsDataURL bypasses blob URL system entirely.
+    // Works for ALL Android file sources including received attachments
+    // (Messages, Gmail, Drive, WhatsApp) backed by content:// URIs.
     const reader = new FileReader();
-
     reader.onload = (ev) => {
       const rawDataUrl = ev.target?.result as string | undefined;
       if (!rawDataUrl) {
         setCameraError("Failed to read image. Please try a different photo.");
         return;
       }
-      // Resize through canvas so the preview data URL stays small (~150-300 KB)
+      // Resize through canvas: keeps preview data URL small (~150-300 KB)
       // and renders reliably across all Android Chrome versions.
       const img = new window.Image();
       img.onload = () => {
@@ -96,33 +91,25 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
           else        { w = Math.round(w * MAX / h); h = MAX; }
         }
         const offscreen = document.createElement("canvas");
-        offscreen.width = w;
-        offscreen.height = h;
+        offscreen.width = w; offscreen.height = h;
         const ctx = offscreen.getContext("2d");
-        if (!ctx) {
-          setCameraError("Failed to process image. Please try another photo.");
-          return;
-        }
+        if (!ctx) { setCameraError("Failed to process image. Please try another photo."); return; }
         ctx.drawImage(img, 0, 0, w, h);
         setPreview(offscreen.toDataURL("image/jpeg", 0.82));
         setPreviewFile(file);
         stopStream();
-        setMode("preview"); // camera window disappears, preview takes over
+        setMode("preview"); // camera disappears, preview takes over
       };
       img.onerror = () => setCameraError("Could not decode that image. Please try a different photo.");
       img.src = rawDataUrl;
     };
-
     reader.onerror = () => setCameraError("Failed to read image. Please try a different photo.");
     reader.readAsDataURL(file);
   };
 
   const retake = () => {
-    setPreview(null);
-    setPreviewFile(null);
-    setCameraError(null);
-    setMode("camera");
-    startCamera();
+    setPreview(null); setPreviewFile(null); setCameraError(null);
+    setMode("camera"); startCamera();
   };
 
   const analyze = () => {
@@ -143,14 +130,21 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
 
   const flipCamera = () => setFacingMode((f) => (f === "environment" ? "user" : "environment"));
 
-  const sizeClass = fill ? "h-full" : "aspect-[4/3]";
+  // When fill=true the component owns its full vertical space.
+  // We wrap in a flex-column div so the camera view can grow (flex-1)
+  // while the Upload Photo button sits below it (shrink-0).
+  // This works regardless of what the parent div's layout is.
+  const outerClass = fill ? "h-full flex flex-col gap-3" : "";
+  const mediaClass = fill
+    ? "relative w-full flex-1 min-h-0 rounded-2xl overflow-hidden bg-soil-900 shadow-2xl"
+    : "relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-soil-900 shadow-2xl";
 
   return (
-    <>
+    <div className={outerClass}>
       {/* ─── CAMERA VIEW (hidden once a photo is selected/uploaded) ─── */}
       {mode === "camera" && (
         <>
-          <div className={`relative w-full ${sizeClass} rounded-2xl overflow-hidden bg-soil-900 shadow-2xl`}>
+          <div className={`${mediaClass}`}>
             {!cameraError && (
               <>
                 <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
@@ -192,10 +186,10 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
             <canvas ref={canvasRef} className="hidden" />
           </div>
 
-          {/* Upload Photo button — always shown in camera mode, below the camera window */}
+          {/* Upload Photo button — sits below the camera window as a shrink-0 row */}
           <button
             onClick={openFilePicker}
-            className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl bg-soil-800/80 border border-white/10 text-field-200 hover:bg-soil-700 hover:text-white active:scale-[0.98] transition text-base font-medium"
+            className="shrink-0 w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl bg-soil-800/80 border border-white/10 text-field-200 hover:bg-soil-700 hover:text-white active:scale-[0.98] transition text-base font-medium"
           >
             <Upload size={18} />
             Upload Photo
@@ -205,7 +199,7 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
 
       {/* ─── PHOTO PREVIEW (replaces camera entirely once photo is ready) ─── */}
       {mode === "preview" && preview && (
-        <div className={`relative w-full ${sizeClass} rounded-2xl overflow-hidden bg-soil-900 shadow-2xl ring-4 ring-green-500`}>
+        <div className={`${mediaClass} ring-4 ring-green-500`}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={preview} alt="Captured turf" className="w-full h-full object-cover" />
 
@@ -215,7 +209,7 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
             <span className="text-white text-[10px] font-semibold tracking-wide">LAWN AI</span>
           </div>
 
-          {/* Analyzing spinner overlay */}
+          {/* Analyzing spinner */}
           {isAnalyzing && (
             <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-3">
               <div className="w-10 h-10 rounded-full border-[3px] border-green-400 border-t-transparent animate-spin" />
@@ -253,6 +247,6 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
         style={{ position: "fixed", top: 0, left: 0, width: "1px", height: "1px", opacity: 0, pointerEvents: "none" }}
         onChange={handleFileUpload}
       />
-    </>
+    </div>
   );
 }

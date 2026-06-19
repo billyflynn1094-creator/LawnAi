@@ -9,12 +9,6 @@ interface CameraCaptureProps {
   fill?: boolean;
 }
 
-function revokeBlobUrl(url: string | null, source: string | null) {
-  if (source === "file" && url?.startsWith("blob:")) {
-    URL.revokeObjectURL(url);
-  }
-}
-
 export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -22,8 +16,11 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
   const streamRef = useRef<MediaStream | null>(null);
 
   const [mode, setMode] = useState<"camera" | "preview">("camera");
+  // preview is always a data URL (never a blob URL) — blob URLs from content-
+  // provider-backed files (Messages, Gmail, Google Drive, etc.) silently
+  // render black on Android Chrome in both fixed overlays and normal DOM.
   const [preview, setPreview] = useState<string | null>(null);
-  const [previewSource, setPreviewSource] = useState<"camera" | "file" | null>(null);
+  // Keep the original File for full-quality base64 read on Analyze press
   const [previewFile, setPreviewFile] = useState<File | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
@@ -42,9 +39,7 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
         audio: false,
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
+      if (videoRef.current) videoRef.current.srcObject = stream;
     } catch (err) {
       const msg =
         err instanceof DOMException && err.name === "NotAllowedError"
@@ -54,15 +49,7 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
     }
   }, [facingMode, stopStream]);
 
-  useEffect(() => {
-    startCamera();
-    return () => stopStream();
-  }, [startCamera, stopStream]);
-
-  useEffect(() => {
-    return () => { revokeBlobUrl(preview, previewSource); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => { startCamera(); return () => stopStream(); }, [startCamera, stopStream]);
 
   const capture = () => {
     const video = videoRef.current;
@@ -74,69 +61,86 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
     if (!ctx) return;
     ctx.drawImage(video, 0, 0);
     const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
-    revokeBlobUrl(preview, previewSource);
     setPreview(dataUrl);
-    setPreviewSource("camera");
     setPreviewFile(null);
     setMode("preview");
     stopStream();
   };
 
   const openFilePicker = () => {
-    if (fileRef.current) {
-      fileRef.current.value = "";
-      fileRef.current.click();
-    }
+    if (fileRef.current) { fileRef.current.value = ""; fileRef.current.click(); }
   };
 
+  /**
+   * Convert the selected file to a canvas JPEG data URL for preview display.
+   *
+   * Problem: blob URLs created from Android content-provider-backed files
+   * (photos received via Messages, Gmail attachments, Google Drive shares,
+   * WhatsApp, etc.) silently render as solid black on Android Chrome — in both
+   * fixed overlays AND normal DOM containers. Reading the file through a hidden
+   * Image element + canvas always produces a renderable data URL.
+   *
+   * Max long-edge 1280px keeps the preview data URL small (~150-300KB base64).
+   * The original File is kept in previewFile so Analyze reads full-quality bytes.
+   */
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    revokeBlobUrl(preview, previewSource);
-    // Use createObjectURL for in-container display only.
-    // blob URLs work fine inside a normal DOM container but silently fail
-    // inside fixed-position overlays on Android Chrome (black screen).
-    // This component keeps preview in-container to avoid that issue.
-    const blobUrl = URL.createObjectURL(file);
-    setPreview(blobUrl);
-    setPreviewSource("file");
-    setPreviewFile(file);
-    setMode("preview");
+
+    const tempUrl = URL.createObjectURL(file);
+    const img = new window.Image();
+
+    img.onload = () => {
+      URL.revokeObjectURL(tempUrl);
+      const MAX = 1280;
+      let { naturalWidth: w, naturalHeight: h } = img;
+      if (w > MAX || h > MAX) {
+        if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
+        else { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { setCameraError("Failed to process image. Please try another photo."); return; }
+      ctx.drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+      setPreview(dataUrl);
+      setPreviewFile(file);
+      setMode("preview");
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(tempUrl);
+      setCameraError("Could not load that image. Please try a different photo.");
+    };
+
+    img.src = tempUrl;
   };
 
   const retake = () => {
-    revokeBlobUrl(preview, previewSource);
-    setPreview(null);
-    setPreviewSource(null);
-    setPreviewFile(null);
-    setMode("camera");
-    startCamera();
+    setPreview(null); setPreviewFile(null);
+    setMode("camera"); startCamera();
   };
 
   const analyze = () => {
     if (!preview) return;
-    if (previewSource === "camera") {
-      onCapture(preview);
-    } else if (previewSource === "file" && previewFile) {
+    if (previewFile) {
+      // File upload: read original at full quality for the API
       const reader = new FileReader();
       reader.onload = (ev) => {
-        const base64 = ev.target?.result as string;
-        if (base64) {
-          onCapture(base64);
-        } else {
-          setCameraError("Failed to read image. Please try a different photo.");
-        }
+        const b64 = ev.target?.result as string;
+        if (b64) onCapture(b64);
+        else setCameraError("Failed to read image. Please try a different photo.");
       };
-      reader.onerror = () => {
-        setCameraError("Failed to read image. Please try a different photo.");
-      };
+      reader.onerror = () => setCameraError("Failed to read image. Please try a different photo.");
       reader.readAsDataURL(previewFile);
+    } else {
+      // Camera capture: preview IS the base64 data URL
+      onCapture(preview);
     }
   };
 
-  const flipCamera = () => {
-    setFacingMode((f) => (f === "environment" ? "user" : "environment"));
-  };
+  const flipCamera = () => setFacingMode((f) => (f === "environment" ? "user" : "environment"));
 
   const containerClass = [
     "relative w-full rounded-2xl overflow-hidden bg-soil-900 shadow-2xl",
@@ -148,7 +152,6 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
     <>
       <div className={containerClass}>
 
-        {/* Live camera */}
         {mode === "camera" && !cameraError && (
           <>
             <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
@@ -173,7 +176,6 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
           </>
         )}
 
-        {/* Camera error fallback */}
         {cameraError && mode === "camera" && (
           <div className="flex flex-col items-center justify-center h-full gap-4 p-6 text-center">
             <Camera className="text-field-600" size={52} />
@@ -184,14 +186,11 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
           </div>
         )}
 
-        {/* Photo preview — IN-CONTAINER (not a fixed overlay).
-            Blob URLs work reliably inside a normal DOM container.
-            Fixed overlays can silently fail on Android Chrome → black screen. */}
+        {/* Preview — canvas-derived data URL, works for ALL Android sources */}
         {mode === "preview" && preview && (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={preview} alt="Captured turf" className="w-full h-full object-cover" />
-            {/* In-app indicator */}
             <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/60 rounded-full px-2.5 py-1 backdrop-blur-sm">
               <div className="w-2 h-2 rounded-full bg-green-500" />
               <span className="text-white text-[10px] font-semibold tracking-wide">LAWN AI</span>

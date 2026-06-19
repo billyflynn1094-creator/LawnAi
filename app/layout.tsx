@@ -18,11 +18,22 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Turf AI — Professional Lawn Intelligence",
+  title: "Lawn AI — Professional Turf Intelligence",
   description:
     "AI-powered turf diagnostics, location-aware treatment timelines, and professional product recommendations for lawns and golf courses across the US.",
   manifest: "/manifest.json",
-  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Turf AI" },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Lawn AI",
+  },
+  icons: {
+    apple: "/icons/apple-touch-icon.png",
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+  },
 };
 
 export const viewport: Viewport = {

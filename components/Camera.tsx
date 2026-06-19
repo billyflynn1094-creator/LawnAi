@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback } from "react";
-import { Camera, RefreshCw, ImagePlus, X } from "lucide-react";
+import { Camera, RefreshCw, X, Upload } from "lucide-react";
 
 interface CameraCaptureProps {
   onCapture: (base64: string) => void;
@@ -40,7 +40,7 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
       const msg =
         err instanceof DOMException && err.name === "NotAllowedError"
           ? "Camera permission denied. Please allow camera access and try again."
-          : "Camera not available. Use the gallery icon to upload a photo.";
+          : "Camera not available. Use the Upload Photo button below to add a photo.";
       setCameraError(msg);
     }
   }, [facingMode, stopStream]);
@@ -71,18 +71,12 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Use FileReader.readAsDataURL — NOT URL.createObjectURL.
-    //
-    // On Android, photos from Messages, Gmail, Google Drive, WhatsApp etc.
-    // are backed by content-provider URIs (content://...).
-    // URL.createObjectURL() on these produces a blob URL that Android Chrome
-    // CANNOT load at all (img.onerror fires immediately) — even before any
-    // rendering attempt.
-    //
-    // FileReader reads raw bytes directly from the file descriptor, bypassing
-    // the blob URL system. It works for every Android file source.
-    // We then load the raw data URL into an Image + canvas to resize down to
-    // ~1280px so the preview data URL stays small and renders reliably.
+    // FileReader.readAsDataURL — NOT URL.createObjectURL.
+    // On Android, photos from Messages/Gmail/Drive/WhatsApp are backed by
+    // content-provider URIs. URL.createObjectURL on those fails silently
+    // (img.onerror fires immediately). FileReader reads raw bytes from the
+    // file descriptor directly, bypassing the blob-URL system entirely.
+    // Works for every Android file source including received attachments.
     const reader = new FileReader();
 
     reader.onload = (ev) => {
@@ -91,9 +85,9 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
         setCameraError("Failed to read image. Please try a different photo.");
         return;
       }
-
+      // Resize through canvas so the preview data URL stays small (~150-300 KB)
+      // and renders reliably across all Android Chrome versions.
       const img = new window.Image();
-
       img.onload = () => {
         const MAX = 1280;
         let { naturalWidth: w, naturalHeight: h } = img;
@@ -110,29 +104,25 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
           return;
         }
         ctx.drawImage(img, 0, 0, w, h);
-        const previewDataUrl = offscreen.toDataURL("image/jpeg", 0.82);
-        setPreview(previewDataUrl);
+        setPreview(offscreen.toDataURL("image/jpeg", 0.82));
         setPreviewFile(file);
-        setMode("preview");
+        stopStream();
+        setMode("preview"); // camera window disappears, preview takes over
       };
-
-      img.onerror = () => {
-        setCameraError("Could not decode that image. Please try a different photo.");
-      };
-
+      img.onerror = () => setCameraError("Could not decode that image. Please try a different photo.");
       img.src = rawDataUrl;
     };
 
-    reader.onerror = () => {
-      setCameraError("Failed to read image. Please try a different photo.");
-    };
-
+    reader.onerror = () => setCameraError("Failed to read image. Please try a different photo.");
     reader.readAsDataURL(file);
   };
 
   const retake = () => {
-    setPreview(null); setPreviewFile(null);
-    setMode("camera"); startCamera();
+    setPreview(null);
+    setPreviewFile(null);
+    setCameraError(null);
+    setMode("camera");
+    startCamera();
   };
 
   const analyze = () => {
@@ -153,79 +143,107 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
 
   const flipCamera = () => setFacingMode((f) => (f === "environment" ? "user" : "environment"));
 
-  const containerClass = [
-    "relative w-full rounded-2xl overflow-hidden bg-soil-900 shadow-2xl",
-    fill ? "h-full" : "aspect-[4/3]",
-    mode === "preview" ? "ring-4 ring-green-500" : "",
-  ].join(" ");
+  const sizeClass = fill ? "h-full" : "aspect-[4/3]";
 
   return (
     <>
-      <div className={containerClass}>
-        {mode === "camera" && !cameraError && (
-          <>
-            <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute inset-8 border border-field-300/40 rounded-lg" />
-              <div className="absolute top-8 left-8 w-6 h-6 border-t-2 border-l-2 border-field-300 rounded-tl" />
-              <div className="absolute top-8 right-8 w-6 h-6 border-t-2 border-r-2 border-field-300 rounded-tr" />
-              <div className="absolute bottom-8 left-8 w-6 h-6 border-b-2 border-l-2 border-field-300 rounded-bl" />
-              <div className="absolute bottom-8 right-8 w-6 h-6 border-b-2 border-r-2 border-field-300 rounded-br" />
-            </div>
-            <div className="absolute bottom-0 inset-x-0 p-4 flex items-center justify-between bg-gradient-to-t from-soil-900/80 to-transparent">
-              <button onClick={openFilePicker} className="p-3.5 rounded-full bg-soil-800/80 text-field-200 hover:bg-soil-700 transition" aria-label="Upload photo from gallery">
-                <ImagePlus size={22} />
-              </button>
-              <button onClick={capture} className="w-[4.5rem] h-[4.5rem] rounded-full bg-field-400 hover:bg-field-300 border-4 border-field-200 transition shadow-lg active:scale-95" aria-label="Capture photo">
-                <Camera className="mx-auto text-soil-900" size={26} />
-              </button>
-              <button onClick={flipCamera} className="p-3.5 rounded-full bg-soil-800/80 text-field-200 hover:bg-soil-700 transition" aria-label="Flip camera">
-                <RefreshCw size={22} />
-              </button>
-            </div>
-          </>
-        )}
+      {/* ─── CAMERA VIEW (hidden once a photo is selected/uploaded) ─── */}
+      {mode === "camera" && (
+        <>
+          <div className={`relative w-full ${sizeClass} rounded-2xl overflow-hidden bg-soil-900 shadow-2xl`}>
+            {!cameraError && (
+              <>
+                <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+                {/* Corner reticle */}
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="absolute inset-8 border border-field-300/40 rounded-lg" />
+                  <div className="absolute top-8 left-8 w-6 h-6 border-t-2 border-l-2 border-field-300 rounded-tl" />
+                  <div className="absolute top-8 right-8 w-6 h-6 border-t-2 border-r-2 border-field-300 rounded-tr" />
+                  <div className="absolute bottom-8 left-8 w-6 h-6 border-b-2 border-l-2 border-field-300 rounded-bl" />
+                  <div className="absolute bottom-8 right-8 w-6 h-6 border-b-2 border-r-2 border-field-300 rounded-br" />
+                </div>
+                {/* Capture + flip */}
+                <div className="absolute bottom-0 inset-x-0 p-4 flex items-center justify-center gap-8 bg-gradient-to-t from-soil-900/80 to-transparent">
+                  <button
+                    onClick={capture}
+                    className="w-[4.5rem] h-[4.5rem] rounded-full bg-field-400 hover:bg-field-300 border-4 border-field-200 transition shadow-lg active:scale-95"
+                    aria-label="Capture photo"
+                  >
+                    <Camera className="mx-auto text-soil-900" size={26} />
+                  </button>
+                  <button
+                    onClick={flipCamera}
+                    className="p-3.5 rounded-full bg-soil-800/80 text-field-200 hover:bg-soil-700 transition"
+                    aria-label="Flip camera"
+                  >
+                    <RefreshCw size={22} />
+                  </button>
+                </div>
+              </>
+            )}
 
-        {cameraError && mode === "camera" && (
-          <div className="flex flex-col items-center justify-center h-full gap-4 p-6 text-center">
-            <Camera className="text-field-600" size={52} />
-            <p className="text-field-200 text-sm">{cameraError}</p>
-            <button onClick={openFilePicker} className="flex items-center gap-2 px-5 py-3 rounded-xl bg-field-600 hover:bg-field-500 text-white text-base font-medium transition">
-              <ImagePlus size={18} /> Upload a photo instead
-            </button>
+            {cameraError && (
+              <div className="flex flex-col items-center justify-center h-full gap-4 p-6 text-center">
+                <Camera className="text-field-600" size={52} />
+                <p className="text-field-200 text-sm">{cameraError}</p>
+              </div>
+            )}
+
+            <canvas ref={canvasRef} className="hidden" />
           </div>
-        )}
 
-        {mode === "preview" && preview && (
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={preview} alt="Captured turf" className="w-full h-full object-cover" />
-            <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/60 rounded-full px-2.5 py-1 backdrop-blur-sm">
-              <div className="w-2 h-2 rounded-full bg-green-500" />
-              <span className="text-white text-[10px] font-semibold tracking-wide">LAWN AI</span>
+          {/* Upload Photo button — always shown in camera mode, below the camera window */}
+          <button
+            onClick={openFilePicker}
+            className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl bg-soil-800/80 border border-white/10 text-field-200 hover:bg-soil-700 hover:text-white active:scale-[0.98] transition text-base font-medium"
+          >
+            <Upload size={18} />
+            Upload Photo
+          </button>
+        </>
+      )}
+
+      {/* ─── PHOTO PREVIEW (replaces camera entirely once photo is ready) ─── */}
+      {mode === "preview" && preview && (
+        <div className={`relative w-full ${sizeClass} rounded-2xl overflow-hidden bg-soil-900 shadow-2xl ring-4 ring-green-500`}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={preview} alt="Captured turf" className="w-full h-full object-cover" />
+
+          {/* In-app badge */}
+          <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/60 rounded-full px-2.5 py-1 backdrop-blur-sm">
+            <div className="w-2 h-2 rounded-full bg-green-500" />
+            <span className="text-white text-[10px] font-semibold tracking-wide">LAWN AI</span>
+          </div>
+
+          {/* Analyzing spinner overlay */}
+          {isAnalyzing && (
+            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-3">
+              <div className="w-10 h-10 rounded-full border-[3px] border-green-400 border-t-transparent animate-spin" />
+              <p className="text-white text-sm font-medium">Analyzing your turf…</p>
             </div>
-            {isAnalyzing && (
-              <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-3">
-                <div className="w-10 h-10 rounded-full border-[3px] border-green-400 border-t-transparent animate-spin" />
-                <p className="text-white text-sm font-medium">Analyzing your turf…</p>
-              </div>
-            )}
-            {!isAnalyzing && (
-              <div className="absolute bottom-0 inset-x-0 px-4 pb-5 pt-16 flex gap-3 bg-gradient-to-t from-black/80 to-transparent">
-                <button onClick={retake} className="flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl bg-white/15 text-white hover:bg-white/25 transition text-base font-medium backdrop-blur-sm">
-                  <X size={18} /> Retake
-                </button>
-                <button onClick={analyze} className="flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl bg-green-600 hover:bg-green-500 active:bg-green-700 text-white transition text-base font-semibold shadow-lg">
-                  <Camera size={18} /> Analyze
-                </button>
-              </div>
-            )}
-          </>
-        )}
+          )}
 
-        <canvas ref={canvasRef} className="hidden" />
-      </div>
+          {/* Retake / Analyze buttons */}
+          {!isAnalyzing && (
+            <div className="absolute bottom-0 inset-x-0 px-4 pb-5 pt-16 flex gap-3 bg-gradient-to-t from-black/80 to-transparent">
+              <button
+                onClick={retake}
+                className="flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl bg-white/15 text-white hover:bg-white/25 transition text-base font-medium backdrop-blur-sm"
+              >
+                <X size={18} /> Retake
+              </button>
+              <button
+                onClick={analyze}
+                className="flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl bg-green-600 hover:bg-green-500 active:bg-green-700 text-white transition text-base font-semibold shadow-lg"
+              >
+                <Camera size={18} /> Analyze
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
+      {/* File input — fixed at 0,0 so Android Chrome fires onChange reliably */}
       <input
         ref={fileRef}
         type="file"

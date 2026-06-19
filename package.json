@@ -13,6 +13,7 @@
     "react": "^18",
     "react-dom": "^18",
     "@google/generative-ai": "latest",
+    "openai": "^4",
     "lucide-react": "^0.400.0",
     "jspdf": "^2.5.1",
     "heic2any": "^0.0.4"

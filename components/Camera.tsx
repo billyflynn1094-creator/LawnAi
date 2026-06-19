@@ -16,11 +16,7 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
   const streamRef = useRef<MediaStream | null>(null);
 
   const [mode, setMode] = useState<"camera" | "preview">("camera");
-  // preview is always a data URL (never a blob URL) — blob URLs from content-
-  // provider-backed files (Messages, Gmail, Google Drive, etc.) silently
-  // render black on Android Chrome in both fixed overlays and normal DOM.
   const [preview, setPreview] = useState<string | null>(null);
-  // Keep the original File for full-quality base64 read on Analyze press
   const [previewFile, setPreviewFile] = useState<File | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
@@ -71,50 +67,67 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
     if (fileRef.current) { fileRef.current.value = ""; fileRef.current.click(); }
   };
 
-  /**
-   * Convert the selected file to a canvas JPEG data URL for preview display.
-   *
-   * Problem: blob URLs created from Android content-provider-backed files
-   * (photos received via Messages, Gmail attachments, Google Drive shares,
-   * WhatsApp, etc.) silently render as solid black on Android Chrome — in both
-   * fixed overlays AND normal DOM containers. Reading the file through a hidden
-   * Image element + canvas always produces a renderable data URL.
-   *
-   * Max long-edge 1280px keeps the preview data URL small (~150-300KB base64).
-   * The original File is kept in previewFile so Analyze reads full-quality bytes.
-   */
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const tempUrl = URL.createObjectURL(file);
-    const img = new window.Image();
+    // Use FileReader.readAsDataURL — NOT URL.createObjectURL.
+    //
+    // On Android, photos from Messages, Gmail, Google Drive, WhatsApp etc.
+    // are backed by content-provider URIs (content://...).
+    // URL.createObjectURL() on these produces a blob URL that Android Chrome
+    // CANNOT load at all (img.onerror fires immediately) — even before any
+    // rendering attempt.
+    //
+    // FileReader reads raw bytes directly from the file descriptor, bypassing
+    // the blob URL system. It works for every Android file source.
+    // We then load the raw data URL into an Image + canvas to resize down to
+    // ~1280px so the preview data URL stays small and renders reliably.
+    const reader = new FileReader();
 
-    img.onload = () => {
-      URL.revokeObjectURL(tempUrl);
-      const MAX = 1280;
-      let { naturalWidth: w, naturalHeight: h } = img;
-      if (w > MAX || h > MAX) {
-        if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
-        else { w = Math.round(w * MAX / h); h = MAX; }
+    reader.onload = (ev) => {
+      const rawDataUrl = ev.target?.result as string | undefined;
+      if (!rawDataUrl) {
+        setCameraError("Failed to read image. Please try a different photo.");
+        return;
       }
-      const canvas = document.createElement("canvas");
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) { setCameraError("Failed to process image. Please try another photo."); return; }
-      ctx.drawImage(img, 0, 0, w, h);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
-      setPreview(dataUrl);
-      setPreviewFile(file);
-      setMode("preview");
+
+      const img = new window.Image();
+
+      img.onload = () => {
+        const MAX = 1280;
+        let { naturalWidth: w, naturalHeight: h } = img;
+        if (w > MAX || h > MAX) {
+          if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
+          else        { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        const offscreen = document.createElement("canvas");
+        offscreen.width = w;
+        offscreen.height = h;
+        const ctx = offscreen.getContext("2d");
+        if (!ctx) {
+          setCameraError("Failed to process image. Please try another photo.");
+          return;
+        }
+        ctx.drawImage(img, 0, 0, w, h);
+        const previewDataUrl = offscreen.toDataURL("image/jpeg", 0.82);
+        setPreview(previewDataUrl);
+        setPreviewFile(file);
+        setMode("preview");
+      };
+
+      img.onerror = () => {
+        setCameraError("Could not decode that image. Please try a different photo.");
+      };
+
+      img.src = rawDataUrl;
     };
 
-    img.onerror = () => {
-      URL.revokeObjectURL(tempUrl);
-      setCameraError("Could not load that image. Please try a different photo.");
+    reader.onerror = () => {
+      setCameraError("Failed to read image. Please try a different photo.");
     };
 
-    img.src = tempUrl;
+    reader.readAsDataURL(file);
   };
 
   const retake = () => {
@@ -125,7 +138,6 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
   const analyze = () => {
     if (!preview) return;
     if (previewFile) {
-      // File upload: read original at full quality for the API
       const reader = new FileReader();
       reader.onload = (ev) => {
         const b64 = ev.target?.result as string;
@@ -135,7 +147,6 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
       reader.onerror = () => setCameraError("Failed to read image. Please try a different photo.");
       reader.readAsDataURL(previewFile);
     } else {
-      // Camera capture: preview IS the base64 data URL
       onCapture(preview);
     }
   };
@@ -151,7 +162,6 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
   return (
     <>
       <div className={containerClass}>
-
         {mode === "camera" && !cameraError && (
           <>
             <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
@@ -186,7 +196,6 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
           </div>
         )}
 
-        {/* Preview — canvas-derived data URL, works for ALL Android sources */}
         {mode === "preview" && preview && (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}

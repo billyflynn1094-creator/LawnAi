@@ -9,15 +9,123 @@ interface CameraCaptureProps {
   fill?: boolean;
 }
 
+// ─── Image processing helpers (ported from PhotoUpload) ────────────────────
+
+const MAX_DIM = 1280;
+const JPEG_QUALITY = 0.82;
+
+function drawToCanvas(
+  source: ImageBitmap | HTMLImageElement,
+  w: number,
+  h: number
+): string | null {
+  if (w > MAX_DIM || h > MAX_DIM) {
+    const r = Math.min(MAX_DIM / w, MAX_DIM / h);
+    w = Math.round(w * r);
+    h = Math.round(h * r);
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.drawImage(source as CanvasImageSource, 0, 0, w, h);
+  const out = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
+  return out && out.length > 200 ? out : null;
+}
+
+/**
+ * Normalize tricky file types before canvas decoding:
+ *  - HEIC/HEIF  → attempt heic2any conversion (lazy-loaded)
+ *  - type="" (Google Photos cloud-only) → re-wrap bytes as image/jpeg
+ */
+async function normalizeBlob(file: File): Promise<Blob> {
+  const rawType = (file.type || "").toLowerCase();
+  const name = (file.name || "").toLowerCase();
+
+  const isHeic =
+    rawType === "image/heic" ||
+    rawType === "image/heif" ||
+    name.endsWith(".heic") ||
+    name.endsWith(".heif");
+
+  if (isHeic) {
+    try {
+      const heic2any = (await import("heic2any")).default;
+      const converted = await (heic2any as Function)({
+        blob: file,
+        toType: "image/jpeg",
+        quality: 0.85,
+      });
+      return Array.isArray(converted) ? converted[0] : converted;
+    } catch (e) {
+      console.warn("heic2any failed", e);
+    }
+  }
+
+  // Google Photos cloud-only: type is empty — re-wrap raw bytes as JPEG
+  if (!rawType || !rawType.startsWith("image/")) {
+    try {
+      const buffer = await file.arrayBuffer();
+      return new Blob([buffer], { type: "image/jpeg" });
+    } catch {
+      return file;
+    }
+  }
+
+  return file;
+}
+
+/**
+ * Compress a user-selected file to a JPEG data URL.
+ * Strategy 1: createImageBitmap — most reliable on modern Android Chrome.
+ * Strategy 2: FileReader → Image element → canvas (fallback).
+ */
+async function compressToBase64(file: File): Promise<string> {
+  const blob = await normalizeBlob(file);
+
+  if (typeof createImageBitmap !== "undefined") {
+    try {
+      const bitmap = await createImageBitmap(blob);
+      const result = drawToCanvas(bitmap, bitmap.width, bitmap.height);
+      bitmap.close();
+      if (result) return result;
+    } catch { /* fall through to strategy 2 */ }
+  }
+
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      if (!dataUrl) { reject(new Error("FileReader returned empty")); return; }
+      const img = new Image();
+      img.onload = () => {
+        const result = drawToCanvas(img, img.naturalWidth, img.naturalHeight);
+        if (result) resolve(result);
+        else reject(new Error("Canvas produced empty output"));
+      };
+      img.onerror = () => reject(new Error("Image decode failed"));
+      img.src = dataUrl;
+    };
+    reader.onerror = () => reject(new Error("FileReader error"));
+    const target =
+      blob instanceof File
+        ? blob
+        : new File([blob], file.name || "photo.jpg", { type: "image/jpeg" });
+    reader.readAsDataURL(target);
+  });
+}
+
+// ─── Component ─────────────────────────────────────────────────────────────
+
 export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   const [mode, setMode] = useState<"camera" | "preview">("camera");
   const [preview, setPreview] = useState<string | null>(null);
-  const [previewFile, setPreviewFile] = useState<File | null>(null);
+  const [processing, setProcessing] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
 
@@ -56,84 +164,55 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.drawImage(video, 0, 0);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+    const dataUrl = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
     setPreview(dataUrl);
-    setPreviewFile(null);
     setMode("preview");
     stopStream();
   };
 
-  const openFilePicker = () => {
-    if (fileRef.current) { fileRef.current.value = ""; fileRef.current.click(); }
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // FileReader.readAsDataURL bypasses blob URL system entirely.
-    // Works for ALL Android file sources including received attachments
-    // (Messages, Gmail, Drive, WhatsApp) backed by content:// URIs.
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const rawDataUrl = ev.target?.result as string | undefined;
-      if (!rawDataUrl) {
-        setCameraError("Failed to read image. Please try a different photo.");
-        return;
-      }
-      // Resize through canvas: keeps preview data URL small (~150-300 KB)
-      // and renders reliably across all Android Chrome versions.
-      const img = new window.Image();
-      img.onload = () => {
-        const MAX = 1280;
-        let { naturalWidth: w, naturalHeight: h } = img;
-        if (w > MAX || h > MAX) {
-          if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
-          else        { w = Math.round(w * MAX / h); h = MAX; }
-        }
-        const offscreen = document.createElement("canvas");
-        offscreen.width = w; offscreen.height = h;
-        const ctx = offscreen.getContext("2d");
-        if (!ctx) { setCameraError("Failed to process image. Please try another photo."); return; }
-        ctx.drawImage(img, 0, 0, w, h);
-        setPreview(offscreen.toDataURL("image/jpeg", 0.82));
-        setPreviewFile(file);
-        stopStream();
-        setMode("preview"); // camera disappears, preview takes over
-      };
-      img.onerror = () => setCameraError("Could not decode that image. Please try a different photo.");
-      img.src = rawDataUrl;
-    };
-    reader.onerror = () => setCameraError("Failed to read image. Please try a different photo.");
-    reader.readAsDataURL(file);
+    // Reset input so the same photo can be re-selected if needed
+    e.target.value = "";
+
+    setCameraError(null);
+    setProcessing(true);
+    try {
+      const base64 = await compressToBase64(file);
+      setPreview(base64);
+      stopStream();
+      setMode("preview");
+    } catch (err) {
+      console.error("Upload failed", err, {
+        name: file.name,
+        sizeKB: Math.round(file.size / 1024),
+        type: file.type || "(none)",
+      });
+      setCameraError(
+        "Couldn't open that photo. Try saving it to your device first, or take a new photo with the camera."
+      );
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const retake = () => {
-    setPreview(null); setPreviewFile(null); setCameraError(null);
-    setMode("camera"); startCamera();
+    setPreview(null);
+    setCameraError(null);
+    setProcessing(false);
+    setMode("camera");
+    startCamera();
   };
 
   const analyze = () => {
-    if (!preview) return;
-    if (previewFile) {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const b64 = ev.target?.result as string;
-        if (b64) onCapture(b64);
-        else setCameraError("Failed to read image. Please try a different photo.");
-      };
-      reader.onerror = () => setCameraError("Failed to read image. Please try a different photo.");
-      reader.readAsDataURL(previewFile);
-    } else {
-      onCapture(preview);
-    }
+    if (preview) onCapture(preview);
   };
 
   const flipCamera = () => setFacingMode((f) => (f === "environment" ? "user" : "environment"));
 
-  // When fill=true the component owns its full vertical space.
-  // We wrap in a flex-column div so the camera view can grow (flex-1)
-  // while the Upload Photo button sits below it (shrink-0).
-  // This works regardless of what the parent div's layout is.
+  // When fill=true the component manages its own vertical space:
+  // camera/preview fills flex-1, upload button is shrink-0 below.
   const outerClass = fill ? "h-full flex flex-col gap-3" : "";
   const mediaClass = fill
     ? "relative w-full flex-1 min-h-0 rounded-2xl overflow-hidden bg-soil-900 shadow-2xl"
@@ -141,10 +220,11 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
 
   return (
     <div className={outerClass}>
-      {/* ─── CAMERA VIEW (hidden once a photo is selected/uploaded) ─── */}
+
+      {/* ── Camera view (hidden once photo is selected) ── */}
       {mode === "camera" && (
         <>
-          <div className={`${mediaClass}`}>
+          <div className={mediaClass}>
             {!cameraError && (
               <>
                 <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
@@ -156,7 +236,7 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
                   <div className="absolute bottom-8 left-8 w-6 h-6 border-b-2 border-l-2 border-field-300 rounded-bl" />
                   <div className="absolute bottom-8 right-8 w-6 h-6 border-b-2 border-r-2 border-field-300 rounded-br" />
                 </div>
-                {/* Capture + flip */}
+                {/* Capture + flip controls */}
                 <div className="absolute bottom-0 inset-x-0 p-4 flex items-center justify-center gap-8 bg-gradient-to-t from-soil-900/80 to-transparent">
                   <button
                     onClick={capture}
@@ -175,29 +255,37 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
                 </div>
               </>
             )}
-
             {cameraError && (
               <div className="flex flex-col items-center justify-center h-full gap-4 p-6 text-center">
                 <Camera className="text-field-600" size={52} />
                 <p className="text-field-200 text-sm">{cameraError}</p>
               </div>
             )}
-
             <canvas ref={canvasRef} className="hidden" />
           </div>
 
-          {/* Upload Photo button — sits below the camera window as a shrink-0 row */}
-          <button
-            onClick={openFilePicker}
-            className="shrink-0 w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl bg-soil-800/80 border border-white/10 text-field-200 hover:bg-soil-700 hover:text-white active:scale-[0.98] transition text-base font-medium"
-          >
-            <Upload size={18} />
-            Upload Photo
-          </button>
+          {/* Upload Photo — label wraps input directly for reliable Android file picker */}
+          {processing ? (
+            <div className="shrink-0 w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl bg-soil-800/80 border border-white/10 text-field-400 text-base">
+              <div className="w-4 h-4 border-2 border-field-500/40 border-t-field-400 rounded-full animate-spin" />
+              Preparing photo…
+            </div>
+          ) : (
+            <label className="shrink-0 w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl bg-soil-800/80 border border-white/10 text-field-200 hover:bg-soil-700 hover:text-white active:scale-[0.98] transition text-base font-medium cursor-pointer select-none">
+              <input
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={handleFileChange}
+              />
+              <Upload size={18} />
+              Upload Photo
+            </label>
+          )}
         </>
       )}
 
-      {/* ─── PHOTO PREVIEW (replaces camera entirely once photo is ready) ─── */}
+      {/* ── Photo preview (replaces camera entirely) ── */}
       {mode === "preview" && preview && (
         <div className={`${mediaClass} ring-4 ring-green-500`}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -217,7 +305,7 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
             </div>
           )}
 
-          {/* Retake / Analyze buttons */}
+          {/* Retake / Analyze */}
           {!isAnalyzing && (
             <div className="absolute bottom-0 inset-x-0 px-4 pb-5 pt-16 flex gap-3 bg-gradient-to-t from-black/80 to-transparent">
               <button
@@ -237,16 +325,6 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
         </div>
       )}
 
-      {/* File input — fixed at 0,0 so Android Chrome fires onChange reliably */}
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        tabIndex={-1}
-        aria-hidden="true"
-        style={{ position: "fixed", top: 0, left: 0, width: "1px", height: "1px", opacity: 0, pointerEvents: "none" }}
-        onChange={handleFileUpload}
-      />
     </div>
   );
 }

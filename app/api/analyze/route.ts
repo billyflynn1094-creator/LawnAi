@@ -10,25 +10,94 @@ export const runtime = 'nodejs';
 // GPT-4o vision also needs headroom. Raise to 90s to cover both.
 export const maxDuration = 90;
 
+// ── JSON helpers ──────────────────────────────────────────────────────────────────
+
 /**
- * Robustly extract the JSON object from a model response string.
+ * Strip HTML from a string so we can extract JSON even when the model wraps
+ * its response in an HTML page (e.g. Gemini safety-block pages).
  */
-function extractJson(raw: string): string {
-  // Strategy 1: content inside the first ``` fence block
-  const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-  if (fenceMatch) {
-    return fenceMatch[1].trim();
-  }
-  // Strategy 2: outermost { } block
-  const firstBrace = raw.indexOf('{');
-  const lastBrace = raw.lastIndexOf('}');
-  if (firstBrace !== -1 && lastBrace > firstBrace) {
-    return raw.slice(firstBrace, lastBrace + 1).trim();
-  }
-  return raw.trim();
+function stripHtml(raw: string): string {
+  return raw
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 }
 
-// ── Lazy OpenAI client ─────────────────────────────────────────────────────
+/**
+ * Gemini occasionally emits literal (unescaped) newlines and tabs inside JSON
+ * string values, which makes JSON.parse throw even though the content looks
+ * correct to human eyes.  Walk the string character-by-character and escape
+ * any bare control characters that appear inside a quoted string.
+ */
+function sanitizeJsonString(raw: string): string {
+  let out = '';
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < raw.length; i++) {
+    const ch = raw[i];
+    if (escaped) { out += ch; escaped = false; continue; }
+    if (ch === '\\' && inString) { out += ch; escaped = true; continue; }
+    if (ch === '"') { out += ch; inString = !inString; continue; }
+    if (inString) {
+      if      (ch === '\n') { out += '\\n'; continue; }
+      else if (ch === '\r') { out += '\\r'; continue; }
+      else if (ch === '\t') { out += '\\t'; continue; }
+      else if (ch.charCodeAt(0) < 0x20) { continue; } // strip other control chars
+    }
+    out += ch;
+  }
+  return out;
+}
+
+/**
+ * Robustly extract a JSON object from a raw model response string.
+ * Handles: markdown fences, HTML wrappers, bare JSON, unescaped newlines.
+ */
+function extractJson(raw: string): string {
+  let s = raw.trim();
+
+  // 1. Strip HTML if the response looks like an HTML document/fragment
+  if (s.startsWith('<!') || s.startsWith('<html') || /<[a-zA-Z][\s\S]*?>/.test(s.slice(0, 500))) {
+    s = stripHtml(s);
+  }
+
+  // 2. Content inside the first ``` fence block
+  const fenceMatch = s.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fenceMatch) return fenceMatch[1].trim();
+
+  // 3. Outermost { } block (works for bare JSON and JSON-after-prose)
+  const firstBrace = s.indexOf('{');
+  const lastBrace  = s.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    return s.slice(firstBrace, lastBrace + 1).trim();
+  }
+
+  return s;
+}
+
+/**
+ * JSON.parse with an automatic fallback that sanitizes unescaped control
+ * characters — the most common reason Gemini output fails to parse even though
+ * it looks correct to human eyes.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function robustParse(cleaned: string): Record<string, any> {
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    // Retry after escaping bare newlines / control chars inside strings
+    return JSON.parse(sanitizeJsonString(cleaned));
+  }
+}
+
+// ── Lazy OpenAI client ────────────────────────────────────────────────────
 let _openai: OpenAI | null = null;
 function getOpenAI(): OpenAI {
   if (_openai) return _openai;
@@ -132,7 +201,7 @@ export async function POST(req: NextRequest) {
       const cleaned = extractJson(rawText);
 
       try {
-        const analysis = JSON.parse(cleaned);
+        const analysis = robustParse(cleaned);
 
         if (analysis.needs_more_photo !== true) {
           const soilProfile = getSoilProfile(location?.soilType);
@@ -177,7 +246,7 @@ export async function POST(req: NextRequest) {
     const cleaned = extractJson(text);
 
     try {
-      const analysis = JSON.parse(cleaned);
+      const analysis = robustParse(cleaned);
 
       // If Gemini requests more detail, pass the request straight through to the UI
       if (analysis.needs_more_photo === true) {

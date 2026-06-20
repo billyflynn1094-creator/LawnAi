@@ -1,140 +1,292 @@
-"use client";
+'use client';
 
-import {
-  MapPin, Thermometer, Droplets, Loader2, AlertCircle, Layers, CloudRain, Leaf, Navigation,
-} from "lucide-react";
+import type { JSX } from 'react';
 
 interface LocationData {
-  lat: number; lng: number; city?: string; state?: string; soilType?: string;
-  hardiness_zone?: string; grassClass?: "cool" | "warm" | "transition";
+  lat: number;
+  lng: number;
+  city?: string;
+  state?: string;
+  soilType?: string;
+  hardiness_zone?: string;
+  grassClass?: 'cool' | 'warm' | 'transition';
   weather?: { avg_high_f: number; avg_low_f: number; avg_humidity: number };
   weather_hist?: { avg_high_f: number; avg_low_f: number; avg_humidity: number };
-  soil_temp_surface_f?: number; soil_temp_6cm_f?: number; soil_temp_hist_f?: number;
+  soil_temp_surface_f?: number;
+  soil_temp_6cm_f?: number;
+  soil_temp_hist_f?: number;
   rainfall?: { recent_in: number; normal_in: number; pct_of_normal: number };
 }
 
 interface LocationBadgeProps {
   location: LocationData | null;
-  loading: boolean;
-  error: string | null;
-  onRetry: () => void;
+  loading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
+  accent?: string;
+  mode?: 'light' | 'dark';
 }
 
-const GRASS_LABEL: Record<string, string> = {
-  cool: "Cool Season", warm: "Warm Season", transition: "Transition Zone",
-};
+function fmt(n: number | undefined, decimals = 0): string {
+  if (n == null || isNaN(n)) return '--';
+  return n.toFixed(decimals);
+}
 
-function MetricTile({
-  icon, label, value, diff, diffUnit, diffPositive,
-}: {
-  icon: React.ReactNode; label: string; value: string;
-  diff?: number | null; diffUnit?: string; diffPositive?: boolean;
-}) {
-  const aboveColor = diffPositive === false ? "text-sky-400" : "text-amber-400";
-  const belowColor = diffPositive === false ? "text-amber-400" : "text-sky-400";
+function diffSign(n: number): string {
+  return n > 0 ? '+' : '';
+}
 
-  let diffEl: React.ReactNode = null;
-  if (diff != null) {
-    const color = diff > 0 ? aboveColor : diff < 0 ? belowColor : "text-field-500";
-    const sign = diff >= 0 ? "+" : "";
-    diffEl = (
-      <span className={`text-xs font-semibold leading-none ${color}`}>
-        {sign}{diff}{diffUnit}
-      </span>
+interface MetricTileProps {
+  icon: JSX.Element | string;
+  label: string;
+  value: string;
+  diff?: string;
+  diffUnit?: string;
+  mode: 'light' | 'dark';
+  accent: string;
+}
+
+function MetricTile({ icon, label, value, diff, diffUnit, mode, accent }: MetricTileProps) {
+  const isLight = mode === 'light';
+
+  if (isLight) {
+    return (
+      <div
+        className="flex flex-col gap-1 rounded-xl px-3 py-2.5 bg-white"
+        style={{ border: `1px solid ${accent}20` }}
+      >
+        <span className="text-base leading-none" style={{ color: accent }}>{icon}</span>
+        <span
+          className="text-[10px] font-bold uppercase tracking-wide leading-none"
+          style={{ color: accent }}
+        >
+          {label}
+        </span>
+        <span className="text-lg font-bold leading-tight text-gray-900">{value}</span>
+        {diff && (
+          <span className="text-[10px] font-semibold leading-none" style={{ color: accent }}>
+            {diff}{diffUnit ?? ''}
+          </span>
+        )}
+      </div>
     );
   }
 
+  // dark mode (original)
+  const diffNum = diff ? parseFloat(diff) : null;
+  const diffColor =
+    diffNum == null ? '' : diffNum > 0 ? 'text-amber-400' : diffNum < 0 ? 'text-sky-400' : 'text-gray-400';
+
   return (
-    <div className="flex flex-col gap-1 rounded-xl bg-soil-800/70 border border-white/6 px-3 py-2.5">
-      <div className="flex items-center gap-1.5 text-field-400">
-        {icon}
-        <span className="text-[10px] font-medium text-field-400 uppercase tracking-wide">{label}</span>
-      </div>
-      <span className="text-lg font-bold text-white leading-tight">{value}</span>
-      {diffEl ?? <span className="text-[10px] text-field-700 italic">no baseline</span>}
+    <div className="flex flex-col gap-1 rounded-xl px-3 py-2.5 bg-soil-800">
+      <span className="text-base leading-none text-field-300">{icon}</span>
+      <span className="text-[10px] font-bold text-field-300 uppercase tracking-wide leading-none">
+        {label}
+      </span>
+      <span className="text-lg font-bold leading-tight text-white">{value}</span>
+      {diff && (
+        <span className={`text-[10px] font-semibold leading-none ${diffColor}`}>
+          {diff}{diffUnit ?? ''}
+        </span>
+      )}
     </div>
   );
 }
 
-export default function LocationBadge({ location, loading, error, onRetry }: LocationBadgeProps) {
+export default function LocationBadge({
+  location,
+  loading = false,
+  error = null,
+  onRetry,
+  accent = '#4a8535',
+  mode = 'dark',
+}: LocationBadgeProps) {
+  const isLight = mode === 'light';
+
+  const containerStyle = isLight
+    ? {
+        backgroundColor: '#ffffff',
+        border: `1.5px solid ${accent}28`,
+        borderRadius: '1rem',
+        overflow: 'hidden' as const,
+      }
+    : {};
+
+  const containerClass = isLight
+    ? 'rounded-2xl overflow-hidden'
+    : 'rounded-2xl bg-soil-900 border border-soil-700 overflow-hidden';
+
   if (loading) {
     return (
-      <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-soil-800 text-field-300">
-        <Loader2 size={15} className="animate-spin shrink-0" />
-        <span className="text-sm">Detecting location…</span>
+      <div className={containerClass} style={isLight ? containerStyle : undefined}>
+        <div className="px-4 py-3 flex items-center gap-2">
+          <span className="text-sm animate-spin">🌀</span>
+          <span
+            className="text-sm font-medium"
+            style={{ color: isLight ? accent : undefined }}
+          >
+            Detecting location...
+          </span>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <button onClick={onRetry} className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-rust-500/20 text-rust-300 hover:bg-rust-500/30 transition w-full">
-        <AlertCircle size={15} className="shrink-0" />
-        <span className="text-sm">Location unavailable — tap to retry</span>
-      </button>
+      <div className={containerClass} style={isLight ? containerStyle : undefined}>
+        <div className="px-4 py-3 flex items-center justify-between gap-2">
+          <span className="text-sm text-red-400 flex-1">{error}</span>
+          {onRetry && (
+            <button
+              onClick={onRetry}
+              className="text-xs font-semibold px-3 py-1 rounded-full transition"
+              style={{
+                backgroundColor: isLight ? `${accent}15` : undefined,
+                color: isLight ? accent : '#86efac',
+              }}
+            >
+              Retry
+            </button>
+          )}
+        </div>
+      </div>
     );
   }
 
   if (!location) return null;
 
-  const { weather, weather_hist, soil_temp_surface_f, soil_temp_hist_f, rainfall } = location;
+  const { city, state, soilType, hardiness_zone, grassClass, weather, weather_hist, soil_temp_surface_f, soil_temp_6cm_f, soil_temp_hist_f, rainfall } = location;
 
-  const tempHighDiff = weather && weather_hist ? Math.round(weather.avg_high_f - weather_hist.avg_high_f) : null;
-  const humidDiff = weather && weather_hist ? Math.round(weather.avg_humidity - weather_hist.avg_humidity) : null;
-  const soilDiff = soil_temp_surface_f != null && soil_temp_hist_f != null ? Math.round(soil_temp_surface_f - soil_temp_hist_f) : null;
-  const rainDiff = rainfall && rainfall.normal_in > 0 ? rainfall.pct_of_normal - 100 : null;
+  const airTempDiff =
+    weather && weather_hist
+      ? weather.avg_high_f - weather_hist.avg_high_f
+      : null;
 
-  const grassLabel = location.grassClass ? GRASS_LABEL[location.grassClass] ?? null : null;
-  const airValue = weather ? `${weather.avg_high_f}° / ${weather.avg_low_f}°` : "—";
-  const soilValue = soil_temp_surface_f != null ? `${soil_temp_surface_f}°F` : "—";
-  const humidValue = weather ? `${weather.avg_humidity}%` : "—";
-  const rainValue = rainfall ? `${rainfall.recent_in}"` : "—";
+  const soilTempDiff =
+    soil_temp_surface_f != null && soil_temp_hist_f != null
+      ? soil_temp_surface_f - soil_temp_hist_f
+      : null;
+
+  const rainfallPct = rainfall?.pct_of_normal ?? null;
+
+  const grassLabel: Record<string, string> = {
+    cool: 'Cool-Season',
+    warm: 'Warm-Season',
+    transition: 'Transition Zone',
+  };
+
+  const headerBg = isLight ? accent : undefined;
+  const headerClass = isLight
+    ? 'px-4 py-2.5 flex items-center justify-between'
+    : 'px-4 py-2.5 bg-soil-800 flex items-center justify-between';
 
   return (
-    <div className="rounded-2xl bg-soil-900/70 border border-white/8 overflow-hidden">
-
-      {/* Location identity row */}
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-3 pt-2.5 pb-2">
-        {location.city && (
-          <div className="flex items-center gap-1.5">
-            <MapPin size={11} className="text-field-500 shrink-0" />
-            <span className="text-sm font-semibold text-field-100">
-              {location.state ? `${location.city}, ${location.state}` : location.city}
-            </span>
+    <div className={containerClass} style={isLight ? containerStyle : undefined}>
+      {/* Header row */}
+      <div
+        className={headerClass}
+        style={isLight ? { backgroundColor: headerBg } : undefined}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-base">📍</span>
+          <div className="min-w-0">
+            {(city || state) ? (
+              <>
+                <span className="text-sm font-bold text-white leading-tight block truncate">
+                  {[city, state].filter(Boolean).join(', ')}
+                </span>
+                {hardiness_zone && (
+                  <span className="text-[10px] font-medium text-white/70 leading-none">
+                    Zone {hardiness_zone}
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="text-sm font-medium text-white/80">
+                {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+              </span>
+            )}
           </div>
-        )}
-        {location.hardiness_zone && location.hardiness_zone !== "Unknown" && (
-          <span className="text-[10px] text-field-400 bg-soil-800 rounded-full px-2 py-0.5">
-            Zone {location.hardiness_zone}
-          </span>
-        )}
-        {grassLabel && (
-          <span className="flex items-center gap-1 text-[10px] text-field-400 bg-soil-800 rounded-full px-2 py-0.5">
-            <Leaf size={9} className="shrink-0" />{grassLabel}
-          </span>
-        )}
-        {location.soilType && (
-          <span className="text-[10px] text-field-500 truncate max-w-[160px]">
-            🪨 {location.soilType.split(" — ")[0]}
+        </div>
+        {grassClass && (
+          <span
+            className="text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
+            style={{
+              backgroundColor: isLight ? 'rgba(255,255,255,0.25)' : 'rgba(74,133,53,0.25)',
+              color: '#ffffff',
+            }}
+          >
+            {grassLabel[grassClass] ?? grassClass}
           </span>
         )}
       </div>
 
-      {/* 2×2 metric grid */}
-      <div className="grid grid-cols-2 gap-1.5 px-2.5 pb-2">
-        <MetricTile icon={<Thermometer size={12} />} label="Air H / L °F" value={airValue} diff={tempHighDiff} diffUnit="°" diffPositive={true} />
-        <MetricTile icon={<Layers size={12} />} label="Soil Temp" value={soilValue} diff={soilDiff} diffUnit="°" diffPositive={true} />
-        <MetricTile icon={<Droplets size={12} />} label="Humidity" value={humidValue} diff={humidDiff} diffUnit="%" diffPositive={false} />
-        <MetricTile icon={<CloudRain size={12} />} label="Rain 7-Day" value={rainValue} diff={rainDiff} diffUnit="%" diffPositive={false} />
-      </div>
+      {/* Soil type */}
+      {soilType && (
+        <div
+          className="px-4 py-1.5 border-b"
+          style={{
+            borderColor: isLight ? `${accent}20` : undefined,
+            backgroundColor: isLight ? `${accent}08` : undefined,
+          }}
+        >
+          <span
+            className="text-[11px] font-medium"
+            style={{ color: isLight ? accent : '#86efac' }}
+          >
+            Soil: {soilType}
+          </span>
+        </div>
+      )}
 
-      {/* Data label */}
-      <div className="flex items-center justify-center gap-1 pb-2">
-        <Navigation size={8} className="text-field-600" />
-        <span className="text-[9px] text-field-600 font-medium tracking-widest uppercase">
-          7-Day Avg · 3-Yr Baseline
-        </span>
-      </div>
+      {/* Metric tiles */}
+      {(weather || soil_temp_surface_f != null || rainfall) && (
+        <div
+          className="p-3 grid grid-cols-2 gap-2"
+          style={{ backgroundColor: isLight ? `${accent}06` : undefined }}
+        >
+          {weather && (
+            <MetricTile
+              icon="🌡️"
+              label="Air Temp"
+              value={`${fmt(weather.avg_high_f)}°F`}
+              diff={airTempDiff != null ? `${diffSign(airTempDiff)}${fmt(airTempDiff, 1)}°` : undefined}
+              mode={mode}
+              accent={accent}
+            />
+          )}
+          {soil_temp_surface_f != null && (
+            <MetricTile
+              icon="🌱"
+              label="Soil Temp"
+              value={`${fmt(soil_temp_surface_f)}°F`}
+              diff={soilTempDiff != null ? `${diffSign(soilTempDiff)}${fmt(soilTempDiff, 1)}°` : undefined}
+              mode={mode}
+              accent={accent}
+            />
+          )}
+          {weather && (
+            <MetricTile
+              icon="💧"
+              label="Humidity"
+              value={`${fmt(weather.avg_humidity)}%`}
+              mode={mode}
+              accent={accent}
+            />
+          )}
+          {rainfall && (
+            <MetricTile
+              icon="🌧️"
+              label="Rainfall"
+              value={`${fmt(rainfall.recent_in, 2)}"`}
+              diff={rainfallPct != null ? `${fmt(rainfallPct, 0)}% of norm` : undefined}
+              mode={mode}
+              accent={accent}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

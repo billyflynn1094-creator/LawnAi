@@ -16,26 +16,29 @@ interface LocationData {
   state?: string;
   soilType?: string;
   hardiness_zone?: string;
+  grassClass?: 'cool' | 'warm' | 'transition';
   weather?: { avg_high_f: number; avg_low_f: number; avg_humidity: number };
+  weather_hist?: { avg_high_f: number; avg_low_f: number; avg_humidity: number };
   soil_temp_surface_f?: number;
   soil_temp_6cm_f?: number;
+  soil_temp_hist_f?: number;
   rainfall?: { recent_in: number; normal_in: number; pct_of_normal: number };
 }
 
 type AppState = 'idle' | 'analyzing' | 'results' | 'error';
 type LocationSource = 'gps' | 'zip';
 
-// -- Brand tokens -------------------------------------------------------------
+// -- Brand tokens (HomeLawn light orange) ------------------------------------
 const BRAND = {
   primary: '#F96302',
   primaryDark: '#D14E00',
-  primaryLight: '#FFB347',
-  bgPage: '#0f0f0f',
-  bgCard: '#1a1a1a',
-  bgCardHover: '#222222',
-  border: 'rgba(249,99,2,0.25)',
+  bgPage: '#FAFAF8',
+  bgCard: '#FFFFFF',
+  border: '#E8E4DF',
+  borderAccent: 'rgba(249,99,2,0.22)',
+  textPrimary: '#1A1A1A',
   textAccent: '#F96302',
-  textMuted: '#a0a0a0',
+  textMuted: '#888888',
 };
 
 export default function HomeLawnAnalyzer() {
@@ -96,7 +99,7 @@ export default function HomeLawnAnalyzer() {
             }
           }
         } catch { /* IP fallback failed */ }
-        setLocationError('Location unavailable — enter your ZIP code below.');
+        setLocationError('Location unavailable. Enter your ZIP code below.');
         setShowZipInput(true);
         setLocationLoading(false);
       },
@@ -156,10 +159,10 @@ export default function HomeLawnAnalyzer() {
   const reset = () => { setAppState('idle'); setAnalysis(null); setCapturedImage(null); setErrorMessage(null); };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: BRAND.bgPage, color: '#ffffff' }}>
+    <div className="min-h-screen" style={{ backgroundColor: BRAND.bgPage, color: BRAND.textPrimary }}>
 
-      {/* -- HEADER -- */}
-      <header style={{ backgroundColor: BRAND.primary }} className="sticky top-0 z-20 shadow-lg">
+      {/* Header */}
+      <header style={{ backgroundColor: BRAND.primary }} className="sticky top-0 z-20 shadow-md">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Link href="/" className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition">
@@ -183,21 +186,28 @@ export default function HomeLawnAnalyzer() {
         </div>
       </header>
 
-      {/* -- BACK BUTTON -- */}
-      <div className="max-w-lg mx-auto px-4 pt-3 pb-1 flex items-center gap-2">
-        <Link href="/" className="flex items-center gap-1.5 text-xs font-medium hover:text-white transition-colors" style={{ color: BRAND.textMuted }}>
-          ← Back to Home
+      {/* Back button */}
+      <div className="max-w-lg mx-auto px-4 pt-3 pb-1">
+        <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-medium transition-colors hover:opacity-70" style={{ color: BRAND.textMuted }}>
+          &larr; Back to Home
         </Link>
       </div>
 
       <div className="max-w-lg mx-auto px-4 pb-10">
 
-        {/* -- LOCATION -- */}
+        {/* Location panel */}
         <div className="mb-3 mt-2">
-          <LocationBadge location={locationData} loading={locationLoading} error={locationError} onRetry={fetchLocation} />
+          <LocationBadge
+            location={locationData}
+            loading={locationLoading}
+            error={locationError}
+            onRetry={fetchLocation}
+            accent={BRAND.primary}
+            mode="light"
+          />
         </div>
 
-        {/* Location controls */}
+        {/* Location source controls */}
         {!locationLoading && (
           <div className="flex items-center gap-3 mb-2">
             <span className="flex items-center gap-1 text-xs" style={{ color: BRAND.textMuted }}>
@@ -206,14 +216,14 @@ export default function HomeLawnAnalyzer() {
                 : <><MapPin size={11} style={{ color: BRAND.primary }} /> Manual ZIP</>}
             </span>
             {locationSource === 'zip' && (
-              <button onClick={revertToGps} className="text-xs hover:text-white transition-colors" style={{ color: BRAND.textMuted }}>
-                Use my GPS ↩
+              <button onClick={revertToGps} className="text-xs transition hover:opacity-70" style={{ color: BRAND.textMuted }}>
+                Use GPS
               </button>
             )}
             <button
               onClick={() => { setShowZipInput(v => !v); setZipError(null); }}
-              className="text-xs hover:text-white transition-colors"
-              style={{ color: BRAND.textMuted }}
+              className="text-xs transition hover:opacity-70"
+              style={{ color: BRAND.textAccent, fontWeight: 600 }}
             >
               Change ZIP
             </button>
@@ -222,8 +232,8 @@ export default function HomeLawnAnalyzer() {
 
         {/* ZIP input */}
         {showZipInput && (
-          <div className="mb-3 p-3 rounded-xl border" style={{ backgroundColor: BRAND.bgCard, borderColor: BRAND.border }}>
-            <p className="text-xs font-medium text-white mb-2">Enter ZIP code to change location</p>
+          <div className="mb-3 p-3 rounded-xl border bg-white" style={{ borderColor: BRAND.borderAccent }}>
+            <p className="text-xs font-semibold mb-2" style={{ color: BRAND.textPrimary }}>Enter ZIP code to change location</p>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -233,44 +243,56 @@ export default function HomeLawnAnalyzer() {
                 value={zipInput}
                 onChange={(e) => { setZipInput(e.target.value.replace(/\D/g, '')); setZipError(null); }}
                 onKeyDown={(e) => { if (e.key === 'Enter') fetchLocationByZip(zipInput); }}
-                className="flex-1 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none transition-colors"
-                style={{ backgroundColor: '#111', border: `1px solid ${BRAND.border}` }}
+                className="flex-1 rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors"
+                style={{
+                  backgroundColor: '#F5F5F3',
+                  border: `1px solid ${BRAND.border}`,
+                  color: BRAND.textPrimary,
+                }}
               />
               <button
                 onClick={() => fetchLocationByZip(zipInput)}
                 disabled={zipLoading || zipInput.length !== 5}
-                className="px-4 py-2 rounded-lg text-white text-sm font-medium disabled:opacity-40 transition"
+                className="px-4 py-2 rounded-lg text-white text-sm font-bold disabled:opacity-40 transition"
                 style={{ backgroundColor: BRAND.primary }}
               >
-                {zipLoading ? '…' : 'Go'}
+                {zipLoading ? '...' : 'Go'}
               </button>
             </div>
-            {zipError && <p className="text-red-400 text-xs mt-2">{zipError}</p>}
+            {zipError && <p className="text-red-500 text-xs mt-2">{zipError}</p>}
           </div>
         )}
 
-        {/* -- CAMERA / UPLOAD -- */}
+        {/* Camera + Upload */}
         {appState !== 'results' && (
           <>
-            <CameraCapture onCapture={handleCapture} isAnalyzing={appState === 'analyzing'} />
-            <PhotoUpload onCapture={handleCapture} isAnalyzing={appState === 'analyzing'} />
+            <CameraCapture
+              onCapture={handleCapture}
+              isAnalyzing={appState === 'analyzing'}
+              themeColor={BRAND.primary}
+            />
+            <PhotoUpload
+              onCapture={handleCapture}
+              isAnalyzing={appState === 'analyzing'}
+              themeColor={BRAND.primary}
+            />
           </>
         )}
 
-        {/* -- IDLE PROMPT -- */}
+        {/* Idle prompt */}
         {appState === 'idle' && (
-          <p className="text-center text-sm mt-6 leading-relaxed px-4" style={{ color: BRAND.textMuted }}>
-            Point your camera at any lawn issue — weeds, bare patches, discoloration — and get instant guidance.
+          <p className="text-center text-sm mt-4 leading-relaxed px-4" style={{ color: BRAND.textMuted }}>
+            Point your camera at any lawn issue and get instant guidance.
           </p>
         )}
 
-        {/* -- ERROR -- */}
+        {/* Error state */}
         {appState === 'error' && (
-          <div className="mt-4 p-4 rounded-xl border text-center" style={{ backgroundColor: BRAND.bgCard, borderColor: 'rgba(239,68,68,0.3)' }}>
-            <p className="text-red-400 text-sm mb-3">{errorMessage}</p>
+          <div className="mt-4 p-4 rounded-xl border bg-white text-center" style={{ borderColor: 'rgba(239,68,68,0.3)' }}>
+            <p className="text-red-500 text-sm mb-3">{errorMessage}</p>
             <button
               onClick={reset}
-              className="px-4 py-2 rounded-lg text-white text-sm font-semibold transition"
+              className="px-4 py-2 rounded-lg text-white text-sm font-bold transition"
               style={{ backgroundColor: BRAND.primary }}
             >
               Try again
@@ -278,17 +300,25 @@ export default function HomeLawnAnalyzer() {
           </div>
         )}
 
-        {/* -- RESULTS -- */}
+        {/* Results */}
         {appState === 'results' && (
           <div id="results">
             {capturedImage && (
-              <div className="rounded-2xl overflow-hidden mb-4 relative border" style={{ borderColor: BRAND.border }}>
+              <div
+                className="rounded-2xl overflow-hidden mb-4 relative border"
+                style={{ borderColor: BRAND.borderAccent }}
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={capturedImage} alt="Analyzed lawn" className="w-full max-h-64 object-cover" />
-                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between px-3 py-2"
-                  style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75), transparent)' }}>
-                  <span className="text-white text-xs font-semibold">📸 Analyzed photo</span>
-                  <button onClick={reset} className="flex items-center gap-1 text-white text-xs font-medium px-2 py-1 rounded-full bg-black/40">
+                <div
+                  className="absolute inset-x-0 bottom-0 flex items-center justify-between px-3 py-2"
+                  style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' }}
+                >
+                  <span className="text-white text-xs font-semibold">Analyzed photo</span>
+                  <button
+                    onClick={reset}
+                    className="flex items-center gap-1 text-white text-xs font-medium px-2 py-1 rounded-full bg-black/40"
+                  >
                     <RotateCcw size={10} /> New scan
                   </button>
                 </div>

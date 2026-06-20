@@ -1,204 +1,116 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Upload, ImageIcon, X, Scan } from "lucide-react";
+import { useRef, useState } from 'react';
+import { Upload, Loader2, ImagePlus } from 'lucide-react';
 
 interface PhotoUploadProps {
   onCapture: (base64: string) => void;
   isAnalyzing: boolean;
+  themeColor?: string;
 }
 
-const MAX_DIM = 1200;
-const JPEG_QUALITY = 0.78;
+export default function PhotoUpload({
+  onCapture,
+  isAnalyzing,
+  themeColor = '#4a8535',
+}: PhotoUploadProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
 
-function drawToCanvas(
-  source: ImageBitmap | HTMLImageElement,
-  w: number,
-  h: number
-): string | null {
-  if (w > MAX_DIM || h > MAX_DIM) {
-    const r = Math.min(MAX_DIM / w, MAX_DIM / h);
-    w = Math.round(w * r);
-    h = Math.round(h * r);
-  }
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return null;
-  ctx.drawImage(source as CanvasImageSource, 0, 0, w, h);
-  const out = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
-  return out && out.length > 200 ? out : null;
-}
-
-/**
- * Normalize any tricky file type before canvas decoding:
- *  - HEIC/HEIF → convert to JPEG via heic2any (lazy-loaded, browser-side)
- *  - Empty type (Google Photos cloud-only) → re-wrap bytes as image/jpeg
- */
-async function normalizeBlob(file: File): Promise<Blob> {
-  const rawType = (file.type || "").toLowerCase();
-  const name = (file.name || "").toLowerCase();
-
-  const isHeic =
-    rawType === "image/heic" ||
-    rawType === "image/heif" ||
-    name.endsWith(".heic") ||
-    name.endsWith(".heif");
-
-  if (isHeic) {
-    try {
-      // Dynamic import — not loaded unless a HEIC file is detected
-      const heic2any = (await import("heic2any")).default;
-      const converted = await (heic2any as Function)({
-        blob: file,
-        toType: "image/jpeg",
-        quality: 0.85,
-      });
-      return Array.isArray(converted) ? converted[0] : converted;
-    } catch (e) {
-      console.warn("heic2any conversion failed", e, { name: file.name, size: file.size, type: file.type });
-      // fall through — canvas will also fail but that's caught below
-    }
-  }
-
-  // Google Photos cloud-only photos come back with type="" — re-wrap as JPEG
-  if (!rawType || !rawType.startsWith("image/")) {
-    try {
-      const buffer = await file.arrayBuffer();
-      return new Blob([buffer], { type: "image/jpeg" });
-    } catch {
-      return file;
-    }
-  }
-
-  return file;
-}
-
-async function compressToBase64(file: File): Promise<string> {
-  const blob = await normalizeBlob(file);
-
-  // Strategy 1: createImageBitmap (most reliable on modern Android Chrome)
-  if (typeof createImageBitmap !== "undefined") {
-    try {
-      const bitmap = await createImageBitmap(blob);
-      const result = drawToCanvas(bitmap, bitmap.width, bitmap.height);
-      bitmap.close();
-      if (result) return result;
-    } catch { /* fall through */ }
-  }
-
-  // Strategy 2: FileReader → Image → Canvas
-  return new Promise<string>((resolve, reject) => {
+  const processFile = (file: File) => {
+    if (!file.type.startsWith('image/')) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result as string;
-      if (!dataUrl) { reject(new Error("FileReader empty")); return; }
-      const img = new Image();
-      img.onload = () => {
-        const result = drawToCanvas(img, img.naturalWidth, img.naturalHeight);
-        if (result) resolve(result);
-        else reject(new Error("Canvas empty"));
-      };
-      img.onerror = () => reject(new Error("Image decode failed"));
-      img.src = dataUrl;
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      if (!dataUrl) return;
+      setPreview(dataUrl);
+      setFileName(file.name);
     };
-    reader.onerror = () => reject(new Error("FileReader error"));
-    const readTarget =
-      blob instanceof File
-        ? blob
-        : new File([blob], file.name || "photo.jpg", { type: "image/jpeg" });
-    reader.readAsDataURL(readTarget);
-  });
-}
-
-export default function PhotoUpload({ onCapture, isAnalyzing }: PhotoUploadProps) {
-  const [previewBase64, setPreviewBase64] = useState<string | null>(null);
-  const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setPreviewBase64(null);
-    setError(null);
-    setProcessing(true);
-    try {
-      const base64 = await compressToBase64(file);
-      setPreviewBase64(base64);
-    } catch (err) {
-      // Log technical details for debugging — keep UI message simple
-      console.error("PhotoUpload compress failed", err, {
-        name: file.name,
-        sizeKB: Math.round(file.size / 1024),
-        type: file.type || "(none)",
-      });
-      setError("Couldn’t open that photo. Try taking a new shot with your camera, or save the photo to your device first and upload from Downloads.");
-    } finally {
-      setProcessing(false);
-    }
+    reader.readAsDataURL(file);
   };
 
-  const handleClear = () => { setPreviewBase64(null); setError(null); };
-  const handleAnalyze = () => { if (previewBase64) onCapture(previewBase64); };
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
+    if (e.target) e.target.value = '';
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) processFile(file);
+  };
+
+  const handleAnalyze = () => {
+    if (!preview) return;
+    const base64 = preview.split(',')[1];
+    if (base64) onCapture(base64);
+  };
+
+  const handleClear = () => {
+    setPreview(null);
+    setFileName(null);
+  };
 
   return (
-    <div className="w-full mt-3">
-      {!previewBase64 && !processing && !error && (
-        <label className="relative flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-soil-800 hover:bg-soil-700 border border-field-700/40 text-field-200 text-sm font-medium cursor-pointer transition active:scale-95 select-none">
+    <div className="mt-3 flex flex-col gap-2">
+      {/* Upload button */}
+      {!preview && (
+        <label
+          onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+          onDragLeave={() => setIsDragOver(false)}
+          onDrop={handleDrop}
+          className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl cursor-pointer transition text-white font-semibold text-sm"
+          style={{
+            backgroundColor: isDragOver ? `${themeColor}cc` : themeColor,
+            opacity: isAnalyzing ? 0.5 : 1,
+          }}
+        >
+          <ImagePlus size={16} />
+          {isDragOver ? 'Drop to upload' : 'Upload a photo'}
           <input
+            ref={inputRef}
             type="file"
             accept="image/*"
-            onChange={handleChange}
-            style={{ position: "absolute", inset: 0, opacity: 0, width: "100%", height: "100%", cursor: "pointer" }}
+            className="hidden"
+            onChange={handleFileChange}
+            disabled={isAnalyzing}
           />
-          <Upload size={16} />
-          Upload Photo
         </label>
       )}
 
-      {processing && (
-        <div className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-soil-800 border border-field-700/40 text-field-400 text-sm">
-          <div className="w-4 h-4 border-2 border-field-500/40 border-t-field-500 rounded-full animate-spin" />
-          Preparing photo…
-        </div>
-      )}
-
-      {error && !previewBase64 && (
-        <div className="w-full rounded-xl bg-soil-800 border border-amber-800/40 p-4">
-          <p className="text-amber-400 text-xs mb-3 leading-relaxed">{error}</p>
-          <label className="relative flex items-center justify-center gap-1.5 w-full py-2.5 rounded-lg bg-soil-700 hover:bg-soil-600 text-field-200 text-sm font-medium cursor-pointer transition">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleChange}
-              style={{ position: "absolute", inset: 0, opacity: 0, width: "100%", height: "100%", cursor: "pointer" }}
-            />
-            <ImageIcon size={14} /> Try another photo
-          </label>
-        </div>
-      )}
-
-      {previewBase64 && (
-        <div className="w-full rounded-xl overflow-hidden border border-field-700/40 bg-soil-800">
-          <div className="relative">
+      {/* Preview */}
+      {preview && (
+        <div className="flex flex-col gap-2">
+          <div className="relative rounded-xl overflow-hidden border" style={{ borderColor: `${themeColor}30` }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={previewBase64} alt="Selected photo" className="w-full max-h-64 object-contain bg-soil-900" />
-            <button onClick={handleClear} className="absolute top-2 right-2 p-1.5 rounded-full bg-soil-900/80 text-field-300 hover:text-white transition" aria-label="Remove photo">
-              <X size={14} />
+            <img src={preview} alt={fileName ?? 'Preview'} className="w-full max-h-48 object-cover" />
+            <button
+              onClick={handleClear}
+              className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 text-xs transition"
+              disabled={isAnalyzing}
+            >
+              ✕
             </button>
           </div>
-          <div className="p-3 flex gap-2">
-            <label className="relative flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-soil-700 hover:bg-soil-600 text-field-200 text-sm font-medium cursor-pointer transition">
-              <input type="file" accept="image/*" onChange={handleChange} style={{ position: "absolute", inset: 0, opacity: 0, width: "100%", height: "100%", cursor: "pointer" }} />
-              <ImageIcon size={14} /> Change
-            </label>
-            <button onClick={handleAnalyze} disabled={isAnalyzing} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-field-500 hover:bg-field-400 disabled:opacity-60 text-white text-sm font-medium transition">
-              {isAnalyzing
-                ? (<><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Analyzing…</>)
-                : (<><Scan size={14} />Analyze</>)}
-            </button>
-          </div>
+          {fileName && (
+            <p className="text-xs text-gray-500 px-1 truncate">{fileName}</p>
+          )}
+          <button
+            onClick={handleAnalyze}
+            disabled={isAnalyzing}
+            className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-white font-bold text-sm disabled:opacity-40 transition active:scale-95"
+            style={{ backgroundColor: themeColor }}
+          >
+            {isAnalyzing ? (
+              <><Loader2 size={16} className="animate-spin" /> Analyzing...</>
+            ) : (
+              <><Upload size={16} /> Analyze Photo</>
+            )}
+          </button>
         </div>
       )}
     </div>

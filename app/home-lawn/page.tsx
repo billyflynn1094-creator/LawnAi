@@ -25,7 +25,7 @@ interface LocationData {
 type AppState = 'idle' | 'analyzing' | 'results' | 'error';
 type LocationSource = 'gps' | 'zip';
 
-// ── Brand tokens ─────────────────────────────────────────────────────────────
+// -- Brand tokens -------------------------------------------------------------
 const BRAND = {
   primary: '#F96302',
   primaryDark: '#D14E00',
@@ -158,7 +158,7 @@ export default function HomeLawnAnalyzer() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: BRAND.bgPage, color: '#ffffff' }}>
 
-      {/* ── HEADER ── */}
+      {/* -- HEADER -- */}
       <header style={{ backgroundColor: BRAND.primary }} className="sticky top-0 z-20 shadow-lg">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -183,7 +183,7 @@ export default function HomeLawnAnalyzer() {
         </div>
       </header>
 
-      {/* ── BACK BUTTON ── */}
+      {/* -- BACK BUTTON -- */}
       <div className="max-w-lg mx-auto px-4 pt-3 pb-1 flex items-center gap-2">
         <Link href="/" className="flex items-center gap-1.5 text-xs font-medium hover:text-white transition-colors" style={{ color: BRAND.textMuted }}>
           ← Back to Home
@@ -192,7 +192,7 @@ export default function HomeLawnAnalyzer() {
 
       <div className="max-w-lg mx-auto px-4 pb-10">
 
-        {/* ── LOCATION ── */}
+        {/* -- LOCATION -- */}
         <div className="mb-3 mt-2">
           <LocationBadge location={locationData} loading={locationLoading} error={locationError} onRetry={fetchLocation} />
         </div>
@@ -249,7 +249,7 @@ export default function HomeLawnAnalyzer() {
           </div>
         )}
 
-        {/* ── CAMERA / UPLOAD ── */}
+        {/* -- CAMERA / UPLOAD -- */}
         {appState !== 'results' && (
           <>
             <CameraCapture onCapture={handleCapture} isAnalyzing={appState === 'analyzing'} />
@@ -257,14 +257,14 @@ export default function HomeLawnAnalyzer() {
           </>
         )}
 
-        {/* ── IDLE PROMPT ── */}
+        {/* -- IDLE PROMPT -- */}
         {appState === 'idle' && (
           <p className="text-center text-sm mt-6 leading-relaxed px-4" style={{ color: BRAND.textMuted }}>
             Point your camera at any lawn issue — weeds, bare patches, discoloration — and get instant guidance.
           </p>
         )}
 
-        {/* ── ERROR ── */}
+        {/* -- ERROR -- */}
         {appState === 'error' && (
           <div className="mt-4 p-4 rounded-xl border text-center" style={{ backgroundColor: BRAND.bgCard, borderColor: 'rgba(239,68,68,0.3)' }}>
             <p className="text-red-400 text-sm mb-3">{errorMessage}</p>
@@ -278,7 +278,7 @@ export default function HomeLawnAnalyzer() {
           </div>
         )}
 
-        {/* ── RESULTS ── */}
+        {/* -- RESULTS -- */}
         {appState === 'results' && (
           <div id="results">
             {capturedImage && (
@@ -297,7 +297,7 @@ export default function HomeLawnAnalyzer() {
             <AnalysisResults analysis={analysis} />
             {analysis && !analysis.parse_error && (
               <div className="mt-4">
-                <DownloadReportButton analysis={analysis} locationData={locationData} capturedImage={capturedImage} />
+                <DownloadReportButton analysis={analysis} location={locationData} />
               </div>
             )}
           </div>

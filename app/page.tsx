@@ -167,7 +167,7 @@ export default function CoverPage() {
   return (
     <main className="min-h-screen flex flex-col overflow-x-hidden">
 
-      {/* ── HEADER ── */}
+      {/* -- HEADER -- */}
       <header className="sticky top-0 z-20 bg-field-900/90 backdrop-blur-lg border-b border-white/5">
         <div className="max-w-lg mx-auto px-4 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -189,7 +189,7 @@ export default function CoverPage() {
         </div>
       </header>
 
-      {/* ── HERO ── */}
+      {/* -- HERO -- */}
       <div className="relative px-5 pt-10 pb-8 max-w-lg mx-auto w-full">
         <div
           className="absolute -top-8 right-0 w-72 h-72 rounded-full pointer-events-none"
@@ -224,7 +224,7 @@ export default function CoverPage() {
         </div>
       </div>
 
-      {/* ── DIVIDER ── */}
+      {/* -- DIVIDER -- */}
       <div className="animate-entry max-w-lg mx-auto px-5 pb-4 w-full">
         <div className="flex items-center gap-3">
           <div className="flex-1 h-px bg-field-700/50" />
@@ -233,7 +233,7 @@ export default function CoverPage() {
         </div>
       </div>
 
-      {/* ── MODULE CARDS ── */}
+      {/* -- MODULE CARDS -- */}
       <div className="flex-1 max-w-lg mx-auto px-4 pb-10 w-full space-y-2.5">
         {MODULES.map((mod, i) => {
           const Icon = mod.icon;
@@ -326,7 +326,7 @@ export default function CoverPage() {
         })}
       </div>
 
-      {/* ── FOOTER ── */}
+      {/* -- FOOTER -- */}
       <div className="max-w-lg mx-auto px-5 pb-8 w-full">
         <div className="border-t border-field-700/40 pt-4 flex items-center justify-between">
           <span className="text-field-200 text-[10px] tracking-wide">Powered by Gemini AI</span>

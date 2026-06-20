@@ -25,7 +25,7 @@ interface LocationData {
 type AppState = 'idle' | 'analyzing' | 'results' | 'error';
 type LocationSource = 'gps' | 'zip';
 
-// ── Brand tokens ─────────────────────────────────────────────────────────────
+// -- Brand tokens -------------------------------------------------------------
 const BRAND = {
   primary: '#1B3A6B',       // Heritage navy
   primaryMid: '#244E90',
@@ -161,7 +161,7 @@ export default function ProLawnAnalyzer() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: BRAND.bgPage, color: '#ffffff' }}>
 
-      {/* ── HEADER ── */}
+      {/* -- HEADER -- */}
       <header
         className="sticky top-0 z-20 shadow-lg"
         style={{
@@ -202,7 +202,7 @@ export default function ProLawnAnalyzer() {
         </div>
       </header>
 
-      {/* ── BACK BUTTON ── */}
+      {/* -- BACK BUTTON -- */}
       <div className="max-w-lg mx-auto px-4 pt-3 pb-1">
         <Link href="/" className="flex items-center gap-1.5 text-xs font-medium hover:text-white transition-colors" style={{ color: BRAND.textMuted }}>
           ← Back to Home
@@ -211,7 +211,7 @@ export default function ProLawnAnalyzer() {
 
       <div className="max-w-lg mx-auto px-4 pb-10">
 
-        {/* ── LOCATION ── */}
+        {/* -- LOCATION -- */}
         <div className="mb-3 mt-2">
           <LocationBadge location={locationData} loading={locationLoading} error={locationError} onRetry={fetchLocation} />
         </div>
@@ -268,7 +268,7 @@ export default function ProLawnAnalyzer() {
           </div>
         )}
 
-        {/* ── CAMERA / UPLOAD ── */}
+        {/* -- CAMERA / UPLOAD -- */}
         {appState !== 'results' && (
           <>
             <CameraCapture onCapture={handleCapture} isAnalyzing={appState === 'analyzing'} />
@@ -276,14 +276,14 @@ export default function ProLawnAnalyzer() {
           </>
         )}
 
-        {/* ── IDLE PROMPT ── */}
+        {/* -- IDLE PROMPT -- */}
         {appState === 'idle' && (
           <p className="text-center text-sm mt-6 leading-relaxed px-4" style={{ color: BRAND.textMuted }}>
             Scan any turf condition — disease, weed pressure, stress, bare areas — for professional diagnosis and field-ready recommendations.
           </p>
         )}
 
-        {/* ── ERROR ── */}
+        {/* -- ERROR -- */}
         {appState === 'error' && (
           <div className="mt-4 p-4 rounded-xl border text-center" style={{ backgroundColor: BRAND.bgCard, borderColor: 'rgba(239,68,68,0.25)' }}>
             <p className="text-red-400 text-sm mb-3">{errorMessage}</p>
@@ -297,7 +297,7 @@ export default function ProLawnAnalyzer() {
           </div>
         )}
 
-        {/* ── RESULTS ── */}
+        {/* -- RESULTS -- */}
         {appState === 'results' && (
           <div id="results">
             {capturedImage && (
@@ -316,7 +316,7 @@ export default function ProLawnAnalyzer() {
             <AnalysisResults analysis={analysis} />
             {analysis && !analysis.parse_error && (
               <div className="mt-4">
-                <DownloadReportButton analysis={analysis} locationData={locationData} capturedImage={capturedImage} />
+                <DownloadReportButton analysis={analysis} location={locationData} />
               </div>
             )}
           </div>

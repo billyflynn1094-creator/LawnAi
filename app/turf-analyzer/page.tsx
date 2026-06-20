@@ -6,7 +6,7 @@ import CameraCapture from '@/components/Camera';
 import LocationPanel from '@/components/LocationPanel';
 import { LocationContext } from '@/lib/prompts';
 
-/* ─── tiny helpers ──────────────────────────────────────────── */
+/* --- tiny helpers -------------------------------------------- */
 function Spinner({ size = 20 }: { size?: number }) {
   return (
     <svg
@@ -63,7 +63,7 @@ function CollapsibleSection({
   );
 }
 
-/* ─── main page ─────────────────────────────────────────────── */
+/* --- main page ----------------------------------------------- */
 export default function TurfAnalyzerPage() {
   type AppState = 'idle' | 'analyzing' | 'result' | 'error';
   const [appState, setAppState] = useState<AppState>('idle');
@@ -191,7 +191,7 @@ export default function TurfAnalyzerPage() {
     setSecondOpinionData(null);
   };
 
-  /* ── PDF download ─────────────────────────────────────────── */
+  /* -- PDF download ------------------------------------------- */
   const handleDownloadPDF = async () => {
     if (!analysis) return;
     try {
@@ -259,7 +259,7 @@ export default function TurfAnalyzerPage() {
     }
   };
 
-  /* ── render helpers ──────────────────────────────────────── */
+  /* -- render helpers ---------------------------------------- */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const renderProductList = (products: any[]) => {
     if (!products?.length) return null;
@@ -423,7 +423,7 @@ export default function TurfAnalyzerPage() {
     );
   };
 
-  /* ── JSX ─────────────────────────────────────────────────── */
+  /* -- JSX --------------------------------------------------- */
   // Result / error view
   if (appState === 'result' || appState === 'error') {
     return (
@@ -509,7 +509,7 @@ export default function TurfAnalyzerPage() {
     );
   }
 
-  /* ── Capture view ────────────────────────────────────────── */
+  /* -- Capture view ------------------------------------------ */
   return (
     <main className="flex flex-col overflow-hidden" style={{ height: 'calc(100dvh - 3rem)' }}>
       {/* Top bar */}

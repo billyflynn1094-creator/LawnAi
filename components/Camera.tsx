@@ -9,7 +9,7 @@ interface CameraCaptureProps {
   fill?: boolean;
 }
 
-// ─── Image processing helpers (ported from PhotoUpload) ────────────────────
+// --- Image processing helpers (ported from PhotoUpload) --------------------
 
 const MAX_DIM = 1280;
 const JPEG_QUALITY = 0.82;
@@ -116,7 +116,7 @@ async function compressToBase64(file: File): Promise<string> {
   });
 }
 
-// ─── Component ─────────────────────────────────────────────────────────────
+// --- Component -------------------------------------------------------------
 
 export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -221,7 +221,7 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
   return (
     <div className={outerClass}>
 
-      {/* ── Camera view (hidden once photo is selected) ── */}
+      {/* -- Camera view (hidden once photo is selected) -- */}
       {mode === "camera" && (
         <>
           <div className={mediaClass}>
@@ -285,7 +285,7 @@ export default function CameraCapture({ onCapture, isAnalyzing, fill }: CameraCa
         </>
       )}
 
-      {/* ── Photo preview (replaces camera entirely) ── */}
+      {/* -- Photo preview (replaces camera entirely) -- */}
       {mode === "preview" && preview && (
         <div className={`${mediaClass} ring-4 ring-green-500`}>
           {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -10,7 +10,7 @@ export const runtime = 'nodejs';
 // GPT-4o vision also needs headroom. Raise to 90s to cover both.
 export const maxDuration = 90;
 
-// ── JSON helpers ──────────────────────────────────────────────────────────────────
+// -- JSON helpers ------------------------------------------------------------------
 
 /**
  * Strip HTML from a string so we can extract JSON even when the model wraps
@@ -97,7 +97,7 @@ function robustParse(cleaned: string): Record<string, any> {
   }
 }
 
-// ── Lazy OpenAI client ────────────────────────────────────────────────────
+// -- Lazy OpenAI client ----------------------------------------------------
 let _openai: OpenAI | null = null;
 function getOpenAI(): OpenAI {
   if (_openai) return _openai;
@@ -138,11 +138,11 @@ export async function POST(req: NextRequest) {
 
     const hasSecondImage = Boolean(image2);
 
-    // ────────────────────────────────────────────────────────────────────────
+    // ------------------------------------------------------------------------
     // SECOND OPINION — routed to GPT-4o for genuine cross-model validation.
     // A different model family means truly independent visual reasoning,
     // not just a re-run of the same weights with a slightly different prompt.
-    // ────────────────────────────────────────────────────────────────────────
+    // ------------------------------------------------------------------------
     if (isSecondOpinion) {
       const systemPrompt = buildSystemPrompt();
 
@@ -158,7 +158,7 @@ export async function POST(req: NextRequest) {
         '',
         originalContext,
         '',
-        '━━ YOUR TASK ━━',
+        '-- YOUR TASK --',
         '1. Examine the image(s) with completely fresh eyes — form your own diagnosis first, before reading the first opinion.',
         '2. Compare your independent findings with the first opinion above.',
         '3. Populate second_opinion_reasoning with: AGREE or DISAGREE, followed by the specific visual evidence from the image(s) that supports your conclusion.',
@@ -222,9 +222,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ────────────────────────────────────────────────────────────────────────
+    // ------------------------------------------------------------------------
     // PRIMARY ANALYSIS — Gemini 2.5 Flash
-    // ────────────────────────────────────────────────────────────────────────
+    // ------------------------------------------------------------------------
     const imagePart    = imageToGeminiPart(image);
     const systemPrompt = buildSystemPrompt();
     const userPrompt   = buildAnalysisPrompt(location ?? { lat: 0, lng: 0 }, hasSecondImage, false);

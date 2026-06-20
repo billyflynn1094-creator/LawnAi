@@ -19,7 +19,7 @@ import {
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// -- Types --------------------------------------------------------------------
 
 interface ElaborateData {
   why_it_happens?: string;
@@ -82,7 +82,7 @@ interface SoilProfileInfo {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnalysisData = Record<string, any>;
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// -- Constants -----------------------------------------------------------------
 
 const SEVERITY_STYLE: Record<string, string> = {
   critical: 'bg-red-900/40 text-red-300 border border-red-700/40',
@@ -119,7 +119,7 @@ const FORMAT_SORT: Record<string, number> = {
   granular: 0, liquid: 1, wdg: 2, wettable_powder: 2, sc: 2, spray_ready: 3,
 };
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// -- Sub-components ------------------------------------------------------------
 
 function SeverityBadge({ severity }: { severity?: string }) {
   const s = (severity ?? 'none').toLowerCase();
@@ -239,7 +239,7 @@ function MechBlock({ icon, title, practice }: { icon: ReactNode; title: string; 
   );
 }
 
-// ── AsWellSection ─────────────────────────────────────────────────────────
+// -- AsWellSection ---------------------------------------------------------
 
 const CATEGORY_LABEL: Record<string, string> = {
   herbicide:   'Herbicide',
@@ -318,7 +318,7 @@ function AsWellSection({ groups }: { groups: AsWellProductGroup[] }) {
   );
 }
 
-// ── Main Export ───────────────────────────────────────────────────────────────
+// -- Main Export ---------------------------------------------------------------
 
 export default function AnalysisResults({
   analysis,
@@ -336,7 +336,7 @@ export default function AnalysisResults({
 
   if (!analysis) return null;
 
-  // ── Parse response ──────────────────────────────────────────
+  // -- Parse response ------------------------------------------
   if (analysis.parse_error) {
     return (
       <div className="rounded-2xl bg-soil-800/60 border border-field-800/40 p-4">
@@ -387,12 +387,12 @@ export default function AnalysisResults({
 
   const hasFullPlan = timeline.length > 0 || prevention.length > 0 || hasMechanical || soilProfile.label;
 
-  // ─────────────────────────────────────────────────────────────────────────────
+  // -----------------------------------------------------------------------------
 
   return (
     <div className="space-y-3">
 
-      {/* ── Issue card (always visible) ───────────────────────────── */}
+      {/* -- Issue card (always visible) ----------------------------- */}
       <div className="rounded-2xl bg-soil-800/60 border border-field-800/40 overflow-hidden">
         <div className="p-4 space-y-3">
 
@@ -473,7 +473,7 @@ export default function AnalysisResults({
         </div>
       </div>
 
-      {/* ── Products card ─────────────────────────────────────────── */}
+      {/* -- Products card ------------------------------------------- */}
       {sortedProducts.length > 0 && (
         <div className="rounded-2xl bg-soil-800/60 border border-field-800/40 overflow-hidden">
           <div className="px-4 pt-3.5 pb-0.5 flex items-center gap-2">
@@ -487,12 +487,12 @@ export default function AnalysisResults({
         </div>
       )}
 
-      {/* ── As Well products card ──────────────────────────────────── */}
+      {/* -- As Well products card ------------------------------------ */}
       {asWellGroups.length > 0 && (
         <AsWellSection groups={asWellGroups} />
       )}
 
-      {/* ── See full plan card ────────────────────────────────────── */}
+      {/* -- See full plan card -------------------------------------- */}
       {hasFullPlan && (
         <div className="rounded-2xl bg-soil-800/60 border border-field-800/40 overflow-hidden">
           <button
@@ -621,7 +621,7 @@ export default function AnalysisResults({
         </div>
       )}
 
-      {/* ── Second Opinion ─────────────────────────────────────── */}
+      {/* -- Second Opinion --------------------------------------- */}
       {onSecondOpinion && (
         <div className="mt-6">
           {!secondOpinionData && (

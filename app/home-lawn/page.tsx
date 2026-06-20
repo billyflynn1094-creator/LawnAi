@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import CameraCapture from '@/components/Camera';
-import PhotoUpload from '@/components/PhotoUpload';
 import LocationBadge from '@/components/LocationBadge';
 import AnalysisResults from '@/components/Analysis';
 import DownloadReportButton from '@/components/DownloadReportButton';
@@ -68,9 +67,7 @@ export default function HomeLawnAnalyzer() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Upload preview state — hides camera when a file is staged
-  const [hasUploadPreview, setHasUploadPreview] = useState(false);
-
+  
   const [localPros, setLocalPros] = useState<LocalPro[]>([]);
   const [prosLoading, setProsLoading] = useState(false);
   const [prosError, setProsError] = useState<string | null>(null);
@@ -157,7 +154,6 @@ export default function HomeLawnAnalyzer() {
     setLocalPros([]);
     setProsError(null);
     setProsSearched(false);
-    // Camera will stay hidden until reset; hasUploadPreview stays true during analysis
     try {
       const res = await fetch('/api/analyze', {
         method: 'POST',
@@ -207,7 +203,6 @@ export default function HomeLawnAnalyzer() {
     setLocalPros([]);
     setProsError(null);
     setProsSearched(false);
-    setHasUploadPreview(false); // restore camera
   };
 
   return (
@@ -281,27 +276,20 @@ export default function HomeLawnAnalyzer() {
           </div>
         )}
 
-        {/* Camera + Upload — hidden once results are ready */}
+        {/* Camera + Upload â hidden once results are ready */}
         {appState !== 'results' && (
           <div className="space-y-3">
-            {/* Camera — hidden when a photo is staged for upload */}
-            {!hasUploadPreview && (
-              <CameraCapture
-                onCapture={handleCapture}
-                isAnalyzing={appState === 'analyzing'}
-                themeColor={BRAND.primary}
-              />
-            )}
-            <PhotoUpload
+            {/* Camera â hidden when a photo is staged for upload */}
+            <CameraCapture
               onCapture={handleCapture}
               isAnalyzing={appState === 'analyzing'}
               themeColor={BRAND.primary}
-              onPreviewChange={setHasUploadPreview}
             />
+            
           </div>
         )}
 
-        {appState === 'idle' && !hasUploadPreview && (
+        {appState === 'idle' && (
           <p className="text-center text-sm mt-4 leading-relaxed px-4" style={{ color: BRAND.textMuted }}>
             Point your camera at any lawn issue and get instant guidance.
           </p>
@@ -345,7 +333,7 @@ export default function HomeLawnAnalyzer() {
                     style={{ background: `linear-gradient(135deg, ${BRAND.primary} 0%, ${BRAND.primaryDark} 100%)` }}
                   >
                     <Users size={18} />
-                    🌿 Find Local Lawn Specialists
+                    ð¿ Find Local Lawn Specialists
                   </button>
                 ) : (
                   <div className="rounded-2xl border overflow-hidden" style={{ borderColor: BRAND.borderAccent }}>
@@ -361,7 +349,7 @@ export default function HomeLawnAnalyzer() {
                     {prosLoading && (
                       <div className="bg-white py-6 flex flex-col items-center gap-2">
                         <Loader2 size={24} className="animate-spin" style={{ color: BRAND.primary }} />
-                        <p className="text-xs text-gray-400">Searching nearby specialists…</p>
+                        <p className="text-xs text-gray-400">Searching nearby specialistsâ¦</p>
                       </div>
                     )}
                     {!prosLoading && prosError && (
@@ -380,7 +368,7 @@ export default function HomeLawnAnalyzer() {
                         {analysis?.identified?.primary && (
                           <div className="px-4 py-2.5 bg-orange-50">
                             <p className="text-xs text-orange-700">
-                              💡 <strong>Tell them about:</strong> {analysis.identified.primary}
+                              ð¡ <strong>Tell them about:</strong> {analysis.identified.primary}
                             </p>
                           </div>
                         )}
@@ -415,7 +403,7 @@ export default function HomeLawnAnalyzer() {
                                 <a href={`tel:${pro.phone}`}
                                   className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border"
                                   style={{ color: BRAND.primary, borderColor: BRAND.primary, backgroundColor: 'transparent' }}>
-                                  📞 Call
+                                  ð Call
                                 </a>
                               )}
                               <a href={pro.maps_url} target="_blank" rel="noopener noreferrer"

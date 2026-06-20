@@ -33,6 +33,8 @@ interface LocalPro {
   open_now?: boolean;
   place_id: string;
   maps_url: string;
+  website?: string;
+  phone?: string;
 }
 
 type AppState = 'idle' | 'analyzing' | 'results' | 'error';
@@ -385,7 +387,14 @@ export default function HomeLawnAnalyzer() {
                         {localPros.map((pro, i) => (
                           <div key={i} className="px-4 py-3 flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-sm truncate text-gray-900">{pro.name}</p>
+                              {pro.website ? (
+                                <a href={pro.website} target="_blank" rel="noopener noreferrer"
+                                  className="font-semibold text-sm truncate text-gray-900 hover:underline" style={{ color: BRAND.primary }}>
+                                  {pro.name}
+                                </a>
+                              ) : (
+                                <p className="font-semibold text-sm truncate text-gray-900">{pro.name}</p>
+                              )}
                               <p className="text-xs mt-0.5 truncate text-gray-500">{pro.address}</p>
                               <div className="flex items-center gap-2 mt-1">
                                 {pro.rating && (
@@ -401,11 +410,20 @@ export default function HomeLawnAnalyzer() {
                                 )}
                               </div>
                             </div>
-                            <a href={pro.maps_url} target="_blank" rel="noopener noreferrer"
-                              className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-white text-xs font-semibold"
-                              style={{ backgroundColor: BRAND.primary }}>
-                              <ExternalLink size={11} /> Maps
-                            </a>
+                            <div className="flex-shrink-0 flex items-center gap-1.5">
+                              {pro.phone && (
+                                <a href={`tel:${pro.phone}`}
+                                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border"
+                                  style={{ color: BRAND.primary, borderColor: BRAND.primary, backgroundColor: 'transparent' }}>
+                                  📞 Call
+                                </a>
+                              )}
+                              <a href={pro.maps_url} target="_blank" rel="noopener noreferrer"
+                                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-white text-xs font-semibold"
+                                style={{ backgroundColor: BRAND.primary }}>
+                                <ExternalLink size={11} /> Maps
+                              </a>
+                            </div>
                           </div>
                         ))}
                       </div>

@@ -66,6 +66,9 @@ export default function ProLawnAnalyzer() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Upload preview state — hides camera when a file is staged
+  const [hasUploadPreview, setHasUploadPreview] = useState(false);
+
   const [localPros, setLocalPros] = useState<LocalPro[]>([]);
   const [prosLoading, setProsLoading] = useState(false);
   const [prosError, setProsError] = useState<string | null>(null);
@@ -145,8 +148,13 @@ export default function ProLawnAnalyzer() {
   useEffect(() => { fetchLocation(); }, [fetchLocation]);
 
   const handleCapture = async (base64: string) => {
-    setCapturedImage(base64); setAppState('analyzing'); setAnalysis(null); setErrorMessage(null);
-    setLocalPros([]); setProsError(null); setProsSearched(false);
+    setCapturedImage(base64);
+    setAppState('analyzing');
+    setAnalysis(null);
+    setErrorMessage(null);
+    setLocalPros([]);
+    setProsError(null);
+    setProsSearched(false);
     try {
       const res = await fetch('/api/analyze', {
         method: 'POST',
@@ -189,8 +197,14 @@ export default function ProLawnAnalyzer() {
   };
 
   const reset = () => {
-    setAppState('idle'); setAnalysis(null); setCapturedImage(null); setErrorMessage(null);
-    setLocalPros([]); setProsError(null); setProsSearched(false);
+    setAppState('idle');
+    setAnalysis(null);
+    setCapturedImage(null);
+    setErrorMessage(null);
+    setLocalPros([]);
+    setProsError(null);
+    setProsSearched(false);
+    setHasUploadPreview(false); // restore camera
   };
 
   return (
@@ -264,14 +278,27 @@ export default function ProLawnAnalyzer() {
           </div>
         )}
 
+        {/* Camera + Upload — hidden once results are ready */}
         {appState !== 'results' && (
           <div className="space-y-3">
-            <CameraCapture onCapture={handleCapture} isAnalyzing={appState === 'analyzing'} themeColor={BRAND.primary} />
-            <PhotoUpload onCapture={handleCapture} isAnalyzing={appState === 'analyzing'} themeColor={BRAND.primary} />
+            {/* Camera — hidden when a photo is staged for upload */}
+            {!hasUploadPreview && (
+              <CameraCapture
+                onCapture={handleCapture}
+                isAnalyzing={appState === 'analyzing'}
+                themeColor={BRAND.primary}
+              />
+            )}
+            <PhotoUpload
+              onCapture={handleCapture}
+              isAnalyzing={appState === 'analyzing'}
+              themeColor={BRAND.primary}
+              onPreviewChange={setHasUploadPreview}
+            />
           </div>
         )}
 
-        {appState === 'idle' && (
+        {appState === 'idle' && !hasUploadPreview && (
           <p className="text-center text-sm mt-4 leading-relaxed px-4" style={{ color: BRAND.textMuted }}>
             Scan turf, identify agronomic issues, and receive professional-grade treatment recommendations.
           </p>
@@ -328,28 +355,23 @@ export default function ProLawnAnalyzer() {
                         {prosLoading ? <Loader2 size={14} className="animate-spin" /> : 'Refresh'}
                       </button>
                     </div>
-
                     {prosLoading && (
                       <div className="bg-white py-6 flex flex-col items-center gap-2">
                         <Loader2 size={24} className="animate-spin" style={{ color: BRAND.primary }} />
                         <p className="text-xs text-gray-400">Searching nearby professionals…</p>
                       </div>
                     )}
-
                     {!prosLoading && prosError && (
                       <div className="bg-white px-4 py-5">
                         <p className="text-sm text-gray-500 mb-3">{prosError}</p>
-                        <a
-                          href={`https://www.google.com/maps/search/lawn+care+fertilization+near+${locationData?.city ?? 'me'}`}
+                        <a href={`https://www.google.com/maps/search/lawn+care+fertilization+near+${locationData?.city ?? 'me'}`}
                           target="_blank" rel="noopener noreferrer"
                           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-semibold"
-                          style={{ backgroundColor: BRAND.primary }}
-                        >
+                          style={{ backgroundColor: BRAND.primary }}>
                           <ExternalLink size={14} /> Search on Google Maps
                         </a>
                       </div>
                     )}
-
                     {!prosLoading && localPros.length > 0 && (
                       <div className="bg-white divide-y divide-gray-100">
                         {analysis?.identified?.primary && (
@@ -391,7 +413,6 @@ export default function ProLawnAnalyzer() {
                 )}
               </div>
             )}
-
           </div>
         )}
       </div>

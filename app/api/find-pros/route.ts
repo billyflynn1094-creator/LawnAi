@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
-export const maxDuration = 20;
+export const maxDuration = 30;
 
 interface PlaceResult {
   name: string;
@@ -11,6 +11,28 @@ interface PlaceResult {
   opening_hours?: { open_now?: boolean };
   place_id: string;
   business_status?: string;
+}
+
+interface PlaceDetails {
+  website?: string;
+  formatted_phone_number?: string;
+}
+
+const MAPS_REFERER_HEADERS = {
+  'Referer': 'https://lawn-ai.vercel.app/',
+  'X-Goog-Maps-Api-Key-Referer': 'https://lawn-ai.vercel.app/',
+};
+
+async function fetchPlaceDetails(placeId: string, key: string): Promise<PlaceDetails> {
+  try {
+    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=website,formatted_phone_number&key=${key}`;
+    const res = await fetch(url, { headers: MAPS_REFERER_HEADERS, cache: 'no-store' });
+    if (!res.ok) return {};
+    const data = await res.json();
+    return data.result ?? {};
+  } catch {
+    return {};
+  }
 }
 
 export async function GET(req: NextRequest) {
@@ -38,11 +60,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const res = await fetch(url, {
-      // Spoof the Referer so HTTP-referrer-restricted keys accept server-side calls
-      headers: {
-        'Referer': 'https://lawn-ai.vercel.app/',
-        'X-Goog-Maps-Api-Key-Referer': 'https://lawn-ai.vercel.app/',
-      },
+      headers: MAPS_REFERER_HEADERS,
       cache: 'no-store',
     });
 
@@ -76,18 +94,26 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const pros = (data.results ?? [])
+  const candidates = (data.results ?? [])
     .filter((p) => p.business_status !== 'PERMANENTLY_CLOSED')
-    .slice(0, 8)
-    .map((p) => ({
-      name:          p.name,
-      address:       p.formatted_address ?? '',
-      rating:        p.rating,
-      ratings_count: p.user_ratings_total,
-      open_now:      p.opening_hours?.open_now,
-      place_id:      p.place_id,
-      maps_url:      `https://www.google.com/maps/place/?q=place_id:${p.place_id}`,
-    }));
+    .slice(0, 8);
+
+  // Enrich with website + phone via Place Details (parallel fetch)
+  const details = await Promise.all(
+    candidates.map((p) => fetchPlaceDetails(p.place_id, key))
+  );
+
+  const pros = candidates.map((p, i) => ({
+    name:          p.name,
+    address:       p.formatted_address ?? '',
+    rating:        p.rating,
+    ratings_count: p.user_ratings_total,
+    open_now:      p.opening_hours?.open_now,
+    place_id:      p.place_id,
+    maps_url:      `https://www.google.com/maps/place/?q=place_id:${p.place_id}`,
+    website:       details[i].website,
+    phone:         details[i].formatted_phone_number,
+  }));
 
   return NextResponse.json({ pros });
 }

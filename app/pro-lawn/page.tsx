@@ -42,7 +42,6 @@ const BRAND = {
   primary: '#1B3A6B',
   primaryLight: '#2F5299',
   bgPage: '#F5F7FA',
-  bgCard: '#FFFFFF',
   border: '#E2E8F2',
   borderAccent: 'rgba(27,58,107,0.22)',
   textPrimary: '#1A1A1A',
@@ -141,20 +140,13 @@ export default function ProLawnAnalyzer() {
     } finally { setZipLoading(false); }
   };
 
-  const revertToGps = () => {
-    setShowZipInput(false); setZipInput(''); setZipError(null); fetchLocation();
-  };
+  const revertToGps = () => { setShowZipInput(false); setZipInput(''); setZipError(null); fetchLocation(); };
 
   useEffect(() => { fetchLocation(); }, [fetchLocation]);
 
   const handleCapture = async (base64: string) => {
-    setCapturedImage(base64);
-    setAppState('analyzing');
-    setAnalysis(null);
-    setErrorMessage(null);
-    setLocalPros([]);
-    setProsError(null);
-    setProsSearched(false);
+    setCapturedImage(base64); setAppState('analyzing'); setAnalysis(null); setErrorMessage(null);
+    setLocalPros([]); setProsError(null); setProsSearched(false);
     try {
       const res = await fetch('/api/analyze', {
         method: 'POST',
@@ -177,20 +169,14 @@ export default function ProLawnAnalyzer() {
   };
 
   const handleFindPros = async () => {
-    if (!locationData?.lat || !locationData?.lng) {
-      setProsError('Location required to find nearby specialists.');
-      return;
-    }
-    setProsLoading(true);
-    setProsError(null);
-    setLocalPros([]);
-    setProsSearched(true);
+    if (!locationData?.lat || !locationData?.lng) { setProsError('Location required to find nearby specialists.'); return; }
+    setProsLoading(true); setProsError(null); setLocalPros([]); setProsSearched(true);
     try {
       const res = await fetch(`/api/find-pros?lat=${locationData.lat}&lng=${locationData.lng}`);
-      if (!res.ok) throw new Error('Could not reach the search service.');
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Search failed');
       if (!data.pros || data.pros.length === 0) {
-        setProsError('No lawn care professionals found nearby. Try expanding your search on Google Maps.');
+        setProsError('No lawn care professionals found nearby. Try the Google Maps search below.');
       } else {
         setLocalPros(data.pros);
       }
@@ -203,19 +189,13 @@ export default function ProLawnAnalyzer() {
   };
 
   const reset = () => {
-    setAppState('idle');
-    setAnalysis(null);
-    setCapturedImage(null);
-    setErrorMessage(null);
-    setLocalPros([]);
-    setProsError(null);
-    setProsSearched(false);
+    setAppState('idle'); setAnalysis(null); setCapturedImage(null); setErrorMessage(null);
+    setLocalPros([]); setProsError(null); setProsSearched(false);
   };
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: BRAND.bgPage, color: BRAND.textPrimary }}>
 
-      {/* Header */}
       <header style={{ backgroundColor: BRAND.primary }} className="sticky top-0 z-20 shadow-md">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -230,17 +210,13 @@ export default function ProLawnAnalyzer() {
             </div>
           </div>
           {appState === 'results' && (
-            <button
-              onClick={reset}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white text-xs font-semibold transition"
-            >
+            <button onClick={reset} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white text-xs font-semibold transition">
               <RotateCcw size={12} /> New scan
             </button>
           )}
         </div>
       </header>
 
-      {/* Back button */}
       <div className="max-w-lg mx-auto px-4 pt-3 pb-1">
         <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-medium transition-colors hover:opacity-70" style={{ color: BRAND.textMuted }}>
           &larr; Back to Home
@@ -249,19 +225,10 @@ export default function ProLawnAnalyzer() {
 
       <div className="max-w-lg mx-auto px-4 pb-12">
 
-        {/* Location panel */}
         <div className="mb-3 mt-2">
-          <LocationBadge
-            location={locationData}
-            loading={locationLoading}
-            error={locationError}
-            onRetry={fetchLocation}
-            accent={BRAND.primary}
-            mode="light"
-          />
+          <LocationBadge location={locationData} loading={locationLoading} error={locationError} onRetry={fetchLocation} accent={BRAND.primary} mode="light" />
         </div>
 
-        {/* Location source controls */}
         {!locationLoading && (
           <div className="flex items-center gap-3 mb-2">
             <span className="flex items-center gap-1 text-xs" style={{ color: BRAND.textMuted }}>
@@ -270,42 +237,26 @@ export default function ProLawnAnalyzer() {
                 : <><MapPin size={11} style={{ color: BRAND.primary }} /> Manual ZIP</>}
             </span>
             {locationSource === 'zip' && (
-              <button onClick={revertToGps} className="text-xs transition hover:opacity-70" style={{ color: BRAND.textMuted }}>
-                Use GPS
-              </button>
+              <button onClick={revertToGps} className="text-xs transition hover:opacity-70" style={{ color: BRAND.textMuted }}>Use GPS</button>
             )}
-            <button
-              onClick={() => { setShowZipInput(v => !v); setZipError(null); }}
-              className="text-xs transition hover:opacity-70"
-              style={{ color: BRAND.textAccent, fontWeight: 600 }}
-            >
+            <button onClick={() => { setShowZipInput(v => !v); setZipError(null); }} className="text-xs transition hover:opacity-70" style={{ color: BRAND.textAccent, fontWeight: 600 }}>
               Change ZIP
             </button>
           </div>
         )}
 
-        {/* ZIP input */}
         {showZipInput && (
           <div className="mb-3 p-3 rounded-xl border bg-white" style={{ borderColor: BRAND.borderAccent }}>
             <p className="text-xs font-semibold mb-2" style={{ color: BRAND.textPrimary }}>Enter ZIP code to change location</p>
             <div className="flex gap-2">
-              <input
-                type="text"
-                inputMode="numeric"
-                maxLength={5}
-                placeholder="e.g. 08833"
-                value={zipInput}
+              <input type="text" inputMode="numeric" maxLength={5} placeholder="e.g. 08833" value={zipInput}
                 onChange={(e) => { setZipInput(e.target.value.replace(/\D/g, '')); setZipError(null); }}
                 onKeyDown={(e) => { if (e.key === 'Enter') fetchLocationByZip(zipInput); }}
                 className="flex-1 rounded-lg px-3 py-2 text-sm focus:outline-none"
                 style={{ backgroundColor: '#F5F5F7', border: `1px solid ${BRAND.border}`, color: BRAND.textPrimary }}
               />
-              <button
-                onClick={() => fetchLocationByZip(zipInput)}
-                disabled={zipLoading || zipInput.length !== 5}
-                className="px-4 py-2 rounded-lg text-white text-sm font-bold disabled:opacity-40 transition"
-                style={{ backgroundColor: BRAND.primary }}
-              >
+              <button onClick={() => fetchLocationByZip(zipInput)} disabled={zipLoading || zipInput.length !== 5}
+                className="px-4 py-2 rounded-lg text-white text-sm font-bold disabled:opacity-40 transition" style={{ backgroundColor: BRAND.primary }}>
                 {zipLoading ? '...' : 'Go'}
               </button>
             </div>
@@ -313,125 +264,84 @@ export default function ProLawnAnalyzer() {
           </div>
         )}
 
-        {/* Camera + Upload — hidden once results are ready */}
         {appState !== 'results' && (
           <div className="space-y-3">
-            <CameraCapture
-              onCapture={handleCapture}
-              isAnalyzing={appState === 'analyzing'}
-              themeColor={BRAND.primary}
-            />
-            <PhotoUpload
-              onCapture={handleCapture}
-              isAnalyzing={appState === 'analyzing'}
-              themeColor={BRAND.primary}
-            />
+            <CameraCapture onCapture={handleCapture} isAnalyzing={appState === 'analyzing'} themeColor={BRAND.primary} />
+            <PhotoUpload onCapture={handleCapture} isAnalyzing={appState === 'analyzing'} themeColor={BRAND.primary} />
           </div>
         )}
 
-        {/* Idle prompt */}
         {appState === 'idle' && (
           <p className="text-center text-sm mt-4 leading-relaxed px-4" style={{ color: BRAND.textMuted }}>
             Scan turf, identify agronomic issues, and receive professional-grade treatment recommendations.
           </p>
         )}
 
-        {/* Error state */}
         {appState === 'error' && (
           <div className="mt-4 p-4 rounded-xl border bg-white text-center" style={{ borderColor: 'rgba(239,68,68,0.3)' }}>
             <p className="text-red-500 text-sm mb-3">{errorMessage}</p>
-            <button onClick={reset} className="px-4 py-2 rounded-lg text-white text-sm font-bold transition" style={{ backgroundColor: BRAND.primary }}>
-              Try again
-            </button>
+            <button onClick={reset} className="px-4 py-2 rounded-lg text-white text-sm font-bold transition" style={{ backgroundColor: BRAND.primary }}>Try again</button>
           </div>
         )}
 
-        {/* Results */}
         {appState === 'results' && (
           <div id="results" className="space-y-4">
 
-            {/* Captured photo */}
             {capturedImage && (
               <div className="rounded-2xl overflow-hidden relative border" style={{ borderColor: BRAND.borderAccent }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={capturedImage} alt="Analyzed turf" className="w-full max-h-64 object-cover" />
-                <div
-                  className="absolute inset-x-0 bottom-0 flex items-center justify-between px-3 py-2"
-                  style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.72), transparent)' }}
-                >
+                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between px-3 py-2" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.72), transparent)' }}>
                   <span className="text-white text-xs font-semibold">Analyzed image</span>
-                  <button
-                    onClick={reset}
-                    className="flex items-center gap-1 text-white text-xs font-medium px-2 py-1 rounded-full bg-black/40"
-                  >
+                  <button onClick={reset} className="flex items-center gap-1 text-white text-xs font-medium px-2 py-1 rounded-full bg-black/40">
                     <RotateCcw size={10} /> New scan
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Analysis results */}
-            <AnalysisResults analysis={analysis} />
+            <AnalysisResults analysis={analysis} mode="light" />
 
-            {/* Download report */}
             {analysis && !analysis.parse_error && (
               <DownloadReportButton analysis={analysis} location={locationData} />
             )}
 
-            {/* ─── Find Local Specialists ─── */}
             {analysis && !analysis.parse_error && (
               <div id="pros-section" className="pt-2">
                 {!prosSearched ? (
                   <button
                     onClick={handleFindPros}
-                    disabled={prosLoading}
                     className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-white font-bold text-[15px] shadow-md active:scale-[0.98] transition-transform"
-                    style={{
-                      background: `linear-gradient(135deg, ${BRAND.primaryLight} 0%, ${BRAND.primary} 100%)`,
-                    }}
+                    style={{ background: `linear-gradient(135deg, ${BRAND.primaryLight} 0%, ${BRAND.primary} 100%)` }}
                   >
                     <Users size={18} />
                     🔍 Find a Certified Pro Near Me
                   </button>
                 ) : (
-                  <div
-                    className="rounded-2xl border overflow-hidden"
-                    style={{ borderColor: BRAND.borderAccent }}
-                  >
-                    {/* Section header */}
-                    <div
-                      className="flex items-center justify-between px-4 py-3"
-                      style={{ backgroundColor: BRAND.primary }}
-                    >
+                  <div className="rounded-2xl border overflow-hidden" style={{ borderColor: BRAND.borderAccent }}>
+                    <div className="flex items-center justify-between px-4 py-3" style={{ backgroundColor: BRAND.primary }}>
                       <div className="flex items-center gap-2">
                         <Users size={16} className="text-white" />
                         <span className="text-white font-bold text-sm">Certified Lawn Professionals</span>
                       </div>
-                      <button
-                        onClick={handleFindPros}
-                        disabled={prosLoading}
-                        className="text-white/80 text-xs hover:text-white transition"
-                      >
+                      <button onClick={handleFindPros} disabled={prosLoading} className="text-white/80 text-xs hover:text-white transition">
                         {prosLoading ? <Loader2 size={14} className="animate-spin" /> : 'Refresh'}
                       </button>
                     </div>
 
-                    {/* Loading */}
                     {prosLoading && (
                       <div className="bg-white py-6 flex flex-col items-center gap-2">
                         <Loader2 size={24} className="animate-spin" style={{ color: BRAND.primary }} />
-                        <p className="text-xs" style={{ color: BRAND.textMuted }}>Searching nearby professionals…</p>
+                        <p className="text-xs text-gray-400">Searching nearby professionals…</p>
                       </div>
                     )}
 
-                    {/* Error */}
                     {!prosLoading && prosError && (
-                      <div className="bg-white px-4 py-5 text-center">
-                        <p className="text-sm mb-3" style={{ color: BRAND.textMuted }}>{prosError}</p>
+                      <div className="bg-white px-4 py-5">
+                        <p className="text-sm text-gray-500 mb-3">{prosError}</p>
                         <a
                           href={`https://www.google.com/maps/search/lawn+care+fertilization+near+${locationData?.city ?? 'me'}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          target="_blank" rel="noopener noreferrer"
                           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-semibold"
                           style={{ backgroundColor: BRAND.primary }}
                         >
@@ -440,9 +350,8 @@ export default function ProLawnAnalyzer() {
                       </div>
                     )}
 
-                    {/* Pro cards */}
                     {!prosLoading && localPros.length > 0 && (
-                      <div className="bg-white divide-y" style={{ borderColor: BRAND.border }}>
+                      <div className="bg-white divide-y divide-gray-100">
                         {analysis?.identified?.primary && (
                           <div className="px-4 py-2.5" style={{ backgroundColor: 'rgba(27,58,107,0.06)' }}>
                             <p className="text-xs" style={{ color: BRAND.textAccent }}>
@@ -453,35 +362,25 @@ export default function ProLawnAnalyzer() {
                         {localPros.map((pro, i) => (
                           <div key={i} className="px-4 py-3 flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-sm truncate" style={{ color: BRAND.textPrimary }}>{pro.name}</p>
-                              <p className="text-xs mt-0.5 truncate" style={{ color: BRAND.textMuted }}>{pro.address}</p>
+                              <p className="font-semibold text-sm truncate text-gray-900">{pro.name}</p>
+                              <p className="text-xs mt-0.5 truncate text-gray-500">{pro.address}</p>
                               <div className="flex items-center gap-2 mt-1">
                                 {pro.rating && (
-                                  <span className="flex items-center gap-0.5 text-xs font-medium" style={{ color: '#F59E0B' }}>
+                                  <span className="flex items-center gap-0.5 text-xs font-medium text-amber-500">
                                     <Star size={11} fill="currentColor" />{pro.rating.toFixed(1)}
-                                    {pro.ratings_count && <span style={{ color: BRAND.textMuted }}>({pro.ratings_count})</span>}
+                                    {pro.ratings_count && <span className="text-gray-400">({pro.ratings_count})</span>}
                                   </span>
                                 )}
                                 {pro.open_now !== undefined && (
-                                  <span
-                                    className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
-                                    style={{
-                                      backgroundColor: pro.open_now ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.1)',
-                                      color: pro.open_now ? '#16A34A' : '#DC2626',
-                                    }}
-                                  >
+                                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${pro.open_now ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
                                     {pro.open_now ? 'Open' : 'Closed'}
                                   </span>
                                 )}
                               </div>
                             </div>
-                            <a
-                              href={pro.maps_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <a href={pro.maps_url} target="_blank" rel="noopener noreferrer"
                               className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-white text-xs font-semibold"
-                              style={{ backgroundColor: BRAND.primary }}
-                            >
+                              style={{ backgroundColor: BRAND.primary }}>
                               <ExternalLink size={11} /> Maps
                             </a>
                           </div>

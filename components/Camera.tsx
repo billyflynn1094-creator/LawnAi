@@ -3,7 +3,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { Camera, CameraOff, Loader2, RotateCcw, ImagePlus, FileImage, AlertCircle } from 'lucide-react';
 
-interface CameraCaptureProps {
+interface CameraCapturePros {
   onCapture: (base64: string) => void;
   isAnalyzing: boolean;
   fill?: boolean;
@@ -11,18 +11,21 @@ interface CameraCaptureProps {
 }
 
 /**
- * Compress an image dataURL via canvas → JPEG.
+ * Compress a File via canvas → JPEG.
+ * Uses URL.createObjectURL for memory-efficient loading on Android Chrome.
  * Returns compressed JPEG dataURL, or null if the image can't be rendered
  * (e.g. HEIC on Chrome/Android).
  */
 async function compressViaCanvas(
-  dataUrl: string,
+  file: File,
   maxDim = 1600,
   quality = 0.82
 ): Promise<string | null> {
   return new Promise((resolve) => {
+    const objectUrl = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
       let { width, height } = img;
       if (width > maxDim || height > maxDim) {
         const scale = maxDim / Math.max(width, height);
@@ -37,8 +40,11 @@ async function compressViaCanvas(
       ctx.drawImage(img, 0, 0, width, height);
       resolve(canvas.toDataURL('image/jpeg', quality));
     };
-    img.onerror = () => resolve(null); // HEIC or unsupported format
-    img.src = dataUrl;
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(null); // HEIC or unsupported format on this browser
+    };
+    img.src = objectUrl;
   });
 }
 
@@ -51,7 +57,7 @@ export default function CameraCapture({
   isAnalyzing,
   fill = false,
   themeColor = '#4a8535',
-}: CameraCaptureProps) {
+}: CameraCapturePros) {
   const videoRef  = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -128,7 +134,7 @@ export default function CameraCapture({
     setUploadError(null);
   }, []);
 
-  // Handle file upload — compress via canvas; gate oversized uncompressible files
+  // Handle file upload — compress via canvas using object URL (memory-efficient on mobile)
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -140,16 +146,8 @@ export default function CameraCapture({
 
     setUploadError(null);
 
-    // Read the file as data URL
-    const rawDataUrl: string = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload  = (ev) => resolve(ev.target?.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-
-    // Try canvas compression first (works for JPEG, PNG, WebP; fails for HEIC)
-    const compressed = await compressViaCanvas(rawDataUrl);
+    // Try canvas compression using object URL (works for JPEG, PNG, WebP; fails for HEIC on Chrome)
+    const compressed = await compressViaCanvas(file);
 
     if (compressed) {
       // Successfully compressed to JPEG — use it
@@ -161,12 +159,18 @@ export default function CameraCapture({
       if (file.size > MAX_UNCOMPRESSIBLE_BYTES) {
         const sizeMb = (file.size / 1024 / 1024).toFixed(1);
         setUploadError(
-          `This photo (${sizeMb} MB) is too large to upload. ` +
+          `This photo (${sizeMb} MB) can't be compressed by this browser. ` +
           'Please take a new photo using the Capture button, or choose a smaller image.'
         );
         return;
       }
-      // Small enough to send as-is
+      // Small enough to send as-is — read as data URL
+      const rawDataUrl: string = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload  = (ev) => resolve(ev.target?.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
       setPreview(rawDataUrl);
       setPreviewFileName(file.name);
       setImgError(false);
@@ -174,23 +178,11 @@ export default function CameraCapture({
   }, []);
 
   // Send preview to parent for analysis
-  const analyze = useCallback(async () => {
+  const analyze = useCallback(() => {
     if (!preview) return;
-
-    let dataUrlToSend = preview;
-
-    // If preview is not yet JPEG-compressed (e.g. loaded as PNG/large JPEG before compression ran),
-    // do a final compression pass to ensure we stay under the API size limit.
-    if (!imgError && !preview.startsWith('data:image/jpeg')) {
-      const recompressed = await compressViaCanvas(preview);
-      if (recompressed) dataUrlToSend = recompressed;
-    }
-
-    const base64 = dataUrlToSend.startsWith('data:')
-      ? dataUrlToSend.split(',')[1]
-      : dataUrlToSend;
+    const base64 = preview.startsWith('data:') ? preview.split(',')[1] : preview;
     if (base64) onCapture(base64);
-  }, [preview, imgError, onCapture]);
+  }, [preview, onCapture]);
 
   // Retake: clear preview, restart live feed
   const retake = useCallback(() => {

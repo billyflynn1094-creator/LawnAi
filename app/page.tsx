@@ -13,6 +13,8 @@ import {
   Settings,
   ArrowUpRight,
   Droplets,
+  Home,
+  Briefcase,
 } from 'lucide-react';
 
 interface LocationData {
@@ -38,17 +40,50 @@ interface ModuleItem {
   href: string;
   active: boolean;
   badge?: string;
+  // Brand theming
+  accent?: string;       // left bar + icon bg color
+  accentGlow?: string;   // glow shadow rgba
+  brandTag?: string;     // optional corner tag (e.g. "PRO")
+  brandTagColor?: string;
 }
 
 const MODULES: ModuleItem[] = [
   {
+    id: 'home-lawn',
+    icon: Home,
+    title: 'HomeLawn',
+    meta: 'For Homeowners',
+    body: 'Snap a photo of any lawn issue — weeds, bare patches, discoloration — and get instant plain-language diagnosis with easy DIY steps and Home Depot product links.',
+    href: '/home-lawn',
+    active: true,
+    accent: '#F96302',
+    accentGlow: 'rgba(249,99,2,0.28)',
+    brandTag: 'Consumer',
+    brandTagColor: '#F96302',
+  },
+  {
+    id: 'pro-lawn',
+    icon: Briefcase,
+    title: 'ProLawn',
+    meta: 'For Contractors',
+    body: 'Professional turf diagnosis with technical detail — disease ID, weed pressure, soil health, and industry-grade product recommendations calibrated to your region.',
+    href: '/pro-lawn',
+    active: true,
+    accent: '#1B3A6B',
+    accentGlow: 'rgba(27,58,107,0.35)',
+    brandTag: 'PRO',
+    brandTagColor: '#3B7F5E',
+  },
+  {
     id: 'turf-analyzer',
     icon: Scan,
     title: 'Turf Analyzer',
-    meta: 'AI-Powered Diagnosis',
-    body: 'Point your camera at any lawn or turf issue. Get instant AI identification of weeds, disease, bare patches, and discoloration with location-aware remediation steps.',
+    meta: 'Dev / Legacy',
+    body: 'Original AI-powered turf diagnosis tool. Use HomeLawn or ProLawn for the branded experience.',
     href: '/turf-analyzer',
     active: true,
+    accent: '#4a8535',
+    accentGlow: 'rgba(74,133,53,0.25)',
   },
   {
     id: 'timeline',
@@ -65,7 +100,7 @@ const MODULES: ModuleItem[] = [
     icon: BookOpen,
     title: 'Product Catalog',
     meta: 'Pro Recommendations',
-    body: 'Curated turf protection products from Syngenta, Bayer (Envu), BASF, Nufarm, and Corteva â granular and liquid options for precision treatment.',
+    body: 'Curated turf protection products from Syngenta, Bayer (Envu), BASF, Nufarm, and Corteva — granular and liquid options for precision treatment.',
     href: '#',
     active: false,
     badge: 'Coming Soon',
@@ -85,9 +120,11 @@ const MODULES: ModuleItem[] = [
     icon: Droplets,
     title: 'IrrigationPro',
     meta: 'Field Diagnostic Tool',
-    body: 'Diagnose any irrigation issue â electrical, hydraulic, controller programming, or coverage â with AI-powered field guidance for residential and commercial systems.',
+    body: 'Diagnose any irrigation issue — electrical, hydraulic, controller programming, or coverage — with AI-powered field guidance.',
     href: '/irrigation',
     active: true,
+    accent: '#0369a1',
+    accentGlow: 'rgba(3,105,161,0.28)',
   },
 ];
 
@@ -130,7 +167,7 @@ export default function CoverPage() {
   return (
     <main className="min-h-screen flex flex-col overflow-x-hidden">
 
-      {/* ââ HEADER ââ */}
+      {/* ── HEADER ── */}
       <header className="sticky top-0 z-20 bg-field-900/90 backdrop-blur-lg border-b border-white/5">
         <div className="max-w-lg mx-auto px-4 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -152,11 +189,10 @@ export default function CoverPage() {
         </div>
       </header>
 
-      {/* ââ HERO ââ */}
+      {/* ── HERO ── */}
       <div className="relative px-5 pt-10 pb-8 max-w-lg mx-auto w-full">
-        {/* Atmospheric glow orbs */}
         <div
-          className="absolute -top-8 right-0 w-72 h-72 rounded-full pointer-events-none animate-glow"
+          className="absolute -top-8 right-0 w-72 h-72 rounded-full pointer-events-none"
           style={{ background: 'radial-gradient(circle, rgba(74,133,53,0.18) 0%, transparent 70%)' }}
         />
         <div
@@ -164,34 +200,21 @@ export default function CoverPage() {
           style={{ background: 'radial-gradient(circle, rgba(42,82,32,0.12) 0%, transparent 70%)' }}
         />
 
-        {/* Eyebrow â decorative, lighter green OK */}
-        <p
-          className="animate-entry text-field-200 text-[10px] tracking-[0.35em] uppercase font-semibold mb-3"
-          style={{ animationDelay: '0ms' }}
-        >
+        <p className="animate-entry text-field-200 text-[10px] tracking-[0.35em] uppercase font-semibold mb-3">
           National US Coverage
         </p>
 
-        {/* Headline */}
-        <h1
-          className="animate-entry font-display text-[3.25rem] leading-[0.97] text-white mb-5"
-          style={{ animationDelay: '80ms' }}
-        >
+        <h1 className="animate-entry font-display text-[3.25rem] leading-[0.97] text-white mb-5">
           Precision<br />
           <span className="italic text-field-200">Turf Care,</span><br />
           <span className="text-field-400">Elevated.</span>
         </h1>
 
-        {/* Sub-tagline â max contrast */}
-        <p
-          className="animate-entry text-field-50 text-[13px] leading-relaxed max-w-[300px] mb-6"
-          style={{ animationDelay: '160ms' }}
-        >
-          AI diagnostics and expert guidance â calibrated to your location, soil profile, and live weather conditions.
+        <p className="animate-entry text-field-50 text-[13px] leading-relaxed max-w-[300px] mb-6">
+          AI diagnostics and expert guidance — calibrated to your location, soil profile, and live weather conditions.
         </p>
 
-        {/* Location data */}
-        <div className="animate-entry" style={{ animationDelay: '240ms' }}>
+        <div className="animate-entry">
           <LocationBadge
             location={locationData}
             loading={locationLoading}
@@ -201,23 +224,22 @@ export default function CoverPage() {
         </div>
       </div>
 
-      {/* ââ DIVIDER ââ */}
-      <div
-        className="animate-entry max-w-lg mx-auto px-5 pb-4 w-full"
-        style={{ animationDelay: '320ms' }}
-      >
+      {/* ── DIVIDER ── */}
+      <div className="animate-entry max-w-lg mx-auto px-5 pb-4 w-full">
         <div className="flex items-center gap-3">
           <div className="flex-1 h-px bg-field-700/50" />
-          <span className="text-field-200 text-[9px] tracking-[0.3em] uppercase font-bold">Modules</span>
+          <span className="text-field-200 text-[9px] tracking-[0.3em] uppercase font-bold">Choose Your Experience</span>
           <div className="flex-1 h-px bg-field-700/50" />
         </div>
       </div>
 
-      {/* ââ MODULE CARDS ââ */}
+      {/* ── MODULE CARDS ── */}
       <div className="flex-1 max-w-lg mx-auto px-4 pb-10 w-full space-y-2.5">
         {MODULES.map((mod, i) => {
           const Icon = mod.icon;
           const delay = 380 + i * 80;
+          const accent = mod.accent ?? '#4a8535';
+          const accentGlow = mod.accentGlow ?? 'rgba(74,133,53,0.25)';
 
           if (mod.active) {
             return (
@@ -228,12 +250,22 @@ export default function CoverPage() {
                 style={{ animationDelay: `${delay}ms` }}
               >
                 {/* Left accent bar */}
-                <div className="absolute left-0 inset-y-5 w-[3px] rounded-full bg-gradient-to-b from-field-400 to-field-600" />
+                <div
+                  className="absolute left-0 inset-y-5 w-[3px] rounded-full"
+                  style={{ background: `linear-gradient(to bottom, ${accent}, ${accent}88)` }}
+                />
                 {/* Hover shimmer */}
-                <div className="absolute inset-0 bg-gradient-to-r from-field-600/0 via-field-500/5 to-field-600/0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                  style={{ background: `linear-gradient(to right, transparent, ${accent}08, transparent)` }} />
 
                 {/* Icon */}
-                <div className="shrink-0 w-[52px] h-[52px] rounded-xl bg-gradient-to-br from-field-500/90 to-field-700 flex items-center justify-center shadow-[0_4px_20px_rgba(74,133,53,0.3)]">
+                <div
+                  className="shrink-0 w-[52px] h-[52px] rounded-xl flex items-center justify-center"
+                  style={{
+                    background: `linear-gradient(135deg, ${accent}CC, ${accent}88)`,
+                    boxShadow: `0 4px 20px ${accentGlow}`,
+                  }}
+                >
                   <Icon size={22} className="text-white" />
                 </div>
 
@@ -241,14 +273,24 @@ export default function CoverPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between mb-0.5">
                     <span className="font-display text-[1.3rem] text-white leading-tight">{mod.title}</span>
-                    <ArrowUpRight
-                      size={15}
-                      className="shrink-0 mt-1 text-field-300 group-hover:text-white group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-all"
-                    />
+                    <div className="flex items-center gap-1.5">
+                      {mod.brandTag && (
+                        <span
+                          className="shrink-0 text-[8px] px-2 py-0.5 rounded-full font-bold tracking-widest uppercase text-white"
+                          style={{ backgroundColor: mod.brandTagColor ?? accent }}
+                        >
+                          {mod.brandTag}
+                        </span>
+                      )}
+                      <ArrowUpRight
+                        size={15}
+                        className="shrink-0 mt-1 text-field-300 group-hover:text-white group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-all"
+                      />
+                    </div>
                   </div>
-                  {/* Meta label â decorative, green accent OK */}
-                  <p className="text-field-300 text-[9px] tracking-[0.22em] uppercase font-bold mb-2">{mod.meta}</p>
-                  {/* Body â near-white for legibility */}
+                  <p className="text-[9px] tracking-[0.22em] uppercase font-bold mb-2" style={{ color: accent }}>
+                    {mod.meta}
+                  </p>
                   <p className="text-field-50 text-[13px] leading-relaxed">{mod.body}</p>
                   <div className="mt-3 inline-flex items-center gap-1 text-field-200 text-[11px] font-semibold tracking-wide group-hover:text-white transition-colors">
                     Open Module <ChevronRight size={10} className="group-hover:translate-x-0.5 transition-transform" />
@@ -269,7 +311,6 @@ export default function CoverPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between mb-0.5">
-                  {/* Inactive title â still needs to be readable */}
                   <span className="font-display text-[1.3rem] text-field-100 leading-tight">{mod.title}</span>
                   {mod.badge && (
                     <span className="shrink-0 text-[8px] px-2 py-0.5 rounded-full bg-field-800/60 border border-field-700/30 text-field-200 font-bold tracking-widest uppercase">
@@ -277,9 +318,7 @@ export default function CoverPage() {
                     </span>
                   )}
                 </div>
-                {/* Meta â decorative */}
                 <p className="text-field-300 text-[9px] tracking-[0.22em] uppercase font-bold mb-2">{mod.meta}</p>
-                {/* Inactive body â still readable */}
                 <p className="text-field-100 text-[13px] leading-relaxed">{mod.body}</p>
               </div>
             </div>
@@ -287,13 +326,13 @@ export default function CoverPage() {
         })}
       </div>
 
-      {/* ââ FOOTER ââ */}
+      {/* ── FOOTER ── */}
       <div className="max-w-lg mx-auto px-5 pb-8 w-full">
         <div className="border-t border-field-700/40 pt-4 flex items-center justify-between">
           <span className="text-field-200 text-[10px] tracking-wide">Powered by Gemini AI</span>
           <div className="flex items-center gap-1.5">
             <div className="w-1.5 h-1.5 rounded-full bg-field-400 animate-pulse" />
-            <span className="text-field-200 text-[10px] tracking-wide">v1.0 Â· US Coverage</span>
+            <span className="text-field-200 text-[10px] tracking-wide">v1.0 · US Coverage</span>
           </div>
         </div>
       </div>

@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { MapPin, RefreshCw, ChevronDown, ChevronUp, Download, ZoomIn, RotateCcw } from 'lucide-react';
+import { MapPin, RefreshCw, ChevronDown, ChevronUp, Download, Users, RotateCcw } from 'lucide-react';
 import CameraCapture from '@/components/Camera';
 import LocationPanel from '@/components/LocationPanel';
 import { LocationContext } from '@/lib/prompts';
 
-/* --- tiny helpers -------------------------------------------- */
+/* ─── tiny helpers ──────────────────────────────────────────── */
 function Spinner({ size = 20 }: { size?: number }) {
   return (
     <svg
@@ -63,7 +63,7 @@ function CollapsibleSection({
   );
 }
 
-/* --- main page ----------------------------------------------- */
+/* ─── main page ─────────────────────────────────────────────── */
 export default function TurfAnalyzerPage() {
   type AppState = 'idle' | 'analyzing' | 'result' | 'error';
   const [appState, setAppState] = useState<AppState>('idle');
@@ -77,8 +77,10 @@ export default function TurfAnalyzerPage() {
   const [locationError, setLocationError] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [photoRequest, setPhotoRequest] = useState<Record<string, any> | null>(null);
-  const [secondOpinionData, setSecondOpinionData] = useState<Record<string, any> | null>(null);
-  const [secondOpinionLoading, setSecondOpinionLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [localPros, setLocalPros] = useState<Record<string, any>[] | null>(null);
+  const [prosLoading, setProsLoading] = useState(false);
+  const [prosError, setProsError] = useState<string | null>(null);
 
   const fetchLocation = useCallback(() => {
     setLocationLoading(true);
@@ -116,7 +118,8 @@ export default function TurfAnalyzerPage() {
     setAppState('idle');
     setAnalysis(null);
     setPhotoRequest(null);
-    setSecondOpinionData(null);
+    setLocalPros(null);
+    setProsError(null);
   }, []);
 
   const handleAnalyze = useCallback(async () => {
@@ -125,7 +128,8 @@ export default function TurfAnalyzerPage() {
     setErrorMessage(null);
     setAnalysis(null);
     setPhotoRequest(null);
-    setSecondOpinionData(null);
+    setLocalPros(null);
+    setProsError(null);
     try {
       const res = await fetch('/api/analyze', {
         method: 'POST',
@@ -154,30 +158,26 @@ export default function TurfAnalyzerPage() {
     }
   }, [capturedImage, capturedImage2, locationData]);
 
-  const handleSecondOpinion = async () => {
-    if (!capturedImage || !analysis) return;
-    setSecondOpinionLoading(true);
+  const handleFindPros = async () => {
+    if (!locationData?.lat || !locationData?.lng) return;
+    setLocalPros(null);
+    setProsLoading(true);
+    setProsError(null);
     try {
-      const res = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          image: capturedImage,
-          ...(capturedImage2 ? { image2: capturedImage2 } : {}),
-          location: locationData ?? { lat: 0, lng: 0 },
-          isSecondOpinion: true,
-          originalDiagnosis: (analysis as any)?.identified?.primary ?? 'unknown',
-          originalAnalysis: analysis,
-        }),
-      });
+      const res = await fetch(
+        `/api/find-pros?lat=${locationData.lat}&lng=${locationData.lng}`
+      );
       const json = await res.json();
-      if (json?.analysis && !json.analysis.needs_more_photo) {
-        setSecondOpinionData(json.analysis);
+      if (json?.pros) {
+        setLocalPros(json.pros);
+      } else {
+        setProsError(json.error ?? 'Could not find pros near you. Try again.');
       }
     } catch (e) {
-      console.error('[second opinion]', e);
+      console.error('[find-pros]', e);
+      setProsError('Network error. Please try again.');
     } finally {
-      setSecondOpinionLoading(false);
+      setProsLoading(false);
     }
   };
 
@@ -188,10 +188,11 @@ export default function TurfAnalyzerPage() {
     setCapturedImage2(null);
     setErrorMessage(null);
     setPhotoRequest(null);
-    setSecondOpinionData(null);
+    setLocalPros(null);
+    setProsError(null);
   };
 
-  /* -- PDF download ------------------------------------------- */
+  /* ── PDF download ─────────────────────────────────────────── */
   const handleDownloadPDF = async () => {
     if (!analysis) return;
     try {
@@ -259,7 +260,7 @@ export default function TurfAnalyzerPage() {
     }
   };
 
-  /* -- render helpers ---------------------------------------- */
+  /* ── render helpers ──────────────────────────────────────── */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const renderProductList = (products: any[]) => {
     if (!products?.length) return null;
@@ -423,7 +424,7 @@ export default function TurfAnalyzerPage() {
     );
   };
 
-  /* -- JSX --------------------------------------------------- */
+  /* ── JSX ─────────────────────────────────────────────────── */
   // Result / error view
   if (appState === 'result' || appState === 'error') {
     return (
@@ -485,23 +486,91 @@ export default function TurfAnalyzerPage() {
           {/* Analysis */}
           {analysis && renderAnalysis(analysis)}
 
-          {/* Second opinion section */}
+          {/* Find a Pro section */}
           {analysis && (
-            <div className="border-t border-white/10 pt-4">
-              {!secondOpinionData && (
+            <div className="border-t border-white/10 pt-4 space-y-3">
+              {!localPros && (
                 <button
-                  onClick={handleSecondOpinion}
-                  disabled={secondOpinionLoading}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-blue-500/40 text-blue-300 text-sm font-semibold hover:bg-blue-900/20 disabled:opacity-50"
+                  onClick={handleFindPros}
+                  disabled={prosLoading || !locationData}
+                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-emerald-800/40 border border-emerald-500/50 text-emerald-300 text-sm font-bold tracking-wide hover:bg-emerald-700/50 active:scale-95 transition-all disabled:opacity-40"
                 >
-                  {secondOpinionLoading ? (
-                    <><Spinner size={16} /> Getting second opinion…</>
+                  {prosLoading ? (
+                    <><Spinner size={16} /> Searching nearby…</>
                   ) : (
-                    <><ZoomIn size={16} /> Get Second Opinion (GPT-4o)</>  
+                    <><Users size={17} /> 🌿 Get a Pro’s Opinion</>
                   )}
                 </button>
               )}
-              {secondOpinionData && renderAnalysis(secondOpinionData, true)}
+
+              {prosError && (
+                <p className="text-red-400 text-xs text-center">{prosError}</p>
+              )}
+
+              {localPros && localPros.length === 0 && (
+                <p className="text-white/40 text-sm text-center py-2">
+                  No lawn pros found within 15 miles.
+                </p>
+              )}
+
+              {localPros && localPros.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs text-emerald-400/70 font-semibold uppercase tracking-wide">
+                    📍 Lawn Pros Near You
+                  </p>
+                  {localPros.map((pro: any, i: number) => (
+                    <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-3">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-semibold text-sm leading-tight">{pro.name}</p>
+                          {pro.rating != null && (
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span className="text-amber-400 text-xs">
+                                {'★'.repeat(Math.round(pro.rating))}{'☆'.repeat(5 - Math.round(pro.rating))}
+                              </span>
+                              <span className="text-amber-300 text-xs font-medium">{pro.rating.toFixed(1)}</span>
+                              {pro.ratings_count && (
+                                <span className="text-white/35 text-xs">({pro.ratings_count})</span>
+                              )}
+                            </div>
+                          )}
+                          {pro.open_now != null && (
+                            <span className={`text-[11px] font-medium ${
+                              pro.open_now ? 'text-emerald-400' : 'text-white/35'
+                            }`}>
+                              {pro.open_now ? '● Open Now' : '○ Closed'}
+                            </span>
+                          )}
+                          <p className="text-white/45 text-xs mt-1 leading-snug">{pro.address}</p>
+                        </div>
+                        <a
+                          href={pro.maps_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="shrink-0 flex flex-col items-center justify-center gap-0.5 w-12 h-12 rounded-xl bg-emerald-900/40 border border-emerald-600/30 text-emerald-400 hover:bg-emerald-800/50 transition-colors"
+                        >
+                          <MapPin size={15} />
+                          <span className="text-[10px] font-bold">Maps</span>
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+
+                  {(analysis as any)?.identified?.primary && (
+                    <p className="text-xs text-white/35 text-center pt-1 leading-relaxed">
+                      💡 Tell them about:{' '}
+                      <span className="text-white/55 italic">{(analysis as any).identified.primary}</span>
+                    </p>
+                  )}
+
+                  <button
+                    onClick={() => { setLocalPros(null); setProsError(null); }}
+                    className="w-full text-xs text-white/25 hover:text-white/50 py-1 transition-colors"
+                  >
+                    Search again
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -509,7 +578,7 @@ export default function TurfAnalyzerPage() {
     );
   }
 
-  /* -- Capture view ------------------------------------------ */
+  /* ── Capture view ────────────────────────────────────────── */
   return (
     <main className="flex flex-col overflow-hidden" style={{ height: 'calc(100dvh - 3rem)' }}>
       {/* Top bar */}

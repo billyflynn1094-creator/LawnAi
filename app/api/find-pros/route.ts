@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
   }
 
   const radius = 24140; // 15 miles in metres
-  const query  = encodeURIComponent('lawn care fertilization service');
+  const query  = encodeURIComponent('lawn care turf fertilization weed control');
   const url    = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&location=${lat},${lng}&radius=${radius}&key=${key}`;
 
   let data: { status: string; results?: PlaceResult[]; error_message?: string };

@@ -252,7 +252,7 @@ export default function CameraCapture({
   return (
     <div className={`flex flex-col gap-0 ${fill ? 'h-full' : ''}`}>
       {/* Viewfinder */}
-      <div className="relative w-full rounded-t-2xl overflow-hidden bg-black" style={{ aspectRatio: '16/9' }}>
+      <div className="relative w-full rounded-t-2xl overflow-hidden bg-black" style={{ aspectRatio: '4/3' }}>
 
         <video
           ref={videoRef}

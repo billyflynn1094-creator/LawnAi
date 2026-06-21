@@ -229,11 +229,6 @@ export default function HomeLawnAnalyzer() {
         </div>
       </header>
 
-      <div className="max-w-lg mx-auto px-4 pt-3 pb-1">
-        <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-medium transition-colors hover:opacity-70" style={{ color: BRAND.textMuted }}>
-          &larr; Back to Home
-        </Link>
-      </div>
 
       <div className="max-w-lg mx-auto px-4 pb-12">
 
@@ -333,7 +328,7 @@ export default function HomeLawnAnalyzer() {
                     style={{ background: `linear-gradient(135deg, ${BRAND.primary} 0%, ${BRAND.primaryDark} 100%)` }}
                   >
                     <Users size={18} />
-                    ð¿ Find Local Lawn Specialists
+                    🌿 Find Local Lawn Specialists
                   </button>
                 ) : (
                   <div className="rounded-2xl border overflow-hidden" style={{ borderColor: BRAND.borderAccent }}>
@@ -355,7 +350,7 @@ export default function HomeLawnAnalyzer() {
                     {!prosLoading && prosError && (
                       <div className="bg-white px-4 py-5">
                         <p className="text-sm text-gray-500 mb-3">{prosError}</p>
-                        <a href={`https://www.google.com/maps/search/lawn+care+fertilization+near+${locationData?.city ?? 'me'}`}
+                        <a href={`https://www.google.com/maps/search/lawn+care+turf+fertilization+weed+control+near+${locationData?.city ?? 'me'}`}
                           target="_blank" rel="noopener noreferrer"
                           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-semibold"
                           style={{ backgroundColor: BRAND.primary }}>
@@ -368,27 +363,32 @@ export default function HomeLawnAnalyzer() {
                         {analysis?.identified?.primary && (
                           <div className="px-4 py-2.5 bg-orange-50">
                             <p className="text-xs text-orange-700">
-                              ð¡ <strong>Tell them about:</strong> {analysis.identified.primary}
+                              💡 <strong>Tell them about:</strong> {analysis.identified.primary}
                             </p>
                           </div>
                         )}
                         {localPros.map((pro, i) => (
-                          <div key={i} className="px-4 py-3 flex items-start justify-between gap-3">
+                          <div key={i} className="px-4 py-3 flex flex-col gap-2 min-h-[88px]">
+                            {/* Name + address */}
                             <div className="flex-1 min-w-0">
                               {pro.website ? (
                                 <a href={pro.website} target="_blank" rel="noopener noreferrer"
-                                  className="font-semibold text-sm truncate text-gray-900 hover:underline" style={{ color: BRAND.primary }}>
+                                  className="font-semibold text-sm leading-snug hover:underline block"
+                                  style={{ color: BRAND.primary }}>
                                   {pro.name}
                                 </a>
                               ) : (
-                                <p className="font-semibold text-sm truncate text-gray-900">{pro.name}</p>
+                                <p className="font-semibold text-sm leading-snug text-gray-900">{pro.name}</p>
                               )}
                               <p className="text-xs mt-0.5 truncate text-gray-500">{pro.address}</p>
-                              <div className="flex items-center gap-2 mt-1">
+                            </div>
+                            {/* Rating + status + action buttons in one row */}
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 {pro.rating && (
                                   <span className="flex items-center gap-0.5 text-xs font-medium text-amber-500">
                                     <Star size={11} fill="currentColor" />{pro.rating.toFixed(1)}
-                                    {pro.ratings_count && <span className="text-gray-400">({pro.ratings_count})</span>}
+                                    {pro.ratings_count && <span className="text-gray-400 ml-0.5">({pro.ratings_count})</span>}
                                   </span>
                                 )}
                                 {pro.open_now !== undefined && (
@@ -397,20 +397,20 @@ export default function HomeLawnAnalyzer() {
                                   </span>
                                 )}
                               </div>
-                            </div>
-                            <div className="flex-shrink-0 flex items-center gap-1.5">
-                              {pro.phone && (
-                                <a href={`tel:${pro.phone}`}
-                                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border"
-                                  style={{ color: BRAND.primary, borderColor: BRAND.primary, backgroundColor: 'transparent' }}>
-                                  ð Call
+                              <div className="flex-shrink-0 flex items-center gap-1.5">
+                                {pro.phone && (
+                                  <a href={`tel:${pro.phone}`}
+                                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border"
+                                    style={{ color: BRAND.primary, borderColor: BRAND.primary, backgroundColor: 'transparent' }}>
+                                    📞 Call
+                                  </a>
+                                )}
+                                <a href={pro.maps_url} target="_blank" rel="noopener noreferrer"
+                                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-white text-xs font-semibold"
+                                  style={{ backgroundColor: BRAND.primary }}>
+                                  <ExternalLink size={11} /> Maps
                                 </a>
-                              )}
-                              <a href={pro.maps_url} target="_blank" rel="noopener noreferrer"
-                                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-white text-xs font-semibold"
-                                style={{ backgroundColor: BRAND.primary }}>
-                                <ExternalLink size={11} /> Maps
-                              </a>
+                              </div>
                             </div>
                           </div>
                         ))}

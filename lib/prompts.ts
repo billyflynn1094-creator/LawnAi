@@ -241,6 +241,11 @@ Schools/parks: CT, IL, ME, MD, NY restrict pesticide use on school grounds — I
 - All states: Follow EPA FIFRA — the pesticide label IS the law.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT RULES — MUST FOLLOW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PLAIN TEXT ONLY: Every string value in the JSON MUST be plain text. NEVER use HTML tags, angle brackets, markdown, or any markup inside field values. No <p>, <br>, <ul>, <li>, <strong>, <em>, <b>, <i>, <span>, <div>, or ANY other tags. No &amp;, &lt;, &gt; HTML entities. Write clean prose sentences with no special formatting characters.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 RESPONSE FORMAT — VALID JSON ONLY, NO MARKDOWN
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {

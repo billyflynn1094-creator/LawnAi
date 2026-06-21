@@ -146,8 +146,8 @@ export default function CameraCapture({
       try {
         // Dynamic import so it only loads when needed
         const heic2anyMod = await import('heic2any');
-        const heic2any = (heic2anyMod as { default: typeof heic2anyMod }).default ?? heic2anyMod;
-        const converted = await (heic2any as Function)({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+        // heic2anyMod.default is the converter function — TypeScript types it correctly
+        const converted = await heic2anyMod.default({ blob: file, toType: 'image/jpeg', quality: 0.85 });
         const jpegBlob = Array.isArray(converted) ? converted[0] : converted;
         const compressedFromHeic = await compressViaCanvas(jpegBlob as Blob);
         if (compressedFromHeic) {

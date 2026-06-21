@@ -52,19 +52,19 @@ function MetricTile({ icon, label, value, diff, diffUnit, mode, accent }: Metric
   if (isLight) {
     return (
       <div
-        className="flex flex-col gap-1 rounded-xl px-3 py-2.5 bg-white"
+        className="flex flex-col gap-1 rounded-xl px-2.5 py-1.5 bg-white"
         style={{ border: `1px solid ${accent}20` }}
       >
-        <span className="text-base leading-none" style={{ color: accent }}>{icon}</span>
+        <span className="text-sm leading-none" style={{ color: accent }}>{icon}</span>
         <span
-          className="text-[10px] font-bold uppercase tracking-wide leading-none"
+          className="text-[9px] font-bold uppercase tracking-wide leading-none"
           style={{ color: accent }}
         >
           {label}
         </span>
-        <span className="text-lg font-bold leading-tight text-gray-900">{value}</span>
+        <span className="text-[15px] font-bold leading-tight text-gray-900">{value}</span>
         {diff && (
-          <span className="text-[10px] font-semibold leading-none" style={{ color: accent }}>
+          <span className="text-[9px] font-semibold leading-none" style={{ color: accent }}>
             {diff}{diffUnit ?? ''}
           </span>
         )}
@@ -243,7 +243,7 @@ export default function LocationBadge({
       {/* Metric tiles */}
       {(weather || soil_temp_surface_f != null || rainfall) && (
         <div
-          className="p-3 grid grid-cols-2 gap-2"
+          className="p-2 grid grid-cols-2 gap-1.5"
           style={{ backgroundColor: isLight ? `${accent}06` : undefined }}
         >
           {weather && (
@@ -285,6 +285,20 @@ export default function LocationBadge({
               accent={accent}
             />
           )}
+        </div>
+      )}
+      {/* 7-day rolling avg vs 3-yr label */}
+      {(weather || soil_temp_surface_f != null || rainfall) && (
+        <div
+          className="px-3 pb-1.5 flex items-center gap-1"
+          style={{ backgroundColor: isLight ? `${accent}06` : undefined }}
+        >
+          <span
+            className="text-[9px] font-medium italic"
+            style={{ color: isLight ? `${accent}99` : '#9ca3af' }}
+          >
+            7-day rolling avg • vs 3-yr historical norm
+          </span>
         </div>
       )}
     </div>

@@ -11,9 +11,8 @@ interface CameraCapturePros {
 }
 
 /**
- * Compress a File via canvas -> JPEG.
- * Uses createImageBitmap (modern, reliable on Android Chrome 50+).
- * Returns compressed JPEG dataURL, or null if the format is unsupported (e.g. HEIC on Chrome).
+ * Compress a File via canvas -> JPEG using createImageBitmap.
+ * Returns null if the format is unsupported (e.g. HEIC on older Android Chrome).
  */
 async function compressViaCanvas(
   file: File,
@@ -37,13 +36,12 @@ async function compressViaCanvas(
     bitmap.close();
     return canvas.toDataURL('image/jpeg', quality);
   } catch {
-    return null; // HEIC or browser-unsupported format
+    return null;
   }
 }
 
-// Max raw file size for formats we truly can't compress (HEIC on Chrome, etc.)
-// 3 MB raw -> ~4.1 MB base64 -> safely under Vercel's 4.5 MB request limit
-const MAX_UNCOMPRESSIBLE_BYTES = 3 * 1024 * 1024;
+// Rough upload limit: 3 MB raw -> ~4.1 MB base64 -> under Vercel's 4.5 MB body limit
+const UPLOAD_LIMIT_BYTES = 3 * 1024 * 1024;
 
 export default function CameraCapture({
   onCapture,
@@ -60,11 +58,11 @@ export default function CameraCapture({
   const [facingMode,   setFacingMode  ] = useState<'environment' | 'user'>('environment');
   const [isFlashing,   setIsFlashing  ] = useState(false);
 
-  // Preview state -- null = live feed, string = captured/uploaded photo dataURL
   const [preview,         setPreview        ] = useState<string | null>(null);
   const [previewFileName, setPreviewFileName] = useState<string | null>(null);
   const [imgError,        setImgError       ] = useState(false);
-  const [uploadError,     setUploadError    ] = useState<string | null>(null);
+  // Non-blocking warning shown below the viewfinder (never prevents preview/analyze)
+  const [uploadWarning,   setUploadWarning  ] = useState<string | null>(null);
 
   const startCamera = useCallback(async (facing: 'environment' | 'user') => {
     if (streamRef.current) {
@@ -74,14 +72,12 @@ export default function CameraCapture({
     try {
       let stream: MediaStream;
       try {
-        // First attempt: preferred facing mode with resolution hints
         stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1080 } },
           audio: false,
         });
       } catch {
-        // Fallback: some Android devices reject facingMode/resolution constraints --
-        // retry with just video: true to get any available camera
+        // Some Android devices reject facingMode or resolution constraints -- fall back
         stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       }
       streamRef.current = stream;
@@ -102,7 +98,6 @@ export default function CameraCapture({
     }
   }, []);
 
-  // Stop/start camera based on whether we have a preview
   useEffect(() => {
     if (!preview) {
       startCamera(facingMode);
@@ -115,7 +110,6 @@ export default function CameraCapture({
     };
   }, [facingMode, preview, startCamera]);
 
-  // Capture from live camera feed
   const capture = useCallback(() => {
     if (!videoRef.current || !canvasRef.current) return;
     const video  = videoRef.current;
@@ -131,10 +125,9 @@ export default function CameraCapture({
     setPreview(dataUrl);
     setPreviewFileName('Camera capture');
     setImgError(false);
-    setUploadError(null);
+    setUploadWarning(null);
   }, []);
 
-  // Handle file upload -- compress via createImageBitmap (reliable on Android Chrome)
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -142,55 +135,55 @@ export default function CameraCapture({
 
     const ext    = file.name.split('.').pop()?.toLowerCase() ?? '';
     const isHeic = ext === 'heic' || ext === 'heif'
-                || file.type === 'image/heic' || file.type === 'image/heif';
+                || file.type === 'image/heic' || file.type === 'image/heif'
+                || file.type === 'image/heic-sequence';
     if (!file.type.startsWith('image/') && !isHeic) return;
 
-    setUploadError(null);
+    setUploadWarning(null);
 
-    // Try canvas compression via createImageBitmap (most reliable path on Android)
+    // 1. Try canvas compression (JPEG/PNG/WebP compress fine; HEIC may compress on Android 10+)
     const compressed = await compressViaCanvas(file);
-
     if (compressed) {
       setPreview(compressed);
       setPreviewFileName(file.name);
       setImgError(false);
-    } else {
-      // createImageBitmap rejected the format (HEIC or other unsupported type)
-      if (file.size > MAX_UNCOMPRESSIBLE_BYTES) {
-        const sizeMb = (file.size / 1024 / 1024).toFixed(1);
-        setUploadError(
-          isHeic
-            ? `HEIC photos (${sizeMb} MB) cannot be processed in this browser. Please convert to JPEG first, or use the Capture button to take a new photo.`
-            : `This photo (${sizeMb} MB) is too large. Please choose a smaller image or use the Capture button.`
-        );
-        return;
-      }
-      // Small enough to send without compression -- read as data URL
-      const rawDataUrl: string = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload  = (ev) => resolve(ev.target?.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-      setPreview(rawDataUrl);
-      setPreviewFileName(file.name);
-      setImgError(false);
+      return;
+    }
+
+    // 2. Compression not available -- always load into preview so user can see it.
+    //    HEIC files will trigger onError on the <img> and show the placeholder.
+    const rawDataUrl: string = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload  = (ev) => resolve(ev.target?.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    setPreview(rawDataUrl);
+    setPreviewFileName(file.name);
+    setImgError(false);
+
+    // 3. Warn (non-blocking) if file may be too large to analyze
+    if (file.size > UPLOAD_LIMIT_BYTES) {
+      const sizeMb = (file.size / 1024 / 1024).toFixed(1);
+      setUploadWarning(
+        isHeic
+          ? `Large HEIC photo (${sizeMb} MB) -- analysis may fail. For best results, go to your camera app settings and switch the photo format to JPEG.`
+          : `Large photo (${sizeMb} MB) -- analysis may fail. Try a smaller image if it does not work.`
+      );
     }
   }, []);
 
-  // Send preview to parent for analysis
   const analyze = useCallback(() => {
     if (!preview) return;
     const base64 = preview.startsWith('data:') ? preview.split(',')[1] : preview;
     if (base64) onCapture(base64);
   }, [preview, onCapture]);
 
-  // Retake: clear preview, restart live feed
   const retake = useCallback(() => {
     setPreview(null);
     setPreviewFileName(null);
     setImgError(false);
-    setUploadError(null);
+    setUploadWarning(null);
     setHasCamera(null);
   }, []);
 
@@ -209,11 +202,6 @@ export default function CameraCapture({
       <div className="w-full rounded-2xl border bg-gray-100 flex flex-col items-center justify-center gap-3 py-10">
         <CameraOff size={36} className="text-gray-400" />
         <p className="text-sm text-gray-500 text-center px-4">{cameraError ?? 'Camera unavailable.'}</p>
-        {uploadError && (
-          <p className="text-xs text-red-500 text-center px-4 flex items-start gap-1">
-            <AlertCircle size={13} className="mt-0.5 shrink-0" /> {uploadError}
-          </p>
-        )}
         <div className="flex items-center gap-2 mt-2">
           <button
             onClick={retryCameraAccess}
@@ -245,7 +233,6 @@ export default function CameraCapture({
       {/* Viewfinder */}
       <div className="relative w-full rounded-t-2xl overflow-hidden bg-black" style={{ aspectRatio: '16/9' }}>
 
-        {/* Live video feed */}
         <video
           ref={videoRef}
           autoPlay
@@ -256,7 +243,6 @@ export default function CameraCapture({
         />
         <canvas ref={canvasRef} className="hidden" />
 
-        {/* Photo preview */}
         {preview && (
           !imgError ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -274,18 +260,16 @@ export default function CameraCapture({
               <FileImage size={40} style={{ color: themeColor }} />
               <p className="text-sm font-semibold" style={{ color: themeColor }}>Photo ready to analyze</p>
               <p className="text-xs text-gray-400 px-6 text-center">
-                Preview unavailable for this format -- analysis will work.
+                Preview unavailable for this format -- tap Analyze Photo below.
               </p>
             </div>
           )
         )}
 
-        {/* Flash overlay */}
         {isFlashing && (
           <div className="absolute inset-0 bg-white opacity-70 pointer-events-none z-20" />
         )}
 
-        {/* Corner brackets -- live feed only */}
         {!preview && (<>
           <div className="absolute top-8 left-8 w-6 h-6"
             style={{ borderTop: `2.5px solid ${themeColor}`, borderLeft: `2.5px solid ${themeColor}` }} />
@@ -297,7 +281,6 @@ export default function CameraCapture({
             style={{ borderBottom: `2.5px solid ${themeColor}`, borderRight: `2.5px solid ${themeColor}` }} />
         </>)}
 
-        {/* Analyzing overlay */}
         {isAnalyzing && (
           <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-3 z-10">
             <Loader2 size={36} className="text-white animate-spin" />
@@ -305,14 +288,12 @@ export default function CameraCapture({
           </div>
         )}
 
-        {/* Camera loading indicator */}
         {hasCamera === null && !preview && (
           <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-10">
             <Loader2 size={28} className="text-white animate-spin" />
           </div>
         )}
 
-        {/* Flip camera button */}
         {hasCamera && !preview && (
           <button
             onClick={flipCamera}
@@ -324,7 +305,6 @@ export default function CameraCapture({
           </button>
         )}
 
-        {/* Retake button on preview */}
         {preview && !isAnalyzing && (
           <button
             onClick={retake}
@@ -335,11 +315,11 @@ export default function CameraCapture({
         )}
       </div>
 
-      {/* Upload error message */}
-      {uploadError && (
-        <div className="flex items-start gap-2 px-4 py-2.5 bg-red-50 border-x border-red-200">
-          <AlertCircle size={14} className="text-red-500 mt-0.5 shrink-0" />
-          <p className="text-xs text-red-600">{uploadError}</p>
+      {/* Non-blocking size/format warning */}
+      {uploadWarning && (
+        <div className="flex items-start gap-2 px-4 py-2.5 bg-amber-50 border-x border-amber-200">
+          <AlertCircle size={14} className="text-amber-500 mt-0.5 shrink-0" />
+          <p className="text-xs text-amber-700">{uploadWarning}</p>
         </div>
       )}
 

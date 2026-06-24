@@ -97,6 +97,37 @@ function robustParse(cleaned: string): Record<string, any> {
   }
 }
 
+/**
+ * Recursively strip HTML tags and common HTML entities from every string value
+ * in the parsed analysis JSON.  Gemini (and GPT-4o) can embed HTML markup
+ * (<b>, <br>, <ul>) inside JSON field values despite plain-text instructions;
+ * this is the defensive server-side layer that guarantees clean text reaches
+ * the client.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function sanitizeAnalysis(obj: unknown): any {
+  if (typeof obj === 'string') {
+    return obj
+      .replace(/<[^>]+>/g, '')        // strip all HTML tags
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+  }
+  if (Array.isArray(obj)) return obj.map(sanitizeAnalysis);
+  if (obj !== null && typeof obj === 'object') {
+    return Object.fromEntries(
+      Object.entries(obj as Record<string, unknown>).map(([k, v]) => [k, sanitizeAnalysis(v)])
+    );
+  }
+  return obj;
+}
+
+
 // -- Lazy OpenAI client ----------------------------------------------------
 let _openai: OpenAI | null = null;
 function getOpenAI(): OpenAI {
@@ -201,7 +232,7 @@ export async function POST(req: NextRequest) {
       const cleaned = extractJson(rawText);
 
       try {
-        const analysis = robustParse(cleaned);
+        const analysis = sanitizeAnalysis(robustParse(cleaned));
 
         if (analysis.needs_more_photo !== true) {
           const soilProfile = getSoilProfile(location?.soilType);
@@ -246,7 +277,7 @@ export async function POST(req: NextRequest) {
     const cleaned = extractJson(text);
 
     try {
-      const analysis = robustParse(cleaned);
+      const analysis = sanitizeAnalysis(robustParse(cleaned));
 
       // If Gemini requests more detail, pass the request straight through to the UI
       if (analysis.needs_more_photo === true) {

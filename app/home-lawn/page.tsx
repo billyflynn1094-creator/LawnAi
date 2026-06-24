@@ -304,12 +304,35 @@ export default function HomeLawnAnalyzer() {
               <div className="rounded-2xl overflow-hidden relative border" style={{ borderColor: BRAND.borderAccent }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={capturedImage} alt="Analyzed lawn" className="w-full max-h-64 object-cover" />
-                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between px-3 py-2" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.72), transparent)' }}>
-                  <span className="text-white text-xs font-semibold">Analyzed photo</span>
-                  <button onClick={reset} className="flex items-center gap-1 text-white text-xs font-medium px-2 py-1 rounded-full bg-black/40">
-                    <RotateCcw size={10} /> New scan
-                  </button>
-                </div>
+                {/* Bottom bar — purple on low/medium confidence, dark otherwise */}
+                {analysis?.confidence_level && analysis.confidence_level !== 'high' ? (
+                  <div
+                    className="absolute inset-x-0 bottom-0 flex items-end justify-between px-3 pb-3 pt-8"
+                    style={{ background: 'linear-gradient(to top, rgba(88,28,135,0.90) 0%, rgba(124,58,237,0.55) 60%, transparent 100%)' }}
+                  >
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-white text-xs font-bold tracking-wide">
+                        📷 {analysis.confidence_level === 'low' ? 'Low' : 'Medium'} Confidence
+                      </span>
+                      <span className="text-purple-100 text-xs leading-snug">
+                        Retake closer to the affected area for better accuracy
+                      </span>
+                    </div>
+                    <button
+                      onClick={reset}
+                      className="flex items-center gap-1 text-white text-xs font-semibold px-2.5 py-1.5 rounded-full bg-white/20 hover:bg-white/30 ml-3 shrink-0"
+                    >
+                      <RotateCcw size={10} /> Retake
+                    </button>
+                  </div>
+                ) : (
+                  <div className="absolute inset-x-0 bottom-0 flex items-center justify-between px-3 py-2" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.72), transparent)' }}>
+                    <span className="text-white text-xs font-semibold">Analyzed photo</span>
+                    <button onClick={reset} className="flex items-center gap-1 text-white text-xs font-medium px-2 py-1 rounded-full bg-black/40">
+                      <RotateCcw size={10} /> New scan
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 

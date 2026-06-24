@@ -349,6 +349,7 @@ RESPONSE FORMAT — VALID JSON ONLY, NO MARKDOWN
     "Specific prevention bullet tied to root cause and regional conditions"
   ],
   "follow_up": "specific follow-up action with timeframe",
+  "confidence_level": "high | medium | low — overall confidence in this diagnosis based on image clarity, symptom visibility, and diagnostic certainty. Use 'low' when image is blurry, partially obscured, or symptoms are ambiguous. Use 'medium' when diagnosis is probable but a clearer photo would confirm it. Use 'high' only when visual evidence is unambiguous.",
   "professional_needed": false
 }
 

@@ -221,7 +221,7 @@ export default function HomeLawnAnalyzer() {
               <span className="text-[9px] text-white/80 tracking-[0.2em] uppercase">Smart Lawn Care</span>
             </div>
           </div>
-          {appState === 'results' && (
+          {analysis && !analysis.parse_error && (
             <button onClick={reset} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white text-xs font-semibold transition">
               <RotateCcw size={12} /> New scan
             </button>
@@ -271,10 +271,10 @@ export default function HomeLawnAnalyzer() {
           </div>
         )}
 
-        {/* Camera + Upload â hidden once results are ready */}
-        {appState !== 'results' && (
+        {/* Camera + Upload */}
+        {(
           <div className="space-y-3">
-            {/* Camera â hidden when a photo is staged for upload */}
+            {/* Camera Ã¢ÂÂ hidden when a photo is staged for upload */}
             <CameraCapture
               onCapture={handleCapture}
               isAnalyzing={appState === 'analyzing'}
@@ -300,41 +300,7 @@ export default function HomeLawnAnalyzer() {
         {appState === 'results' && (
           <div id="results" className="space-y-4">
 
-            {capturedImage && (
-              <div className="rounded-2xl overflow-hidden relative border" style={{ borderColor: BRAND.borderAccent }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={capturedImage} alt="Analyzed lawn" className="w-full max-h-64 object-cover" />
-                {/* Bottom bar — purple on low/medium confidence, dark otherwise */}
-                {analysis?.confidence_level && analysis.confidence_level !== 'high' ? (
-                  <div
-                    className="absolute inset-x-0 bottom-0 flex items-end justify-between px-3 pb-3 pt-8"
-                    style={{ background: 'linear-gradient(to top, rgba(88,28,135,0.90) 0%, rgba(124,58,237,0.55) 60%, transparent 100%)' }}
-                  >
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-white text-xs font-bold tracking-wide">
-                        📷 {analysis.confidence_level === 'low' ? 'Low' : 'Medium'} Confidence
-                      </span>
-                      <span className="text-purple-100 text-xs leading-snug">
-                        Retake closer to the affected area for better accuracy
-                      </span>
-                    </div>
-                    <button
-                      onClick={reset}
-                      className="flex items-center gap-1 text-white text-xs font-semibold px-2.5 py-1.5 rounded-full bg-white/20 hover:bg-white/30 ml-3 shrink-0"
-                    >
-                      <RotateCcw size={10} /> Retake
-                    </button>
-                  </div>
-                ) : (
-                  <div className="absolute inset-x-0 bottom-0 flex items-center justify-between px-3 py-2" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.72), transparent)' }}>
-                    <span className="text-white text-xs font-semibold">Analyzed photo</span>
-                    <button onClick={reset} className="flex items-center gap-1 text-white text-xs font-medium px-2 py-1 rounded-full bg-black/40">
-                      <RotateCcw size={10} /> New scan
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+
 
             <AnalysisResults analysis={analysis} mode="light" />
 
@@ -351,7 +317,7 @@ export default function HomeLawnAnalyzer() {
                     style={{ background: `linear-gradient(135deg, ${BRAND.primary} 0%, ${BRAND.primaryDark} 100%)` }}
                   >
                     <Users size={18} />
-                    🌿 Find Local Lawn Specialists
+                    ð¿ Find Local Lawn Specialists
                   </button>
                 ) : (
                   <div className="rounded-2xl border overflow-hidden" style={{ borderColor: BRAND.borderAccent }}>
@@ -367,7 +333,7 @@ export default function HomeLawnAnalyzer() {
                     {prosLoading && (
                       <div className="bg-white py-6 flex flex-col items-center gap-2">
                         <Loader2 size={24} className="animate-spin" style={{ color: BRAND.primary }} />
-                        <p className="text-xs text-gray-400">Searching nearby specialistsâ¦</p>
+                        <p className="text-xs text-gray-400">Searching nearby specialistsÃ¢ÂÂ¦</p>
                       </div>
                     )}
                     {!prosLoading && prosError && (
@@ -386,7 +352,7 @@ export default function HomeLawnAnalyzer() {
                         {analysis?.identified?.primary && (
                           <div className="px-4 py-2.5 bg-orange-50">
                             <p className="text-xs text-orange-700">
-                              💡 <strong>Tell them about:</strong> {analysis.identified.primary}
+                              ð¡ <strong>Tell them about:</strong> {analysis.identified.primary}
                             </p>
                           </div>
                         )}
@@ -425,7 +391,7 @@ export default function HomeLawnAnalyzer() {
                                   <a href={`tel:${pro.phone}`}
                                     className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border"
                                     style={{ color: BRAND.primary, borderColor: BRAND.primary, backgroundColor: 'transparent' }}>
-                                    📞 Call
+                                    ð Call
                                   </a>
                                 )}
                                 <a href={pro.maps_url} target="_blank" rel="noopener noreferrer"

@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { buildSystemPrompt } from "@/lib/prompts";
 
-// ── Lazy initialization ─────────────────────────────────────────────────────
+// ── Lazy initialization ─────────────────────────────────────────────
 // Do NOT validate GEMINI_API_KEY at module level — a module-level throw causes
 // Vercel to return a raw non-JSON "An error occurred..." response before our
 // route handler's try/catch can intercept it.
@@ -22,7 +22,7 @@ function getModel() {
     generationConfig: {
       temperature: 0.65,
       topP: 0.9,
-      maxOutputTokens: 6000,
+      maxOutputTokens: 4000,
       responseMimeType: "application/json",
     },
   });

@@ -22,7 +22,7 @@ function getModel() {
     generationConfig: {
       temperature: 0.65,
       topP: 0.9,
-      maxOutputTokens: 4000,
+      maxOutputTokens: 6000,
       responseMimeType: "application/json",
     },
   });

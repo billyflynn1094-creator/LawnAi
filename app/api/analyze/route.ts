@@ -9,7 +9,7 @@ export const runtime = 'nodejs';
 // GPT-4o vision also needs headroom. Raise to 90s to cover both.
 export const maxDuration = 90;
 
-// -- JSON helpers ------------------------------------------------------------------
+// -- JSON helpers ---------------------------------------------------------------------------
 
 /**
  * Strip HTML from a string so we can extract JSON even when the model wraps
@@ -62,8 +62,11 @@ function sanitizeJsonString(raw: string): string {
 function extractJson(raw: string): string {
   let s = raw.trim();
 
-  // 1. Strip HTML if the response looks like an HTML document/fragment
-  if (s.startsWith('<!') || s.startsWith('<html') || /<[a-zA-Z][\s\S]*?>/.test(s.slice(0, 500))) {
+  // 1. Strip HTML only when the response clearly starts with an HTML document.
+  // Do NOT check for angle-bracket patterns inside the body — they appear in
+  // JSON field values (e.g. latin species names like <Poa pratensis>) and would
+  // cause stripHtml() to corrupt valid JSON (&quot; → " breaks JSON string boundaries).
+  if (s.startsWith('<!') || s.startsWith('<html') || s.startsWith('<HTML')) {
     s = stripHtml(s);
   }
 
@@ -107,13 +110,13 @@ function robustParse(cleaned: string): Record<string, any> {
 function sanitizeAnalysis(obj: unknown): any {
   if (typeof obj === 'string') {
     return obj
-      .replace(/<[^>]+>/g, '')        // strip all HTML tags
-      .replace(/&amp;/g, '&')
+      .replace(/&amp;/g, '&')         // decode entities FIRST so entity-encoded tags get stripped
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, "'")
       .replace(/&nbsp;/g, ' ')
+      .replace(/<[^>]+>/g, '')        // THEN strip HTML tags
       .replace(/\s{2,}/g, ' ')
       .trim();
   }
@@ -154,11 +157,11 @@ export async function POST(req: NextRequest) {
 
     const hasSecondImage = Boolean(image2);
 
-    // ------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // SECOND OPINION — routed to GPT-4o for genuine cross-model validation.
     // A different model family means truly independent visual reasoning,
     // not just a re-run of the same weights with a slightly different prompt.
-    // ------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     if (isSecondOpinion) {
       // Give Gemini the full first opinion so it can explicitly agree/disagree.
       // A different prompt temperature + explicit "form your own view first" instruction
@@ -223,9 +226,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ analysis: { raw: soCleaned, parse_error: true } });
       }
     }
-    // ------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // PRIMARY ANALYSIS — Gemini 2.5 Flash
-    // ------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     const imagePart    = imageToGeminiPart(image);
     const userPrompt   = buildAnalysisPrompt(location ?? { lat: 0, lng: 0 }, hasSecondImage, false);
 

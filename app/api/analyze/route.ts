@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { geminiFlash, imageToGeminiPart } from '@/lib/gemini';
-import { buildAnalysisPrompt, buildSystemPrompt, LocationContext } from '@/lib/prompts';
+import { buildAnalysisPrompt, LocationContext } from '@/lib/prompts';
 import { getSoilProfile } from '@/lib/soilRates';
 
 export const runtime = 'nodejs';
@@ -160,8 +160,6 @@ export async function POST(req: NextRequest) {
     // not just a re-run of the same weights with a slightly different prompt.
     // ------------------------------------------------------------------------
     if (isSecondOpinion) {
-      const systemPrompt = buildSystemPrompt();
-
       // Give Gemini the full first opinion so it can explicitly agree/disagree.
       // A different prompt temperature + explicit "form your own view first" instruction
       // creates genuine independence even within the same model family.
@@ -190,7 +188,6 @@ export async function POST(req: NextRequest) {
 
       const soImagePart  = imageToGeminiPart(image);
       const soContentParts: Parameters<typeof geminiFlash.generateContent>[0] = [
-        { text: systemPrompt },
         { text: userText },
         soImagePart,
       ];
@@ -230,11 +227,9 @@ export async function POST(req: NextRequest) {
     // PRIMARY ANALYSIS — Gemini 2.5 Flash
     // ------------------------------------------------------------------------
     const imagePart    = imageToGeminiPart(image);
-    const systemPrompt = buildSystemPrompt();
     const userPrompt   = buildAnalysisPrompt(location ?? { lat: 0, lng: 0 }, hasSecondImage, false);
 
     const contentParts: Parameters<typeof geminiFlash.generateContent>[0] = [
-      { text: systemPrompt },
       { text: userPrompt },
       imagePart,
     ];

@@ -62,11 +62,8 @@ function sanitizeJsonString(raw: string): string {
 function extractJson(raw: string): string {
   let s = raw.trim();
 
-  // 1. Strip HTML ONLY when the response is clearly an HTML document.
-  // Do NOT check for angle-bracket patterns inside the body — they appear in
-  // JSON field values (e.g. latin species names, math expressions) and would
-  // cause stripHtml() to corrupt valid JSON, making JSON.parse() fail.
-  if (s.startsWith('<!') || s.startsWith('<html') || s.startsWith('<HTML')) {
+  // 1. Strip HTML if the response looks like an HTML document/fragment
+  if (s.startsWith('<!') || s.startsWith('<html') || /<[a-zA-Z][\s\S]*?>/.test(s.slice(0, 500))) {
     s = stripHtml(s);
   }
 
@@ -110,15 +107,13 @@ function robustParse(cleaned: string): Record<string, any> {
 function sanitizeAnalysis(obj: unknown): any {
   if (typeof obj === 'string') {
     return obj
-      .replace(/&amp;/g, '&')         // decode entities FIRST
+      .replace(/<[^>]+>/g, '')        // strip all HTML tags
+      .replace(/&amp;/g, '&')
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, "'")
       .replace(/&nbsp;/g, ' ')
-      .replace(/<[^>]+>/g, '')         // THEN strip HTML tags
-      .replace(/\*\*(.+?)\*\*/g, '$1') // strip markdown bold
-      .replace(/\*(.+?)\*/g, '$1')     // strip markdown italic
       .replace(/\s{2,}/g, ' ')
       .trim();
   }
@@ -205,8 +200,7 @@ export async function POST(req: NextRequest) {
 
       const soResult  = await geminiFlash.generateContent(soContentParts);
       const soRawText = soResult.response.text().trim();
-      let soCleaned: string;
-      try { JSON.parse(soRawText); soCleaned = soRawText; } catch { soCleaned = extractJson(soRawText); }
+      const soCleaned = extractJson(soRawText);
 
       try {
         const analysis = sanitizeAnalysis(robustParse(soCleaned));
@@ -248,11 +242,7 @@ export async function POST(req: NextRequest) {
 
     const result = await geminiFlash.generateContent(contentParts);
     const text    = result.response.text().trim();
-    // With responseMimeType:"application/json" Gemini should return bare JSON.
-    // Try a direct parse first; only fall back to the full extractJson pipeline
-    // if the direct parse fails (e.g. markdown-fenced output, HTML wrapper).
-    let cleaned: string;
-    try { JSON.parse(text); cleaned = text; } catch { cleaned = extractJson(text); }
+    const cleaned = extractJson(text);
 
     try {
       const analysis = sanitizeAnalysis(robustParse(cleaned));

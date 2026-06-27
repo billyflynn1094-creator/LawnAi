@@ -14,7 +14,7 @@ function getModel() {
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new Error("GEMINI_API_KEY is not configured in Vercel environment variables.");
   _model = new GoogleGenerativeAI(key).getGenerativeModel({
-    model: "gemini-2.5-flash",
+    model: "gemini-2.0-flash",
     // Pass the system prompt via systemInstruction so Gemini treats it as a
     // true system-level directive, not user content — this enforces plain-text
     // output and JSON schema compliance far more reliably.
@@ -22,7 +22,7 @@ function getModel() {
     generationConfig: {
       temperature: 0.65,
       topP: 0.9,
-      maxOutputTokens: 8192,
+      maxOutputTokens: 4000,
       responseMimeType: "application/json",
     },
   });

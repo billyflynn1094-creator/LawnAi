@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { buildSystemPrompt } from "@/lib/prompts";
 
 // ── Lazy initialization ────────────────────────────────────────────────────
 // Do NOT validate GEMINI_API_KEY at module level — a module-level throw causes
@@ -14,6 +15,10 @@ function getModel() {
   if (!key) throw new Error("GEMINI_API_KEY is not configured in Vercel environment variables.");
   _model = new GoogleGenerativeAI(key).getGenerativeModel({
     model: "gemini-2.5-flash",
+    // Pass the system prompt via systemInstruction so Gemini treats it as a
+    // true system-level directive, not user content — this enforces plain-text
+    // output and JSON schema compliance far more reliably.
+    systemInstruction: buildSystemPrompt(),
     generationConfig: {
       temperature: 0.65,
       topP: 0.9,

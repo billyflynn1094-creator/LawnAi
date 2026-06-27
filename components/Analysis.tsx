@@ -437,9 +437,13 @@ export default function AnalysisResults({
 
   if (analysis.parse_error) {
     return (
-      <div className={`rounded-2xl ${tk.card} p-4`}>
-        <p className={`text-xs ${tk.muted}`}>Analysis received but could not be parsed. Raw output:</p>
-        <pre className={`mt-2 text-xs ${tk.faint} whitespace-pre-wrap break-words`}>{analysis.raw}</pre>
+      <div className={`rounded-2xl ${tk.card} p-4 text-center space-y-2`}>
+        <p className="text-2xl">📷</p>
+        <p className={`text-sm font-semibold ${tk.heading}`}>Couldn&apos;t read the analysis</p>
+        <p className={`text-xs ${tk.muted} leading-relaxed`}>
+          The image may need better lighting or be closer to the affected area.
+          Retake the photo and try again.
+        </p>
       </div>
     );
   }

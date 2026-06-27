@@ -107,13 +107,15 @@ function robustParse(cleaned: string): Record<string, any> {
 function sanitizeAnalysis(obj: unknown): any {
   if (typeof obj === 'string') {
     return obj
-      .replace(/<[^>]+>/g, '')        // strip all HTML tags
-      .replace(/&amp;/g, '&')
+      .replace(/&amp;/g, '&')         // decode entities FIRST
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, "'")
       .replace(/&nbsp;/g, ' ')
+      .replace(/<[^>]+>/g, '')         // THEN strip HTML tags
+      .replace(/\*\*(.+?)\*\*/g, '$1') // strip markdown bold
+      .replace(/\*(.+?)\*/g, '$1')     // strip markdown italic
       .replace(/\s{2,}/g, ' ')
       .trim();
   }

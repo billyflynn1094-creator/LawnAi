@@ -32,63 +32,69 @@ function fmt(n: number | undefined, decimals = 0): string {
   return n.toFixed(decimals);
 }
 
-function diffSign(n: number): string {
-  return n > 0 ? '+' : '';
-}
-
 interface MetricTileProps {
   icon: JSX.Element | string;
   label: string;
   value: string;
-  diff?: string;
-  diffUnit?: string;
+  historical?: string;
   mode: 'light' | 'dark';
   accent: string;
 }
 
-function MetricTile({ icon, label, value, diff, diffUnit, mode, accent }: MetricTileProps) {
+function MetricTile({ icon, label, value, historical, mode, accent }: MetricTileProps) {
   const isLight = mode === 'light';
 
   if (isLight) {
     return (
       <div
-        className="flex flex-col gap-1 rounded-xl px-2.5 py-1.5 bg-white"
+        className="rounded-lg px-2.5 py-1.5 bg-white"
         style={{ border: `1px solid ${accent}20` }}
       >
-        <span className="text-sm leading-none" style={{ color: accent }}>{icon}</span>
-        <span
-          className="text-[9px] font-bold uppercase tracking-wide leading-none"
-          style={{ color: accent }}
-        >
-          {label}
-        </span>
-        <span className="text-[15px] font-bold leading-tight text-gray-900">{value}</span>
-        {diff && (
-          <span className="text-[9px] font-semibold leading-none" style={{ color: accent }}>
-            {diff}{diffUnit ?? ''}
+        {/* Row 1: icon + label */}
+        <div className="flex items-center gap-1 mb-0.5">
+          <span className="text-xs leading-none" style={{ color: accent }}>{icon}</span>
+          <span
+            className="text-[9px] font-bold uppercase tracking-wide leading-none"
+            style={{ color: accent }}
+          >
+            {label}
           </span>
-        )}
+        </div>
+        {/* Row 2: actual | historical */}
+        <div className="flex items-baseline justify-between gap-1">
+          <span className="text-sm font-bold leading-tight text-gray-900">{value}</span>
+          {historical && (
+            <span
+              className="text-[9px] font-medium leading-none"
+              style={{ color: `${accent}80` }}
+            >
+              hist {historical}
+            </span>
+          )}
+        </div>
       </div>
     );
   }
 
-  // dark mode (original)
-  const diffNum = diff ? parseFloat(diff) : null;
-  const diffColor =
-    diffNum == null ? '' : diffNum > 0 ? 'text-amber-400' : diffNum < 0 ? 'text-sky-400' : 'text-gray-400';
-
+  // dark mode
   return (
-    <div className="flex flex-col gap-1 rounded-xl px-3 py-2.5 bg-soil-800">
-      <span className="text-base leading-none text-field-300">{icon}</span>
-      <span className="text-[10px] font-bold text-field-300 uppercase tracking-wide leading-none">
-        {label}
-      </span>
-      <span className="text-lg font-bold leading-tight text-white">{value}</span>
-      {diff && (
-        <span className={`text-[10px] font-semibold leading-none ${diffColor}`}>
-          {diff}{diffUnit ?? ''}
+    <div className="rounded-lg px-2.5 py-1.5 bg-soil-800">
+      {/* Row 1: icon + label */}
+      <div className="flex items-center gap-1 mb-0.5">
+        <span className="text-xs leading-none text-field-300">{icon}</span>
+        <span className="text-[9px] font-bold text-field-300 uppercase tracking-wide leading-none">
+          {label}
         </span>
-      )}
+      </div>
+      {/* Row 2: actual | historical */}
+      <div className="flex items-baseline justify-between gap-1">
+        <span className="text-sm font-bold leading-tight text-white">{value}</span>
+        {historical && (
+          <span className="text-[9px] font-medium leading-none text-gray-400">
+            hist {historical}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -156,19 +162,7 @@ export default function LocationBadge({
 
   if (!location) return null;
 
-  const { city, state, soilType, hardiness_zone, grassClass, weather, weather_hist, soil_temp_surface_f, soil_temp_6cm_f, soil_temp_hist_f, rainfall } = location;
-
-  const airTempDiff =
-    weather && weather_hist
-      ? weather.avg_high_f - weather_hist.avg_high_f
-      : null;
-
-  const soilTempDiff =
-    soil_temp_surface_f != null && soil_temp_hist_f != null
-      ? soil_temp_surface_f - soil_temp_hist_f
-      : null;
-
-  const rainfallPct = rainfall?.pct_of_normal ?? null;
+  const { city, state, soilType, hardiness_zone, grassClass, weather, weather_hist, soil_temp_surface_f, soil_temp_hist_f, rainfall } = location;
 
   const grassLabel: Record<string, string> = {
     cool: 'Cool-Season',
@@ -178,8 +172,8 @@ export default function LocationBadge({
 
   const headerBg = isLight ? accent : undefined;
   const headerClass = isLight
-    ? 'px-4 py-2.5 flex items-center justify-between'
-    : 'px-4 py-2.5 bg-soil-800 flex items-center justify-between';
+    ? 'px-4 py-2 flex items-center justify-between'
+    : 'px-4 py-2 bg-soil-800 flex items-center justify-between';
 
   return (
     <div className={containerClass} style={isLight ? containerStyle : undefined}>
@@ -189,21 +183,21 @@ export default function LocationBadge({
         style={isLight ? { backgroundColor: headerBg } : undefined}
       >
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-base">📍</span>
+          <span className="text-sm">📍</span>
           <div className="min-w-0">
             {(city || state) ? (
               <>
-                <span className="text-sm font-bold text-white leading-tight block truncate">
+                <span className="text-xs font-bold text-white leading-tight block truncate">
                   {[city, state].filter(Boolean).join(', ')}
                 </span>
                 {hardiness_zone && (
-                  <span className="text-[10px] font-medium text-white/70 leading-none">
+                  <span className="text-[9px] font-medium text-white/70 leading-none">
                     Zone {hardiness_zone}
                   </span>
                 )}
               </>
             ) : (
-              <span className="text-sm font-medium text-white/80">
+              <span className="text-xs font-medium text-white/80">
                 {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
               </span>
             )}
@@ -211,7 +205,7 @@ export default function LocationBadge({
         </div>
         {grassClass && (
           <span
-            className="text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
+            className="text-[9px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
             style={{
               backgroundColor: isLight ? 'rgba(255,255,255,0.25)' : 'rgba(74,133,53,0.25)',
               color: '#ffffff',
@@ -225,14 +219,14 @@ export default function LocationBadge({
       {/* Soil type */}
       {soilType && (
         <div
-          className="px-4 py-1.5 border-b"
+          className="px-4 py-1 border-b"
           style={{
             borderColor: isLight ? `${accent}20` : undefined,
             backgroundColor: isLight ? `${accent}08` : undefined,
           }}
         >
           <span
-            className="text-[11px] font-medium"
+            className="text-[10px] font-medium"
             style={{ color: isLight ? accent : '#86efac' }}
           >
             Soil: {soilType}
@@ -251,7 +245,7 @@ export default function LocationBadge({
               icon="🌡️"
               label="Air Temp"
               value={`${fmt(weather.avg_high_f)}°F`}
-              diff={airTempDiff != null ? `${diffSign(airTempDiff)}${fmt(airTempDiff, 1)}°` : undefined}
+              historical={weather_hist ? `${fmt(weather_hist.avg_high_f)}°F` : undefined}
               mode={mode}
               accent={accent}
             />
@@ -261,7 +255,7 @@ export default function LocationBadge({
               icon="🌱"
               label="Soil Temp"
               value={`${fmt(soil_temp_surface_f)}°F`}
-              diff={soilTempDiff != null ? `${diffSign(soilTempDiff)}${fmt(soilTempDiff, 1)}°` : undefined}
+              historical={soil_temp_hist_f != null ? `${fmt(soil_temp_hist_f)}°F` : undefined}
               mode={mode}
               accent={accent}
             />
@@ -271,6 +265,7 @@ export default function LocationBadge({
               icon="💧"
               label="Humidity"
               value={`${fmt(weather.avg_humidity)}%`}
+              historical={weather_hist ? `${fmt(weather_hist.avg_humidity)}%` : undefined}
               mode={mode}
               accent={accent}
             />
@@ -280,7 +275,7 @@ export default function LocationBadge({
               icon="🌧️"
               label="Rainfall"
               value={`${fmt(rainfall.recent_in, 2)}"`}
-              diff={rainfallPct != null ? `${fmt(rainfallPct, 0)}% of norm` : undefined}
+              historical={`${fmt(rainfall.normal_in, 2)}"`}
               mode={mode}
               accent={accent}
             />
@@ -297,7 +292,7 @@ export default function LocationBadge({
             className="text-[9px] font-medium italic"
             style={{ color: isLight ? `${accent}99` : '#9ca3af' }}
           >
-            7-day rolling avg • vs 3-yr historical norm
+            7-day rolling avg • hist = 3-yr norm
           </span>
         </div>
       )}

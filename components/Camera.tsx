@@ -88,8 +88,8 @@ export default function CameraCapture({
 
   return (
     <div className={`flex flex-col gap-0 ${fill ? 'h-full' : ''}`.trim()}>
-      {/* Camera viewfinder */}
-      <div className="relative w-full rounded-t-2xl overflow-hidden bg-black" style={{ aspectRatio: '16/9' }}>
+      {/* Camera viewfinder — taller 4:3 aspect ratio */}
+      <div className="relative w-full rounded-t-2xl overflow-hidden bg-black" style={{ aspectRatio: '4/3' }}>
         <video
           ref={videoRef}
           autoPlay

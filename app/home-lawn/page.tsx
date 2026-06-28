@@ -204,9 +204,21 @@ export default function HomeLawnAnalyzer() {
         {/* IDLE */}
         {appState === 'idle' && (
           <>
-            <CameraCapture onCapture={handleCapture} isAnalyzing={false} themeColor={BRAND.primary} />
-            <PhotoUpload onCapture={handleCapture} isAnalyzing={false} themeColor={BRAND.primary} />
-            <p className="text-center text-sm mt-4 leading-relaxed px-4" style={{ color: BRAND.textMuted }}>
+            {/* Camera (left) + Upload (right) side-by-side */}
+            <div className="flex gap-2 items-stretch">
+              <div className="flex-[3] min-w-0">
+                <CameraCapture onCapture={handleCapture} isAnalyzing={false} themeColor={BRAND.primary} />
+              </div>
+              <div className="flex-[2] min-w-0 flex flex-col" style={{ minHeight: '100%' }}>
+                <PhotoUpload
+                  onCapture={handleCapture}
+                  isAnalyzing={false}
+                  themeColor={BRAND.primary}
+                  columnMode
+                />
+              </div>
+            </div>
+            <p className="text-center text-sm mt-3 leading-relaxed px-4" style={{ color: BRAND.textMuted }}>
               Point your camera at any lawn issue and get instant guidance.
             </p>
           </>

@@ -9,6 +9,8 @@ interface PhotoUploadProps {
   themeColor?: string;
   /** Called with true when a file is staged, false when cleared */
   onPreviewChange?: (hasPreview: boolean) => void;
+  /** When true, renders as a tall column panel matching the camera height */
+  columnMode?: boolean;
 }
 
 export default function PhotoUpload({
@@ -16,6 +18,7 @@ export default function PhotoUpload({
   isAnalyzing,
   themeColor = '#4a8535',
   onPreviewChange,
+  columnMode = false,
 }: PhotoUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -24,7 +27,6 @@ export default function PhotoUpload({
   const [isDragOver, setIsDragOver] = useState(false);
 
   const processFile = (file: File) => {
-    // Accept image/* AND .heic/.heif by extension (type may be empty on some Android)
     const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
     const isHeic = ext === 'heic' || ext === 'heif';
     if (!file.type.startsWith('image/') && !isHeic) return;
@@ -67,9 +69,97 @@ export default function PhotoUpload({
     onPreviewChange?.(false);
   };
 
+  // ─── COLUMN MODE (side-by-side panel) ────────────────────────────────────
+  if (columnMode) {
+    if (!preview) {
+      return (
+        <label
+          onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+          onDragLeave={() => setIsDragOver(false)}
+          onDrop={handleDrop}
+          className="flex flex-col items-center justify-center gap-2 w-full h-full rounded-2xl cursor-pointer transition"
+          style={{
+            border: `2px dashed ${isDragOver ? themeColor : `${themeColor}50`}`,
+            backgroundColor: isDragOver ? `${themeColor}14` : `${themeColor}08`,
+            opacity: isAnalyzing ? 0.5 : 1,
+            minHeight: '120px',
+          }}
+        >
+          <ImagePlus size={22} style={{ color: themeColor }} />
+          <span className="text-xs font-bold text-center leading-tight" style={{ color: themeColor }}>
+            {isDragOver ? 'Drop photo' : 'Upload\nPhoto'}
+          </span>
+          <span className="text-[9px] text-center leading-tight" style={{ color: `${themeColor}80` }}>
+            tap or drag
+          </span>
+          {/* NOTE: no capture attribute — opens file picker, not camera */}
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*,.heic,.heif"
+            className="hidden"
+            onChange={handleFileChange}
+            disabled={isAnalyzing}
+          />
+        </label>
+      );
+    }
+
+    return (
+      <div className="flex flex-col h-full w-full gap-0 rounded-2xl overflow-hidden"
+        style={{ border: `2px solid ${themeColor}30` }}>
+        {/* Photo preview fills top */}
+        <div className="relative flex-1 overflow-hidden" style={{ minHeight: '80px' }}>
+          {!imgError ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={preview}
+              alt={fileName ?? 'Preview'}
+              className="absolute inset-0 w-full h-full object-cover"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <div
+              className="absolute inset-0 flex flex-col items-center justify-center gap-1"
+              style={{ backgroundColor: `${themeColor}12` }}
+            >
+              <FileImage size={24} style={{ color: themeColor }} />
+              <p className="text-[9px] font-semibold text-center px-2" style={{ color: themeColor }}>
+                Photo ready
+              </p>
+            </div>
+          )}
+          {/* Change button overlay */}
+          <button
+            onClick={handleClear}
+            disabled={isAnalyzing}
+            className="absolute top-2 right-2 text-white text-[9px] px-2 py-0.5 rounded-full transition"
+            style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+          >
+            ✕ Change
+          </button>
+        </div>
+
+        {/* Analyze button at bottom */}
+        <button
+          onClick={handleAnalyze}
+          disabled={isAnalyzing}
+          className="flex items-center justify-center gap-1.5 py-3 text-white font-bold text-xs disabled:opacity-40 transition active:scale-95 shrink-0"
+          style={{ backgroundColor: themeColor }}
+        >
+          {isAnalyzing ? (
+            <><Loader2 size={13} className="animate-spin" /> Analyzing…</>
+          ) : (
+            <><Upload size={13} /> Analyze</>
+          )}
+        </button>
+      </div>
+    );
+  }
+
+  // ─── DEFAULT MODE (stacked, original behavior) ────────────────────────────
   return (
     <div className="flex flex-col gap-2">
-      {/* Upload button — only shown when no file is staged */}
       {!preview && (
         <label
           onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
@@ -83,11 +173,11 @@ export default function PhotoUpload({
         >
           <ImagePlus size={16} />
           {isDragOver ? 'Drop to upload' : 'Upload a photo'}
+          {/* NOTE: no capture attribute — opens file picker, not camera */}
           <input
             ref={inputRef}
             type="file"
             accept="image/*,.heic,.heif"
-            capture="environment"
             className="hidden"
             onChange={handleFileChange}
             disabled={isAnalyzing}
@@ -95,10 +185,8 @@ export default function PhotoUpload({
         </label>
       )}
 
-      {/* Preview — shown when file is staged */}
       {preview && (
         <div className="flex flex-col gap-2">
-          {/* Image preview or HEIC placeholder */}
           <div
             className="relative rounded-2xl overflow-hidden border"
             style={{ borderColor: `${themeColor}30` }}
@@ -112,7 +200,6 @@ export default function PhotoUpload({
                 onError={() => setImgError(true)}
               />
             ) : (
-              /* Fallback for HEIC / unsupported formats */
               <div
                 className="w-full h-40 flex flex-col items-center justify-center gap-2"
                 style={{ backgroundColor: `${themeColor}12` }}
@@ -126,8 +213,6 @@ export default function PhotoUpload({
                 </p>
               </div>
             )}
-
-            {/* Filename bar at bottom */}
             <div
               className="absolute inset-x-0 bottom-0 flex items-center justify-between px-3 py-2"
               style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.65), transparent)' }}
@@ -143,7 +228,6 @@ export default function PhotoUpload({
             </div>
           </div>
 
-          {/* Analyze button */}
           <button
             onClick={handleAnalyze}
             disabled={isAnalyzing}

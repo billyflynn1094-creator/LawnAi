@@ -5,14 +5,9 @@ import Link from 'next/link';
 import LocationBadge from '@/components/LocationBadge';
 import {
   Sprout,
-  Scan,
-  Calendar,
-  BookOpen,
-  BarChart3,
   ChevronRight,
   Settings,
   ArrowUpRight,
-  Droplets,
   Home,
   Briefcase,
 } from 'lucide-react';
@@ -40,10 +35,9 @@ interface ModuleItem {
   href: string;
   active: boolean;
   badge?: string;
-  // Brand theming
-  accent?: string;       // left bar + icon bg color
-  accentGlow?: string;   // glow shadow rgba
-  brandTag?: string;     // optional corner tag (e.g. "PRO")
+  accent?: string;
+  accentGlow?: string;
+  brandTag?: string;
   brandTagColor?: string;
 }
 
@@ -73,58 +67,6 @@ const MODULES: ModuleItem[] = [
     accentGlow: 'rgba(27,58,107,0.35)',
     brandTag: 'PRO',
     brandTagColor: '#3B7F5E',
-  },
-  {
-    id: 'turf-analyzer',
-    icon: Scan,
-    title: 'Turf Analyzer',
-    meta: 'Dev / Legacy',
-    body: 'Original AI-powered turf diagnosis tool. Use HomeLawn or ProLawn for the branded experience.',
-    href: '/turf-analyzer',
-    active: true,
-    accent: '#4a8535',
-    accentGlow: 'rgba(74,133,53,0.25)',
-  },
-  {
-    id: 'timeline',
-    icon: Calendar,
-    title: 'Treatment Timeline',
-    meta: 'Seasonal Schedule',
-    body: 'Smart treatment programs calibrated to your USDA hardiness zone, grass type, soil temperature, and current conditions.',
-    href: '#',
-    active: false,
-    badge: 'Coming Soon',
-  },
-  {
-    id: 'catalog',
-    icon: BookOpen,
-    title: 'Product Catalog',
-    meta: 'Pro Recommendations',
-    body: 'Curated turf protection products from Syngenta, Bayer (Envu), BASF, Nufarm, and Corteva — granular and liquid options for precision treatment.',
-    href: '#',
-    active: false,
-    badge: 'Coming Soon',
-  },
-  {
-    id: 'reports',
-    icon: BarChart3,
-    title: 'Field Reports',
-    meta: 'Property Intelligence',
-    body: 'Historical scan data, trend analysis, and cumulative treatment records for your lawn or golf course.',
-    href: '#',
-    active: false,
-    badge: 'Coming Soon',
-  },
-  {
-    id: 'irrigation',
-    icon: Droplets,
-    title: 'IrrigationPro',
-    meta: 'Field Diagnostic Tool',
-    body: 'Diagnose any irrigation issue — electrical, hydraulic, controller programming, or coverage — with AI-powered field guidance.',
-    href: '/irrigation',
-    active: true,
-    accent: '#0369a1',
-    accentGlow: 'rgba(3,105,161,0.28)',
   },
 ];
 
@@ -241,87 +183,61 @@ export default function CoverPage() {
           const accent = mod.accent ?? '#4a8535';
           const accentGlow = mod.accentGlow ?? 'rgba(74,133,53,0.25)';
 
-          if (mod.active) {
-            return (
-              <Link
-                key={mod.id}
-                href={mod.href}
-                className="animate-entry group relative flex gap-4 p-5 rounded-2xl bg-field-800/40 border border-field-600/30 hover:border-field-500/55 hover:bg-field-800/60 transition-all duration-200 active:scale-[0.985] overflow-hidden"
-                style={{ animationDelay: `${delay}ms` }}
-              >
-                {/* Left accent bar */}
-                <div
-                  className="absolute left-0 inset-y-5 w-[3px] rounded-full"
-                  style={{ background: `linear-gradient(to bottom, ${accent}, ${accent}88)` }}
-                />
-                {/* Hover shimmer */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-                  style={{ background: `linear-gradient(to right, transparent, ${accent}08, transparent)` }} />
-
-                {/* Icon */}
-                <div
-                  className="shrink-0 w-[52px] h-[52px] rounded-xl flex items-center justify-center"
-                  style={{
-                    background: `linear-gradient(135deg, ${accent}CC, ${accent}88)`,
-                    boxShadow: `0 4px 20px ${accentGlow}`,
-                  }}
-                >
-                  <Icon size={22} className="text-white" />
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between mb-0.5">
-                    <span className="font-display text-[1.3rem] text-white leading-tight">{mod.title}</span>
-                    <div className="flex items-center gap-1.5">
-                      {mod.brandTag && (
-                        <span
-                          className="shrink-0 text-[8px] px-2 py-0.5 rounded-full font-bold tracking-widest uppercase text-white"
-                          style={{ backgroundColor: mod.brandTagColor ?? accent }}
-                        >
-                          {mod.brandTag}
-                        </span>
-                      )}
-                      <ArrowUpRight
-                        size={15}
-                        className="shrink-0 mt-1 text-field-300 group-hover:text-white group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-all"
-                      />
-                    </div>
-                  </div>
-                  <p className="text-[9px] tracking-[0.22em] uppercase font-bold mb-2" style={{ color: accent }}>
-                    {mod.meta}
-                  </p>
-                  <p className="text-field-50 text-[13px] leading-relaxed">{mod.body}</p>
-                  <div className="mt-3 inline-flex items-center gap-1 text-field-200 text-[11px] font-semibold tracking-wide group-hover:text-white transition-colors">
-                    Open Module <ChevronRight size={10} className="group-hover:translate-x-0.5 transition-transform" />
-                  </div>
-                </div>
-              </Link>
-            );
-          }
-
           return (
-            <div
+            <Link
               key={mod.id}
-              className="animate-entry relative flex gap-4 p-5 rounded-2xl bg-field-900/30 border border-field-800/25 opacity-60 cursor-not-allowed overflow-hidden"
+              href={mod.href}
+              className="animate-entry group relative flex gap-4 p-5 rounded-2xl bg-field-800/40 border border-field-600/30 hover:border-field-500/55 hover:bg-field-800/60 transition-all duration-200 active:scale-[0.985] overflow-hidden"
               style={{ animationDelay: `${delay}ms` }}
             >
-              <div className="shrink-0 w-[52px] h-[52px] rounded-xl bg-field-900/60 border border-field-800/40 flex items-center justify-center">
-                <Icon size={22} className="text-field-500" />
+              {/* Left accent bar */}
+              <div
+                className="absolute left-0 inset-y-5 w-[3px] rounded-full"
+                style={{ background: `linear-gradient(to bottom, ${accent}, ${accent}88)` }}
+              />
+              {/* Hover shimmer */}
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                style={{ background: `linear-gradient(to right, transparent, ${accent}08, transparent)` }} />
+
+              {/* Icon */}
+              <div
+                className="shrink-0 w-[52px] h-[52px] rounded-xl flex items-center justify-center"
+                style={{
+                  background: `linear-gradient(135deg, ${accent}CC, ${accent}88)`,
+                  boxShadow: `0 4px 20px ${accentGlow}`,
+                }}
+              >
+                <Icon size={22} className="text-white" />
               </div>
+
+              {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between mb-0.5">
-                  <span className="font-display text-[1.3rem] text-field-100 leading-tight">{mod.title}</span>
-                  {mod.badge && (
-                    <span className="shrink-0 text-[8px] px-2 py-0.5 rounded-full bg-field-800/60 border border-field-700/30 text-field-200 font-bold tracking-widest uppercase">
-                      {mod.badge}
-                    </span>
-                  )}
+                  <span className="font-display text-[1.3rem] text-white leading-tight">{mod.title}</span>
+                  <div className="flex items-center gap-1.5">
+                    {mod.brandTag && (
+                      <span
+                        className="shrink-0 text-[8px] px-2 py-0.5 rounded-full font-bold tracking-widest uppercase text-white"
+                        style={{ backgroundColor: mod.brandTagColor ?? accent }}
+                      >
+                        {mod.brandTag}
+                      </span>
+                    )}
+                    <ArrowUpRight
+                      size={15}
+                      className="shrink-0 mt-1 text-field-300 group-hover:text-white group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-all"
+                    />
+                  </div>
                 </div>
-                <p className="text-field-300 text-[9px] tracking-[0.22em] uppercase font-bold mb-2">{mod.meta}</p>
-                <p className="text-field-100 text-[13px] leading-relaxed">{mod.body}</p>
+                <p className="text-[9px] tracking-[0.22em] uppercase font-bold mb-2" style={{ color: accent }}>
+                  {mod.meta}
+                </p>
+                <p className="text-field-50 text-[13px] leading-relaxed">{mod.body}</p>
+                <div className="mt-3 inline-flex items-center gap-1 text-field-200 text-[11px] font-semibold tracking-wide group-hover:text-white transition-colors">
+                  Open Module <ChevronRight size={10} className="group-hover:translate-x-0.5 transition-transform" />
+                </div>
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>

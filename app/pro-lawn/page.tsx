@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import CameraCapture from '@/components/Camera';
-import PhotoUpload from '@/components/PhotoUpload';
 import LocationBadge from '@/components/LocationBadge';
 import AnalysisResults from '@/components/Analysis';
 import AnalysisProgress from '@/components/AnalysisProgress';
@@ -205,9 +204,6 @@ export default function ProLawnAnalyzer() {
         {appState === 'idle' && (
           <>
             <CameraCapture onCapture={handleCapture} isAnalyzing={false} themeColor={BRAND.primary} />
-            <div className="mt-2">
-              <PhotoUpload onCapture={handleCapture} isAnalyzing={false} themeColor={BRAND.primary} />
-            </div>
             <p className="text-center text-sm mt-4 leading-relaxed px-4" style={{ color: BRAND.textMuted }}>
               Scan turf, identify agronomic issues, and receive professional-grade treatment recommendations.
             </p>

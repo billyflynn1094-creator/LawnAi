@@ -7,7 +7,7 @@ import LocationBadge from '@/components/LocationBadge';
 import AnalysisResults from '@/components/Analysis';
 import AnalysisProgress from '@/components/AnalysisProgress';
 import DownloadReportButton from '@/components/DownloadReportButton';
-import { RotateCcw, MapPin, Navigation, Home } from 'lucide-react';
+import { RotateCcw, MapPin, Navigation, Home, Phone, Globe, Star, Users, Loader2 } from 'lucide-react';
 
 interface LocationData {
   lat: number; lng: number; city?: string; state?: string; soilType?: string;
@@ -16,6 +16,17 @@ interface LocationData {
   weather_hist?: { avg_high_f: number; avg_low_f: number; avg_humidity: number };
   soil_temp_surface_f?: number; soil_temp_6cm_f?: number; soil_temp_hist_f?: number;
   rainfall?: { recent_in: number; normal_in: number; pct_of_normal: number };
+}
+
+interface Pro {
+  name: string;
+  vicinity?: string;
+  rating?: number;
+  user_ratings_total?: number;
+  phone?: string;
+  website?: string;
+  place_id?: string;
+  distance_mi?: number;
 }
 
 type AppState = 'idle' | 'analyzing' | 'results' | 'error';
@@ -32,11 +43,26 @@ const BRAND = {
   textMuted: '#888888',
 };
 
-// Helper to make a safe img src from raw base64
 function b64Src(b64: string | null) {
   if (!b64) return '';
   if (b64.startsWith('data:')) return b64;
   return `data:image/jpeg;base64,${b64}`;
+}
+
+function StarRating({ rating }: { rating: number }) {
+  const full = Math.floor(rating);
+  const half = rating - full >= 0.5;
+  return (
+    <span className="flex items-center gap-0.5">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Star
+          key={i}
+          size={11}
+          className={i < full ? 'fill-amber-400 text-amber-400' : half && i === full ? 'fill-amber-200 text-amber-400' : 'text-gray-300'}
+        />
+      ))}
+    </span>
+  );
 }
 
 export default function HomeLawnAnalyzer() {
@@ -54,6 +80,12 @@ export default function HomeLawnAnalyzer() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [analysisComplete, setAnalysisComplete] = useState(false);
+
+  // Pro search state
+  const [pros, setPros] = useState<Pro[]>([]);
+  const [prosLoading, setProsLoading] = useState(false);
+  const [prosError, setProsError] = useState<string | null>(null);
+  const [prosLoaded, setProsLoaded] = useState(false);
 
   const fetchLocation = useCallback(() => {
     setLocationLoading(true); setLocationError(null);
@@ -110,6 +142,8 @@ export default function HomeLawnAnalyzer() {
   const handleCapture = async (base64: string) => {
     setCapturedImage(base64); setAppState('analyzing'); setAnalysis(null);
     setErrorMessage(null); setAnalysisComplete(false);
+    // Reset pro search when new scan starts
+    setPros([]); setProsLoaded(false); setProsError(null);
     try {
       const res = await fetch('/api/analyze', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -132,7 +166,32 @@ export default function HomeLawnAnalyzer() {
     }
   };
 
-  const reset = () => { setAppState('idle'); setAnalysis(null); setCapturedImage(null); setErrorMessage(null); setAnalysisComplete(false); };
+  const handleFindPros = async () => {
+    if (!locationData) return;
+    setProsLoading(true); setProsError(null);
+    try {
+      const res = await fetch(`/api/find-pros?lat=${locationData.lat}&lng=${locationData.lng}`);
+      if (!res.ok) throw new Error('Could not load local specialists.');
+      const data = await res.json();
+      const sorted = (data.results ?? []).sort((a: Pro, b: Pro) => {
+        const scoreA = (a.rating ?? 0) * Math.log1p(a.user_ratings_total ?? 0);
+        const scoreB = (b.rating ?? 0) * Math.log1p(b.user_ratings_total ?? 0);
+        return scoreB - scoreA;
+      }).slice(0, 7);
+      setPros(sorted);
+      setProsLoaded(true);
+    } catch (err) {
+      setProsError(err instanceof Error ? err.message : 'Search failed. Please try again.');
+    } finally {
+      setProsLoading(false);
+    }
+  };
+
+  const reset = () => {
+    setAppState('idle'); setAnalysis(null); setCapturedImage(null);
+    setErrorMessage(null); setAnalysisComplete(false);
+    setPros([]); setProsLoaded(false); setProsError(null);
+  };
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: BRAND.bgPage, color: BRAND.textPrimary }}>
@@ -249,10 +308,120 @@ export default function HomeLawnAnalyzer() {
                 </div>
               </div>
             )}
+
             <AnalysisResults analysis={analysis} mode="light" />
+
             {analysis && !analysis.parse_error && (
-              <div className="mt-4"><DownloadReportButton analysis={analysis} location={locationData} /></div>
+              <div className="mt-4">
+                <DownloadReportButton analysis={analysis} location={locationData} />
+              </div>
             )}
+
+            {/* ---- Get a Local Pro section ---- */}
+            <div className="mt-5">
+              {!prosLoaded && (
+                <button
+                  onClick={handleFindPros}
+                  disabled={prosLoading || !locationData}
+                  className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl font-semibold text-sm transition-all disabled:opacity-50"
+                  style={{ backgroundColor: BRAND.primary, color: '#fff' }}
+                >
+                  {prosLoading ? (
+                    <><Loader2 size={15} className="animate-spin" /> Finding local specialists...</>
+                  ) : (
+                    <><MapPin size={15} /> Get a Local Pro&apos;s Opinion</>
+                  )}
+                </button>
+              )}
+
+              {prosError && (
+                <p className="text-center text-xs text-red-500 mt-2">{prosError}</p>
+              )}
+
+              {prosLoaded && pros.length === 0 && (
+                <div className="mt-3 p-4 rounded-2xl border bg-white text-center" style={{ borderColor: BRAND.border }}>
+                  <p className="text-sm" style={{ color: BRAND.textMuted }}>No local lawn specialists found within 20 miles.</p>
+                </div>
+              )}
+
+              {prosLoaded && pros.length > 0 && (
+                <div className="mt-3 space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: BRAND.textMuted }}>
+                    Local Lawn Specialists
+                  </p>
+                  {pros.map((pro, i) => (
+                    <div
+                      key={pro.place_id ?? i}
+                      className="rounded-2xl border bg-white overflow-hidden"
+                      style={{ borderColor: BRAND.border }}
+                    >
+                      <div className="p-4 flex flex-col gap-3 min-h-[120px] justify-between">
+                        {/* Top: name + rating */}
+                        <div className="space-y-1.5">
+                          <p className="text-sm font-bold leading-snug" style={{ color: BRAND.textPrimary }}>
+                            {pro.name}
+                          </p>
+                          {pro.rating != null && (
+                            <div className="flex items-center gap-1.5">
+                              <StarRating rating={pro.rating} />
+                              <span className="text-xs font-medium" style={{ color: BRAND.textPrimary }}>{pro.rating.toFixed(1)}</span>
+                              {pro.user_ratings_total != null && (
+                                <span className="text-xs flex items-center gap-0.5" style={{ color: BRAND.textMuted }}>
+                                  <Users size={10} /> {pro.user_ratings_total.toLocaleString()} reviews
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          {pro.vicinity && (
+                            <p className="text-xs" style={{ color: BRAND.textMuted }}>{pro.vicinity}</p>
+                          )}
+                          {pro.distance_mi != null && (
+                            <p className="text-[11px]" style={{ color: BRAND.textAccent }}>{pro.distance_mi.toFixed(1)} mi away</p>
+                          )}
+                        </div>
+
+                        {/* Bottom: action buttons */}
+                        <div className="flex items-center justify-end gap-2">
+                          {pro.phone && (
+                            <a
+                              href={`tel:${pro.phone}`}
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition"
+                              style={{ backgroundColor: BRAND.primary, color: '#fff' }}
+                            >
+                              <Phone size={12} /> Call
+                            </a>
+                          )}
+                          {pro.website && (
+                            <a
+                              href={pro.website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition border"
+                              style={{ borderColor: BRAND.border, color: BRAND.textPrimary, backgroundColor: '#fff' }}
+                            >
+                              <Globe size={12} /> Website
+                            </a>
+                          )}
+                          {!pro.phone && !pro.website && pro.place_id && (
+                            <a
+                              href={`https://www.google.com/maps/place/?q=place_id:${pro.place_id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition border"
+                              style={{ borderColor: BRAND.border, color: BRAND.textPrimary, backgroundColor: '#fff' }}
+                            >
+                              <MapPin size={12} /> View on Maps
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* ---- End Get a Local Pro section ---- */}
+
           </div>
         )}
       </div>

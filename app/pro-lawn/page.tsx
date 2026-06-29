@@ -204,21 +204,11 @@ export default function ProLawnAnalyzer() {
         {/* IDLE */}
         {appState === 'idle' && (
           <>
-            {/* Camera (left) + Upload (right) side-by-side */}
-            <div className="flex gap-2 items-stretch">
-              <div className="flex-[3] min-w-0">
-                <CameraCapture onCapture={handleCapture} isAnalyzing={false} themeColor={BRAND.primary} />
-              </div>
-              <div className="flex-[2] min-w-0 flex flex-col" style={{ minHeight: '100%' }}>
-                <PhotoUpload
-                  onCapture={handleCapture}
-                  isAnalyzing={false}
-                  themeColor={BRAND.primary}
-                  columnMode
-                />
-              </div>
+            <CameraCapture onCapture={handleCapture} isAnalyzing={false} themeColor={BRAND.primary} />
+            <div className="mt-2">
+              <PhotoUpload onCapture={handleCapture} isAnalyzing={false} themeColor={BRAND.primary} />
             </div>
-            <p className="text-center text-sm mt-3 leading-relaxed px-4" style={{ color: BRAND.textMuted }}>
+            <p className="text-center text-sm mt-4 leading-relaxed px-4" style={{ color: BRAND.textMuted }}>
               Scan turf, identify agronomic issues, and receive professional-grade treatment recommendations.
             </p>
           </>

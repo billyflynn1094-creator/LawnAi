@@ -20,9 +20,9 @@ interface LocationData {
 
 interface Pro {
   name: string;
-  vicinity?: string;
+  address?: string;
   rating?: number;
-  user_ratings_total?: number;
+  ratings_count?: number;
   phone?: string;
   website?: string;
   place_id?: string;
@@ -173,9 +173,9 @@ export default function HomeLawnAnalyzer() {
       const res = await fetch(`/api/find-pros?lat=${locationData.lat}&lng=${locationData.lng}`);
       if (!res.ok) throw new Error('Could not load local specialists.');
       const data = await res.json();
-      const sorted = (data.results ?? []).sort((a: Pro, b: Pro) => {
-        const scoreA = (a.rating ?? 0) * Math.log1p(a.user_ratings_total ?? 0);
-        const scoreB = (b.rating ?? 0) * Math.log1p(b.user_ratings_total ?? 0);
+      const sorted = (data.pros ?? []).sort((a: Pro, b: Pro) => {
+        const scoreA = (a.rating ?? 0) * Math.log1p(a.ratings_count ?? 0);
+        const scoreB = (b.rating ?? 0) * Math.log1p(b.ratings_count ?? 0);
         return scoreB - scoreA;
       }).slice(0, 7);
       setPros(sorted);
@@ -365,15 +365,15 @@ export default function HomeLawnAnalyzer() {
                             <div className="flex items-center gap-1.5">
                               <StarRating rating={pro.rating} />
                               <span className="text-xs font-medium" style={{ color: BRAND.textPrimary }}>{pro.rating.toFixed(1)}</span>
-                              {pro.user_ratings_total != null && (
+                              {pro.ratings_count != null && (
                                 <span className="text-xs flex items-center gap-0.5" style={{ color: BRAND.textMuted }}>
-                                  <Users size={10} /> {pro.user_ratings_total.toLocaleString()} reviews
+                                  <Users size={10} /> {pro.ratings_count!.toLocaleString()} reviews
                                 </span>
                               )}
                             </div>
                           )}
-                          {pro.vicinity && (
-                            <p className="text-xs" style={{ color: BRAND.textMuted }}>{pro.vicinity}</p>
+                          {pro.address && (
+                            <p className="text-xs" style={{ color: BRAND.textMuted }}>{pro.address}</p>
                           )}
                           {pro.distance_mi != null && (
                             <p className="text-[11px]" style={{ color: BRAND.textAccent }}>{pro.distance_mi.toFixed(1)} mi away</p>

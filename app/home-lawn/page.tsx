@@ -65,6 +65,36 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
+
+/** Resize + JPEG-compress a base64 image before upload.
+ *  Keeps display-quality preview; reduces API payload to ~200-500 KB.
+ */
+async function compressBase64(
+  src: string,
+  maxPx = 1280,
+  quality = 0.82,
+): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const { width, height } = img;
+      const scale = Math.min(1, maxPx / Math.max(width, height));
+      const w = Math.round(width * scale);
+      const h = Math.round(height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { resolve(src); return; }
+      ctx.drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL('image/jpeg', quality);
+      resolve(dataUrl.replace(/^data:[^;]+;base64,/, ''));
+    };
+    img.onerror = () => resolve(src); // fallback: send original
+    img.src = src.startsWith('data:') ? src : `data:image/jpeg;base64,${src}`;
+  });
+}
+
 export default function HomeLawnAnalyzer() {
   const [locationData, setLocationData] = useState<LocationData | null>(null);
   const [locationLoading, setLocationLoading] = useState(true);
@@ -145,9 +175,13 @@ export default function HomeLawnAnalyzer() {
     // Reset pro search when new scan starts
     setPros([]); setProsLoaded(false); setProsError(null);
     try {
+      // Compress before sending — full-res Android photos can exceed the 4.5 MB
+      // serverless body limit as base64. Max 1280px / JPEG 0.82 is more than
+      // sufficient for AI vision analysis and keeps the payload under ~500 KB.
+      const compressed = await compressBase64(base64);
       const res = await fetch('/api/analyze', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: base64, location: locationData ?? { lat: 0, lng: 0 } }),
+        body: JSON.stringify({ image: compressed, location: locationData ?? { lat: 0, lng: 0 } }),
       });
       if (!res.ok) {
         let errMsg = 'Analysis failed';

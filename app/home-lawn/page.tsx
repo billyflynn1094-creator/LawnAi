@@ -181,7 +181,7 @@ export default function HomeLawnAnalyzer() {
       const compressed = await compressBase64(base64);
       const res = await fetch('/api/analyze', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: compressed, location: locationData ?? { lat: 0, lng: 0 } }),
+        body: JSON.stringify({ image: compressed, location: locationData ?? { lat: 0, lng: 0 }, tier: 'consumer' }),
       });
       if (!res.ok) {
         let errMsg = 'Analysis failed';

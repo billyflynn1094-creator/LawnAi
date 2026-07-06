@@ -141,6 +141,7 @@ export async function POST(req: NextRequest) {
       isSecondOpinion,
       originalDiagnosis,
       originalAnalysis,
+      tier,
     } = body as {
       image: string;
       image2?: string;
@@ -149,7 +150,11 @@ export async function POST(req: NextRequest) {
       originalDiagnosis?: string;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       originalAnalysis?: Record<string, any>;
+      /** 'consumer' = HomeLawn (Home Depot retail brands); default 'pro' = ProLawn (unchanged). */
+      tier?: 'pro' | 'consumer';
     };
+
+    const productTier: 'pro' | 'consumer' = tier === 'consumer' ? 'consumer' : 'pro';
 
     if (!image) {
       return NextResponse.json({ error: 'No image provided' }, { status: 400 });
@@ -184,7 +189,7 @@ export async function POST(req: NextRequest) {
         '4. Return the SAME JSON schema as the original analysis — all fields must be fully populated.',
         '5. If you disagree, clearly explain which visual cues in the image support a different diagnosis than what the first analysis identified, and why.',
         '',
-        buildAnalysisPrompt(location ?? { lat: 0, lng: 0 }, hasSecondImage, false),
+        buildAnalysisPrompt(location ?? { lat: 0, lng: 0 }, hasSecondImage, false, undefined, productTier),
         '',
         'CRITICAL OUTPUT REQUIREMENT: second_opinion_reasoning must start with AGREE or DISAGREE, then cite specific visual details from the image(s) as supporting evidence for your assessment.',
       ].join('\n');
@@ -201,7 +206,7 @@ export async function POST(req: NextRequest) {
         soContentParts.push({ text: 'The image above is the close-up detail photo. Use both images together for your assessment.' });
       }
 
-      const soResult  = await geminiFlash.generateContent(soContentParts);
+      const soResult  = await geminiFlash.generateContent(soContentParts, productTier);
       const soRawText = soResult.response.text().trim();
       const soCleaned = extractJson(soRawText);
 
@@ -230,7 +235,7 @@ export async function POST(req: NextRequest) {
     // PRIMARY ANALYSIS — Gemini 2.5 Flash
     // ---------------------------------------------------------------------------
     const imagePart    = imageToGeminiPart(image);
-    const userPrompt   = buildAnalysisPrompt(location ?? { lat: 0, lng: 0 }, hasSecondImage, false);
+    const userPrompt   = buildAnalysisPrompt(location ?? { lat: 0, lng: 0 }, hasSecondImage, false, undefined, productTier);
 
     const contentParts: Parameters<typeof geminiFlash.generateContent>[0] = [
       { text: userPrompt },
@@ -243,7 +248,7 @@ export async function POST(req: NextRequest) {
       contentParts.push({ text: 'The image above is the close-up detail photo. Use both images together for a definitive diagnosis.' });
     }
 
-    const result = await geminiFlash.generateContent(contentParts);
+    const result = await geminiFlash.generateContent(contentParts, productTier);
     const text    = result.response.text().trim();
     const cleaned = extractJson(text);
 

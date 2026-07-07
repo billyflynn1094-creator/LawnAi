@@ -29,7 +29,7 @@ function getModel(tier: Tier = "pro") {
     generationConfig: {
       temperature: 0.65,
       topP: 0.9,
-      maxOutputTokens: 8000,
+      maxOutputTokens: 16000,
       responseMimeType: "application/json",
     },
   });

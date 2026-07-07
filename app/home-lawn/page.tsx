@@ -343,7 +343,7 @@ export default function HomeLawnAnalyzer() {
               </div>
             )}
 
-            <AnalysisResults analysis={analysis} mode="light" />
+            <AnalysisResults analysis={analysis} mode="light" shopLinks="homedepot" />
 
             {analysis && !analysis.parse_error && (
               <div className="mt-4">

@@ -85,17 +85,62 @@ function extractJson(raw: string): string {
 }
 
 /**
- * JSON.parse with an automatic fallback that sanitizes unescaped control
- * characters — the most common reason Gemini output fails to parse even though
- * it looks correct to human eyes.
+ * Structurally repair JSON that was cut off mid-response (token-limit
+ * truncation). Walks the string tracking open braces/brackets and whether
+ * we're inside a quoted string, then closes whatever was left open — this
+ * recovers a valid (if partial) object instead of failing outright.
+ */
+function repairTruncatedJson(raw: string): string {
+  let s = raw;
+  let inString = false;
+  let escaped = false;
+  const stack: string[] = [];
+
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (escaped) { escaped = false; continue; }
+    if (ch === '\\' && inString) { escaped = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === '{' || ch === '[') stack.push(ch);
+    else if (ch === '}' || ch === ']') stack.pop();
+  }
+
+  // Truncated mid-string — close the open string literal first.
+  if (inString) s += '"';
+
+  // Drop a dangling trailing comma / colon left by the cut before closing.
+  s = s.replace(/,\s*$/, '').replace(/:\s*$/, ': null');
+
+  // Close whatever braces/brackets were still open, innermost first.
+  for (let i = stack.length - 1; i >= 0; i--) {
+    s += stack[i] === '{' ? '}' : ']';
+  }
+
+  return s;
+}
+
+/**
+ * JSON.parse with automatic fallbacks:
+ *   1. Straight parse.
+ *   2. Retry after escaping bare newlines / control chars inside strings
+ *      — the most common reason Gemini output fails to parse even though
+ *      it looks correct to human eyes.
+ *   3. Retry after structurally repairing a token-limit-truncated response
+ *      (closes any braces/brackets/strings left open by the cutoff).
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function robustParse(cleaned: string): Record<string, any> {
   try {
     return JSON.parse(cleaned);
   } catch {
-    // Retry after escaping bare newlines / control chars inside strings
-    return JSON.parse(sanitizeJsonString(cleaned));
+    try {
+      // Retry after escaping bare newlines / control chars inside strings
+      return JSON.parse(sanitizeJsonString(cleaned));
+    } catch {
+      // Last resort: the response was truncated mid-structure — repair and retry.
+      return JSON.parse(repairTruncatedJson(sanitizeJsonString(cleaned)));
+    }
   }
 }
 

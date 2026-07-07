@@ -19,6 +19,13 @@ import {
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 
+/** Build a Home Depot search-results URL for a product name. Home Depot's own
+ *  site auto-detects the visitor's nearest store/zip on load — no geo lookup
+ *  needed on our end. */
+function hdSearchUrl(name: string): string {
+  return `https://www.homedepot.com/s/${encodeURIComponent(name)}`;
+}
+
 // -- Types --------------------------------------------------------------------
 
 interface ElaborateData {
@@ -241,7 +248,7 @@ function ElaborateSub({ title, content, tk }: { title: string; content?: string;
   );
 }
 
-function ProductRow({ product, tk }: { product: Product; tk: Tk }) {
+function ProductRow({ product, tk, shopLinks }: { product: Product; tk: Tk; shopLinks?: 'homedepot' }) {
   const [expanded, setExpanded] = useState(false);
   const fmt = (product.format ?? '').toLowerCase();
   const fmtStyle = tk.fmtBadge[fmt] ?? tk.fmtBadge._default;
@@ -261,7 +268,19 @@ function ProductRow({ product, tk }: { product: Product; tk: Tk }) {
         className={`w-full flex items-center justify-between py-2.5 text-left gap-3 ${tk.rowHover}`}
       >
         <div className="flex items-center gap-2 min-w-0">
-          <span className={`text-xs ${tk.subheading} font-medium truncate`}>{product.name}</span>
+          {shopLinks === 'homedepot' ? (
+            <a
+              href={hdSearchUrl(product.name)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className={`text-xs ${tk.subheading} font-medium truncate underline decoration-dotted underline-offset-2 hover:opacity-70`}
+            >
+              {product.name}
+            </a>
+          ) : (
+            <span className={`text-xs ${tk.subheading} font-medium truncate`}>{product.name}</span>
+          )}
           {fmtLabel && (
             <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap shrink-0 ${fmtStyle}`}>
               {fmtLabel}
@@ -300,7 +319,16 @@ function ProductRow({ product, tk }: { product: Product; tk: Tk }) {
             <div className={`mt-2 pt-2 border-t ${tk.divider}`}>
               <p className={`text-[10px] ${tk.faint} uppercase tracking-wide font-medium mb-0.5`}>Or equivalent</p>
               <p className={`text-xs ${tk.muted}`}>
-                {product.equivalent_product}
+                {shopLinks === 'homedepot' ? (
+                  <a
+                    href={hdSearchUrl(product.equivalent_product)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline decoration-dotted underline-offset-2 hover:opacity-70"
+                  >
+                    {product.equivalent_product}
+                  </a>
+                ) : product.equivalent_product}
                 {product.equivalent_manufacturer && (
                   <span className={tk.faint}> ({product.equivalent_manufacturer})</span>
                 )}
@@ -336,7 +364,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   fertilizer:  'Fertilizer',
 };
 
-function AsWellSection({ groups, tk }: { groups: AsWellProductGroup[]; tk: Tk }) {
+function AsWellSection({ groups, tk, shopLinks }: { groups: AsWellProductGroup[]; tk: Tk; shopLinks?: 'homedepot' }) {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
   if (!groups.length) return null;
 
@@ -382,7 +410,18 @@ function AsWellSection({ groups, tk }: { groups: AsWellProductGroup[]; tk: Tk })
                   return (
                     <div key={pi} className={`border-b ${tk.divider} last:border-b-0 py-2.5`}>
                       <div className="flex items-center justify-between mb-1">
-                        <span className={`text-xs ${tk.subheading} font-medium`}>{p.name}</span>
+                        {shopLinks === 'homedepot' ? (
+                          <a
+                            href={hdSearchUrl(p.name)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`text-xs ${tk.subheading} font-medium underline decoration-dotted underline-offset-2 hover:opacity-70`}
+                          >
+                            {p.name}
+                          </a>
+                        ) : (
+                          <span className={`text-xs ${tk.subheading} font-medium`}>{p.name}</span>
+                        )}
                         {fmtLabel && (
                           <span className={`text-[10px] px-2 py-0.5 rounded-full shrink-0 ml-2 ${fmtStyle}`}>
                             {fmtLabel}
@@ -398,7 +437,17 @@ function AsWellSection({ groups, tk }: { groups: AsWellProductGroup[]; tk: Tk })
                       )}
                       {p.equivalent_product && (
                         <p className={`text-xs ${tk.faint} mt-1`}>
-                          <span className={tk.faint}>Or equivalent:</span> {p.equivalent_product}
+                          <span className={tk.faint}>Or equivalent:</span>{' '}
+                          {shopLinks === 'homedepot' ? (
+                            <a
+                              href={hdSearchUrl(p.equivalent_product)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="underline decoration-dotted underline-offset-2 hover:opacity-70"
+                            >
+                              {p.equivalent_product}
+                            </a>
+                          ) : p.equivalent_product}
                           {p.equivalent_manufacturer && ` (${p.equivalent_manufacturer})`}
                         </p>
                       )}
@@ -422,12 +471,15 @@ export default function AnalysisResults({
   secondOpinionData,
   secondOpinionLoading,
   onSecondOpinion,
+  shopLinks,
 }: {
   analysis: AnalysisData;
   mode?: 'dark' | 'light';
   secondOpinionData?: Record<string, any> | null;
   secondOpinionLoading?: boolean;
   onSecondOpinion?: () => void;
+  /** 'homedepot' = link product names to Home Depot search (HomeLawn only). Omit for ProLawn. */
+  shopLinks?: 'homedepot';
 }) {
   const tk = mode === 'light' ? LIGHT_TK : DARK_TK;
   const [showElaborate, setShowElaborate] = useState(false);
@@ -574,14 +626,14 @@ export default function AnalysisResults({
             <span className={`text-[10px] ${tk.faint} ml-0.5`}>tap to expand</span>
           </div>
           <div className="px-4 pb-2">
-            {sortedProducts.map((p, i) => <ProductRow key={i} product={p} tk={tk} />)}
+            {sortedProducts.map((p, i) => <ProductRow key={i} product={p} tk={tk} shopLinks={shopLinks} />)}
           </div>
         </div>
       )}
 
       {/* -- As Well products card --------------------------------- */}
       {asWellGroups.length > 0 && (
-        <AsWellSection groups={asWellGroups} tk={tk} />
+        <AsWellSection groups={asWellGroups} tk={tk} shopLinks={shopLinks} />
       )}
 
       {/* -- See full plan card ----------------------------------- */}

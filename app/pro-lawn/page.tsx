@@ -239,7 +239,14 @@ export default function ProLawnAnalyzer() {
             )}
             <AnalysisResults analysis={analysis} mode="light" />
             {analysis && !analysis.parse_error && (
-              <div className="mt-4"><DownloadReportButton analysis={analysis} location={locationData} /></div>
+              <div className="mt-4"><DownloadReportButton
+                analysis={analysis}
+                location={locationData}
+                capturedImage={capturedImage}
+                accent={BRAND.primary}
+                brandName="ProLawn"
+                brandTagline="Professional Turf Management — Analysis Report"
+              /></div>
             )}
           </div>
         )}

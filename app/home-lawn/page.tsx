@@ -277,7 +277,14 @@ export default function HomeLawnAnalyzer() {
 
             {analysis && !analysis.parse_error && (
               <div className="mt-4">
-                <DownloadReportButton analysis={analysis} location={locationData} />
+                <DownloadReportButton
+                  analysis={analysis}
+                  location={locationData}
+                  capturedImage={capturedImage}
+                  accent={BRAND.primary}
+                  brandName="HomeLawn"
+                  brandTagline="Smart Lawn Care — Turf Analysis Report"
+                />
               </div>
             )}
 

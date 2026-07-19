@@ -19,6 +19,59 @@ function getScaledDims(w: number, h: number): { w: number; h: number } {
 }
 
 /**
+ * Reject a pending promise if it hasn't settled within `ms` milliseconds.
+ * HEIC decode attempts on browsers with no native HEIC support can hang
+ * indefinitely (neither resolve nor reject) rather than failing fast --
+ * this is what produced a permanently-black "Processing photo..." screen.
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), ms);
+    promise.then(
+      (v) => { clearTimeout(timer); resolve(v); },
+      (e) => { clearTimeout(timer); reject(e); }
+    );
+  });
+}
+
+/**
+ * Sniff the file's actual magic bytes to detect HEIC/HEIF content, regardless
+ * of what the OS/share-intent reports as the file name or MIME type (Android
+ * frequently mangles both). ISOBMFF files start with a 4-byte box size, then
+ * the ascii box type "ftyp", then a 4-byte major brand -- HEIC/HEIF brands are
+ * heic/heix/hevc/hevx/mif1/msf1.
+ */
+async function sniffIsHeic(file: File): Promise<boolean> {
+  try {
+    const buf = await file.slice(4, 12).arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    const str = String.fromCharCode(...bytes);
+    if (!str.startsWith('ftyp')) return false;
+    const brand = str.slice(4, 8).toLowerCase();
+    return ['heic', 'heix', 'hevc', 'hevx', 'mif1', 'msf1'].includes(brand);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Convert a HEIC/HEIF file to a JPEG Blob using heic2any -- a WASM-based
+ * decoder (libheif compiled to WebAssembly) that runs entirely in-browser,
+ * independent of the browser/OS's native image codecs. This is the actual
+ * fix for Android: Chrome for Android has NO native HEIC decode support in
+ * <img>, canvas, or createImageBitmap (unlike Safari, which uses Apple's
+ * system-level HEIC codec) -- so relying on the browser to decode HEIC will
+ * never work reliably there, no matter how many fallback paths are added.
+ */
+async function convertHeicToJpegBlob(file: File): Promise<Blob> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mod: any = await import('heic2any');
+  const heic2any = mod.default ?? mod;
+  const result = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+  return Array.isArray(result) ? result[0] : result;
+}
+
+/**
  * Detect a blank/solid-black render — some Android browsers "successfully"
  * decode certain HEIC photos (esp. wide-gamut/Display P3 shots from newer
  * iPhones) into a bitmap that draws as solid black on <canvas> instead of
@@ -59,7 +112,7 @@ function isBlankCanvas(ctx: CanvasRenderingContext2D, w: number, h: number): boo
  * createImageBitmap isn't available or fails. Both paths verify the render
  * isn't blank/black before accepting it as a success — see isBlankCanvas().
  */
-async function normalizeToJpeg(file: File): Promise<string> {
+async function decodeViaCanvas(file: File): Promise<string> {
   // -- Attempt 1: createImageBitmap (format-agnostic, decodes actual bytes) --
   try {
     const bitmap = await createImageBitmap(file);
@@ -107,6 +160,35 @@ async function normalizeToJpeg(file: File): Promise<string> {
     reader.onerror = () => reject(new Error('read-failed'));
     reader.readAsDataURL(file);
   });
+}
+
+/**
+ * Normalize ANY uploaded image file to a JPEG data URL, regardless of source
+ * format (HEIC, PNG, WEBP, GIF, BMP, AVIF, etc.) or device/OS origin.
+ *
+ * HEIC/HEIF files are routed through heic2any (WASM decoder, works regardless
+ * of browser/OS codec support) since Chrome for Android has no native HEIC
+ * decode path at all. Everything else goes through the canvas-based decode,
+ * which also catches blank/silent-failure renders (see isBlankCanvas).
+ * The whole pipeline is timeout-guarded so a hung decode surfaces a clear
+ * error instead of leaving the UI stuck on a black "Processing..." screen.
+ */
+async function normalizeToJpeg(file: File): Promise<string> {
+  const looksHeicByName = /\.(heic|heif)$/i.test(file.name);
+  const looksHeicByType = /heic|heif/i.test(file.type);
+  const isHeic = looksHeicByName || looksHeicByType || (await sniffIsHeic(file));
+
+  if (isHeic) {
+    const jpegBlob = await withTimeout(
+      convertHeicToJpegBlob(file),
+      25000,
+      'heic-convert-timeout'
+    );
+    const jpegFile = new File([jpegBlob], 'converted.jpg', { type: 'image/jpeg' });
+    return withTimeout(decodeViaCanvas(jpegFile), 10000, 'canvas-decode-timeout');
+  }
+
+  return withTimeout(decodeViaCanvas(file), 15000, 'canvas-decode-timeout');
 }
 
 export default function CameraCapture({
@@ -193,9 +275,16 @@ export default function CameraCapture({
       setUploadedPreview(normalizedJpeg);
     } catch (err) {
       console.error('Photo upload normalize failed:', err);
-      setUploadError(
-        'This photo could not be loaded correctly. Some HEIC photos from newer iPhones can render as a blank image on certain Android browsers. Try using the camera above to take a new photo directly, or open this photo in your gallery app and save/share it as a JPEG first, then upload that.'
-      );
+      const message = err instanceof Error ? err.message : '';
+      if (message === 'heic-convert-timeout') {
+        setUploadError(
+          'This HEIC photo took too long to convert. Try using the camera above to take a new photo directly, or open this photo in your gallery app and save/share it as a JPEG first, then upload that.'
+        );
+      } else {
+        setUploadError(
+          'This photo could not be loaded correctly. Try using the camera above to take a new photo directly, or open this photo in your gallery app and save/share it as a JPEG first, then upload that.'
+        );
+      }
     } finally {
       setIsProcessingUpload(false);
     }

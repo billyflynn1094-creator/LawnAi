@@ -19,6 +19,32 @@ function getScaledDims(w: number, h: number): { w: number; h: number } {
 }
 
 /**
+ * Detect a blank/solid-black render — some Android browsers "successfully"
+ * decode certain HEIC photos (esp. wide-gamut/Display P3 shots from newer
+ * iPhones) into a bitmap that draws as solid black on <canvas> instead of
+ * throwing a decode error. Left unchecked, this produces a fully-black
+ * "successful" upload with no error shown. We sample a sparse grid of pixels
+ * across the canvas and treat it as blank if none carry meaningful color/alpha.
+ */
+function isBlankCanvas(ctx: CanvasRenderingContext2D, w: number, h: number): boolean {
+  if (w === 0 || h === 0) return true;
+  try {
+    const rows = 12;
+    const stepY = Math.max(1, Math.floor(h / rows));
+    for (let y = 0; y < h; y += stepY) {
+      const row = ctx.getImageData(0, y, w, 1).data;
+      for (let x = 0; x < row.length; x += 4 * Math.max(1, Math.floor(w / 24))) {
+        const r = row[x], g = row[x + 1], b = row[x + 2], a = row[x + 3];
+        if (a > 10 && (r > 8 || g > 8 || b > 8)) return false; // found real content
+      }
+    }
+    return true; // every sampled pixel was effectively black/transparent
+  } catch {
+    return false; // can't sample (e.g. security restriction) — don't false-fail
+  }
+}
+
+/**
  * Normalize ANY uploaded image file to a JPEG data URL, regardless of source
  * format (HEIC, PNG, WEBP, GIF, BMP, AVIF, etc.) or device/OS origin.
  *
@@ -30,26 +56,33 @@ function getScaledDims(w: number, h: number): { w: number; h: number } {
  * is a valid image, but our old MIME-string check silently rejected it.
  *
  * Falls back to an <img> + FileReader decode path for browsers/formats where
- * createImageBitmap isn't available or fails.
+ * createImageBitmap isn't available or fails. Both paths verify the render
+ * isn't blank/black before accepting it as a success — see isBlankCanvas().
  */
 async function normalizeToJpeg(file: File): Promise<string> {
   // -- Attempt 1: createImageBitmap (format-agnostic, decodes actual bytes) --
   try {
     const bitmap = await createImageBitmap(file);
     const { w, h } = getScaledDims(bitmap.width, bitmap.height);
-    const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('canvas-context-unavailable');
-    ctx.drawImage(bitmap, 0, 0, w, h);
-    bitmap.close?.();
-    return canvas.toDataURL('image/jpeg', 0.85);
+    if (w > 0 && h > 0) {
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('canvas-context-unavailable');
+      ctx.drawImage(bitmap, 0, 0, w, h);
+      bitmap.close?.();
+      if (!isBlankCanvas(ctx, w, h)) {
+        return canvas.toDataURL('image/jpeg', 0.85);
+      }
+      // Rendered blank — fall through and try the <img> decode path instead.
+    }
   } catch {
     // fall through to attempt 2
   }
 
-  // -- Attempt 2: <img> + FileReader decode (fallback for older browsers) --
+  // -- Attempt 2: <img> + FileReader decode (fallback for older browsers, or
+  //    when Attempt 1 produced a blank render) --
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -57,13 +90,15 @@ async function normalizeToJpeg(file: File): Promise<string> {
       if (!dataUrl) { reject(new Error('read-failed')); return; }
       const img = new window.Image();
       img.onload = () => {
-        const { w, h } = getScaledDims(img.naturalWidth || 1280, img.naturalHeight || 960);
+        const { w, h } = getScaledDims(img.naturalWidth || 0, img.naturalHeight || 0);
+        if (w === 0 || h === 0) { reject(new Error('zero-dimension-decode')); return; }
         const canvas = document.createElement('canvas');
         canvas.width = w;
         canvas.height = h;
         const ctx = canvas.getContext('2d');
         if (!ctx) { reject(new Error('canvas-context-unavailable')); return; }
         ctx.drawImage(img, 0, 0, w, h);
+        if (isBlankCanvas(ctx, w, h)) { reject(new Error('blank-render')); return; }
         resolve(canvas.toDataURL('image/jpeg', 0.85));
       };
       img.onerror = () => reject(new Error('decode-failed'));
@@ -159,7 +194,7 @@ export default function CameraCapture({
     } catch (err) {
       console.error('Photo upload normalize failed:', err);
       setUploadError(
-        'This photo could not be processed. Try taking a new photo with the camera, or re-saving it as a JPEG/PNG before uploading.'
+        'This photo could not be loaded correctly. Some HEIC photos from newer iPhones can render as a blank image on certain Android browsers. Try using the camera above to take a new photo directly, or open this photo in your gallery app and save/share it as a JPEG first, then upload that.'
       );
     } finally {
       setIsProcessingUpload(false);

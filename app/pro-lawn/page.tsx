@@ -7,7 +7,7 @@ import LocationBadge from '@/components/LocationBadge';
 import AnalysisResults from '@/components/Analysis';
 import AnalysisProgress from '@/components/AnalysisProgress';
 import DownloadReportButton from '@/components/DownloadReportButton';
-import { RotateCcw, MapPin, Navigation, Home } from 'lucide-react';
+import { RotateCcw, Home } from 'lucide-react';
 
 interface LocationData {
   lat: number; lng: number; city?: string; state?: string; soilType?: string;
@@ -155,32 +155,20 @@ export default function ProLawnAnalyzer() {
         </div>
       </header>
 
-      <div className="max-w-lg mx-auto px-4 pt-3 pb-1">
-        <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-medium transition-colors hover:opacity-70" style={{ color: BRAND.textMuted }}>
-          &larr; Back to Home
-        </Link>
-      </div>
-
       <div className="max-w-lg mx-auto px-4 pb-10">
         <div className="mb-3 mt-2">
-          <LocationBadge location={locationData} loading={locationLoading} error={locationError} onRetry={fetchLocation} accent={BRAND.primary} mode="light" />
+          <LocationBadge
+            location={locationData}
+            loading={locationLoading}
+            error={locationError}
+            onRetry={fetchLocation}
+            accent={BRAND.primary}
+            mode="light"
+            locationSource={locationSource}
+            onChangeZip={() => { setShowZipInput(v => !v); setZipError(null); }}
+            onUseGps={revertToGps}
+          />
         </div>
-
-        {!locationLoading && (
-          <div className="flex items-center gap-3 mb-2">
-            <span className="flex items-center gap-1 text-xs" style={{ color: BRAND.textMuted }}>
-              {locationSource === 'gps'
-                ? <><Navigation size={11} style={{ color: BRAND.primary }} /> GPS location</>
-                : <><MapPin size={11} style={{ color: BRAND.primary }} /> Manual ZIP</>}
-            </span>
-            {locationSource === 'zip' && (
-              <button onClick={revertToGps} className="text-xs transition hover:opacity-70" style={{ color: BRAND.textMuted }}>Use GPS</button>
-            )}
-            <button onClick={() => { setShowZipInput(v => !v); setZipError(null); }} className="text-xs transition hover:opacity-70" style={{ color: BRAND.textAccent, fontWeight: 600 }}>
-              Change ZIP
-            </button>
-          </div>
-        )}
 
         {showZipInput && (
           <div className="mb-3 p-3 rounded-xl border bg-white" style={{ borderColor: BRAND.borderAccent }}>

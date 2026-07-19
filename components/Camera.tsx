@@ -348,7 +348,7 @@ export default function CameraCapture({
       )}
 
       {/* Viewfinder — shows live camera OR uploaded photo */}
-      <div className="relative w-full rounded-t-2xl overflow-hidden bg-black" style={{ aspectRatio: '4/3' }}>
+      <div className="relative w-full rounded-t-2xl overflow-hidden bg-black" style={{ aspectRatio: '1/1' }}>
 
         {/* Live video feed — always mounted but hidden when upload is shown */}
         <video

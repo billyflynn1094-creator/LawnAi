@@ -142,6 +142,20 @@ PRODUCT RECOMMENDATION RULES
 9. VARY product selection — do NOT default to the same 2–3 products on every diagnosis.
    Evaluate each product's fit to: grass species, soil temp, weed/disease/pest present,
    resistance management needs, and treatment timing.
+10. PRODUCT RELATIONSHIP CLARITY — SAFETY CRITICAL, MUST STATE EXPLICITLY:
+    - The products[] array (granular + liquid) are ALTERNATIVE formulations of the SAME
+      treatment for the SAME active ingredient/purpose — the applicator chooses ONE based
+      on equipment, area size, and terrain (per rule 6). They are NOT a instruction to apply
+      both simultaneously. Populate products_relationship with a plain-language statement
+      making this explicit, e.g. "Choose ONE of the following based on application method —
+      do not apply both the granular and liquid option for the same treatment."
+    - For EVERY as_well_products group, populate compatibility_note stating clearly whether
+      that product can be tank-mixed/applied the same day as the primary treatment, or
+      whether it requires a separate application window. If there is ANY known antagonism,
+      label restriction, or you are not certain of compatibility, default to the conservative
+      instruction: "Apply separately from the primary treatment — verify tank-mix compatibility
+      on both product labels before combining, or apply on a different day." Never imply two
+      products can be combined unless you are citing a specific, real compatibility basis.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DIFFERENTIAL DIAGNOSIS PROTOCOL — EVALUATE BEFORE COMMITTING
@@ -353,6 +367,7 @@ RESPONSE FORMAT — VALID JSON ONLY, NO MARKDOWN
     "immediate_actions": [
       "Specific action bullet — what to do TODAY or this week"
     ],
+    "products_relationship": "REQUIRED plain-language statement clarifying that products[] below are ALTERNATIVE formulations to choose ONE from (not a combined application) — e.g. 'Choose ONE of the following based on application method — do not apply both for the same treatment.'",
     "elaborate": {
       "why_it_happens": "Detailed agronomic explanation of the root cause — specific to image, soil conditions, climate. Educational for a new applicator.",
       "how_to_apply": "Step-by-step product application technique — mixing ratios, equipment settings, time of day, weather requirements, PPE.",
@@ -377,6 +392,7 @@ RESPONSE FORMAT — VALID JSON ONLY, NO MARKDOWN
       {
         "category": "herbicide | insecticide | fungicide | fertilizer",
         "label": "brief context sentence: why these additional products are relevant alongside primary treatment",
+        "compatibility_note": "REQUIRED: state plainly whether this can be tank-mixed/applied same-day as the primary treatment, or must be applied separately/on a different day. Default to a conservative 'apply separately, verify label compatibility' instruction unless you can cite a specific real compatibility basis.",
         "products": [
           {
             "name": "product name",
@@ -485,6 +501,7 @@ export function buildAnalysisPrompt(location: LocationContext, hasSecondImage = 
       : `REQUIRED: Recommend at least one GRANULAR and one LIQUID product from the approved professional manufacturer lines (Syngenta, Bayer/Envu, BASF, Nufarm, Corteva, Lebanon Turf, LESCO, Simplot Pro, PBI Gordon).`,
     `REQUIRED: Every product must include manufacturer and equivalent_product fields.`,
     `REQUIRED: Include as_well_products when secondary product categories are relevant to recovery.`,
+    `REQUIRED: populate products_relationship (choose-one clarification) and, for every as_well_products group, populate compatibility_note (tank-mix/timing guidance) — never leave product combination safety unstated.`,
     `REQUIRED: All elaborate sub-sections must be specific to what you see in this image — never generic.`,
     `REQUIRED: grass_type.identified must name specific likely species common to this location's USDA zone/grass class — never return bare 'Mixed Stand' with no species named.`,
     `Apply MECHANICAL PRACTICE DECISION RULES using the grass class above.`,

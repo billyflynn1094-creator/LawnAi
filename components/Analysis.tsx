@@ -35,6 +35,7 @@ interface Product {
 interface AsWellProductGroup {
   category?: string;
   label?: string;
+  compatibility_note?: string;
   products?: Product[];
 }
 
@@ -251,8 +252,9 @@ function ProductLine({ product, tk, shopLinks }: { product: Product; tk: Tk; sho
   );
 }
 
-/** Renders a list of products joined by "and/or" dividers, since listed products
- *  are interchangeable options rather than a required combination. */
+/** Renders a list of products with an explicit "choose ONE" divider — these are
+ *  alternative formulations of the same treatment, never a tank-mix/combined
+ *  application, unless a relationshipNote explicitly says otherwise. */
 function ProductGroup({ products, tk, shopLinks }: { products: Product[]; tk: Tk; shopLinks?: 'homedepot' }) {
   if (products.length === 0) return null;
   return (
@@ -260,7 +262,7 @@ function ProductGroup({ products, tk, shopLinks }: { products: Product[]; tk: Tk
       {products.map((p, i) => (
         <div key={i}>
           {i > 0 && (
-            <p className={`text-[10px] font-semibold italic text-center py-0.5 ${tk.faint}`}>and/or</p>
+            <p className={`text-[10px] font-bold uppercase tracking-wide text-center py-1 ${tk.faint}`}>— or choose —</p>
           )}
           <ProductLine product={p} tk={tk} shopLinks={shopLinks} />
         </div>
@@ -345,6 +347,7 @@ export default function AnalysisResults({
   const treatment:        AnalysisData      = analysis.treatment        ?? {};
   const elaborateData:    AnalysisData      = treatment.elaborate       ?? {};
   const products:         Product[]         = treatment.products        ?? [];
+  const productsRelationship: string | undefined = treatment.products_relationship;
   const asWellGroups:     AsWellProductGroup[] = treatment.as_well_products ?? [];
   const culturalPractices: string[]         = treatment.cultural_practices ?? [];
   const mechanical:       AnalysisData      = analysis.mechanical_practices ?? {};
@@ -495,6 +498,11 @@ export default function AnalysisResults({
               {asWellGroups.map((g, gi) => (
                 <div key={gi}>
                   {g.label && <p className={`text-[11px] ${tk.faint} italic mb-1`}>Optional — {g.label}</p>}
+                  {g.compatibility_note && (
+                    <p className={`text-[10px] italic mb-1.5 ${mode === 'light' ? 'text-blue-600' : 'text-blue-300'}`}>
+                      ⚠ {g.compatibility_note}
+                    </p>
+                  )}
                   {(g.products ?? []).map((p, i) => <ProductDetail key={i} product={p} tk={tk} shopLinks={shopLinks} />)}
                 </div>
               ))}
@@ -509,6 +517,11 @@ export default function AnalysisResults({
             </div>
           }
         >
+          {products.length > 1 && (
+            <p className={`text-[10px] font-bold uppercase tracking-wide mb-1.5 ${mode === 'light' ? 'text-amber-700' : 'text-amber-300'}`}>
+              {productsRelationship ?? 'Choose ONE of the following based on application method — do not apply both for the same treatment.'}
+            </p>
+          )}
           <ProductGroup products={products} tk={tk} shopLinks={shopLinks} />
 
           {asWellCount > 0 && (
@@ -520,7 +533,14 @@ export default function AnalysisResults({
                 </span>
               </div>
               {asWellGroups.map((g, gi) => (
-                <ProductGroup key={gi} products={g.products ?? []} tk={tk} shopLinks={shopLinks} />
+                <div key={gi} className="mb-2 last:mb-0">
+                  <ProductGroup products={g.products ?? []} tk={tk} shopLinks={shopLinks} />
+                  {g.compatibility_note && (
+                    <p className={`text-[10px] italic mt-1 ${mode === 'light' ? 'text-blue-600' : 'text-blue-300'}`}>
+                      ⚠ {g.compatibility_note}
+                    </p>
+                  )}
+                </div>
               ))}
             </div>
           )}

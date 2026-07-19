@@ -175,6 +175,68 @@ function sanitizeAnalysis(obj: unknown): any {
 }
 
 
+/**
+ * Deterministic confidence gate — runs in plain code, NOT the LLM, so it can't
+ * hallucinate. Two responsibilities:
+ *  1. Environmental plausibility check: downgrades self-reported confidence when
+ *     the diagnosis contradicts the actual weather/soil data we already have
+ *     (e.g. fungal disease claimed under conditions that don't support it).
+ *  2. Second-photo gate: flags _needs_second_photo when confidence is low, or
+ *     medium with moderate/critical severity — the UI uses this flag to prompt
+ *     the user for a follow-up photo instead of trusting a shaky diagnosis.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyConfidenceGate(analysis: Record<string, any>, location: LocationContext): Record<string, any> {
+  if (!analysis || analysis.needs_more_photo === true || analysis.parse_error) return analysis;
+
+  let confidence: string = (analysis.confidence_level ?? 'medium').toLowerCase();
+  const issueType: string = (analysis.diagnosis?.issue_type ?? '').toLowerCase();
+  const severity: string  = (analysis.diagnosis?.severity ?? '').toLowerCase();
+  const contradictions: string[] = [];
+
+  // -- Fungal/disease plausibility vs. humidity + soil temp --------------------
+  const isFungal = issueType === 'disease' || issueType === 'fungus';
+  if (isFungal && location.weather && location.soil_temp_surface_f != null) {
+    const lowHumidity = location.weather.avg_humidity < 40;
+    const coldSoil = location.soil_temp_surface_f < 50;
+    if (lowHumidity && coldSoil) {
+      contradictions.push(
+        `Diagnosis is a fungal/disease issue, but 7-day humidity (${location.weather.avg_humidity}%) and soil temp (${location.soil_temp_surface_f}°F) are both outside typical pathogen-favorable range.`
+      );
+    }
+  }
+
+  // -- Drought diagnosis vs. rainfall data --------------------------------------
+  if (issueType === 'drought' && location.rainfall && location.rainfall.pct_of_normal >= 120) {
+    contradictions.push(
+      `Diagnosis is drought stress, but 7-day rainfall is ${location.rainfall.pct_of_normal}% of the 3-year normal — above-normal, not below.`
+    );
+  }
+
+  // -- Overwatering diagnosis vs. rainfall data ---------------------------------
+  if (issueType === 'overwatering' && location.rainfall && location.rainfall.pct_of_normal < 80) {
+    contradictions.push(
+      `Diagnosis is overwatering, but 7-day rainfall is ${location.rainfall.pct_of_normal}% of the 3-year normal — below-normal, not above.`
+    );
+  }
+
+  if (contradictions.length > 0) {
+    // Force confidence down at least one tier when the data contradicts the model's own claim.
+    confidence = confidence === 'high' ? 'medium' : 'low';
+    analysis._confidence_override_reason = contradictions.join(' ');
+  }
+
+  analysis.confidence_level = confidence;
+
+  // -- Second-photo gate ---------------------------------------------------------
+  const lowConfidence = confidence === 'low';
+  const mediumButSerious = confidence === 'medium' && (severity === 'moderate' || severity === 'critical');
+  const multiplePlausible = Array.isArray(analysis.ruled_out) && analysis.ruled_out.length >= 2 && confidence !== 'high';
+
+  analysis._needs_second_photo = Boolean(lowConfidence || mediumButSerious || multiplePlausible);
+
+  return analysis;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -268,9 +330,10 @@ export async function POST(req: NextRequest) {
           };
           // Tag so the UI knows this is the second-opinion pass
           analysis._second_opinion_model = 'Gemini 2.5 Flash';
+          applyConfidenceGate(analysis, location ?? { lat: 0, lng: 0 });
         }
 
-        return NextResponse.json({ analysis });
+        return NextResponse.json({ analysis: sanitizeAnalysis(analysis) });
       } catch (parseErr) {
         console.error('[analyze/second-opinion] JSON.parse failed:', parseErr, '\nCleaned:', soCleaned.slice(0, 500));
         return NextResponse.json({ analysis: { raw: soCleaned, parse_error: true } });
@@ -314,7 +377,9 @@ export async function POST(req: NextRequest) {
         drainageClass: soilProfile.drainageClass,
       };
 
-      return NextResponse.json({ analysis });
+      applyConfidenceGate(analysis, location ?? { lat: 0, lng: 0 });
+
+      return NextResponse.json({ analysis: sanitizeAnalysis(analysis) });
     } catch (parseErr) {
       console.error('[analyze] JSON.parse failed:', parseErr, '\nCleaned text:', cleaned.slice(0, 500));
       return NextResponse.json({

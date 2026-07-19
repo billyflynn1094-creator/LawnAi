@@ -2,47 +2,28 @@
 
 import {
   AlertTriangle,
-  CheckCircle,
   FlaskConical,
-  Leaf,
   ShieldAlert,
   ChevronDown,
   ChevronUp,
   Calendar,
-  Tag,
-  Activity,
-  Drill,
-  Scissors,
-  Wheat,
-  ClipboardList,
+  Sparkles,
+  Loader2,
 } from 'lucide-react';
 import { useState } from 'react';
-import type { ReactNode } from 'react';
 
-/** Build a Home Depot search-results URL for a product name. Home Depot's own
- *  site auto-detects the visitor's nearest store/zip on load — no geo lookup
- *  needed on our end. */
+/** Build a Home Depot search-results URL for a product name. */
 function hdSearchUrl(name: string): string {
   return `https://www.homedepot.com/s/${encodeURIComponent(name)}`;
 }
 
 // -- Types --------------------------------------------------------------------
 
-interface ElaborateData {
-  why_it_happens?: string;
-  how_to_apply?: string;
-  what_to_watch_for?: string;
-  common_mistakes?: string;
-  long_term_pathway?: string;
-}
-
 interface Product {
   name: string;
   manufacturer?: string;
   equivalent_product?: string;
   equivalent_manufacturer?: string;
-  sku?: string;
-  catalog_name?: string;
   format?: string;
   type?: string;
   application_rate?: string;
@@ -73,19 +54,6 @@ interface MechanicalPractice {
   notes?: string;
 }
 
-interface MechanicalPractices {
-  aeration?: MechanicalPractice;
-  dethatching?: MechanicalPractice;
-  seeding?: MechanicalPractice;
-}
-
-interface SoilProfileInfo {
-  label?: string;
-  notes?: string;
-  fertFrequency?: string;
-  drainageClass?: string;
-}
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnalysisData = Record<string, any>;
 
@@ -93,7 +61,6 @@ type AnalysisData = Record<string, any>;
 
 interface Tk {
   card: string;
-  innerCard: string;
   divider: string;
   outerDivider: string;
   heading: string;
@@ -101,27 +68,17 @@ interface Tk {
   body: string;
   muted: string;
   faint: string;
-  icon: string;
   label: string;
   rowHover: string;
   btn: string;
-  elaborateBorder: string;
-  invasive: string;
-  dotColor: string;
-  stemColor: string;
+  tileHeaderBg: string;
   fmtBadge: Record<string, string>;
   severityBadge: Record<string, string>;
-  spreadBadge: Record<string, string>;
-  categoryBadge: string;
-  asWellBg: string;
-  asWellBorder: string;
-  timelineDot: string;
-  timelineStem: string;
+  confidenceBadge: Record<string, string>;
 }
 
 const DARK_TK: Tk = {
   card:            'bg-soil-800/60 border border-field-800/40',
-  innerCard:       'bg-soil-800/60 border border-field-800/40',
   divider:         'border-field-800/30',
   outerDivider:    'border-field-800/40',
   heading:         'text-field-100',
@@ -129,21 +86,16 @@ const DARK_TK: Tk = {
   body:            'text-field-300',
   muted:           'text-field-400',
   faint:           'text-field-500',
-  icon:            'text-field-500',
   label:           'text-field-300 uppercase tracking-wide',
   rowHover:        'hover:bg-field-800/10',
   btn:             'text-field-400 hover:text-field-200',
-  elaborateBorder: 'border-field-700/40',
-  invasive:        'text-orange-400/80 bg-orange-900/20 border border-orange-800/30',
-  dotColor:        'bg-field-600',
-  stemColor:       'bg-field-800/60',
+  tileHeaderBg:    'bg-soil-900/60',
   fmtBadge: {
     granular:        'bg-straw-400/20 text-straw-200 border border-straw-500/30',
     liquid:          'bg-blue-900/30 text-blue-300 border border-blue-700/30',
     wdg:             'bg-purple-900/30 text-purple-300 border border-purple-700/30',
     wettable_powder: 'bg-purple-900/30 text-purple-300 border border-purple-700/30',
     sc:              'bg-blue-900/30 text-blue-300 border border-blue-700/30',
-    spray_ready:     'bg-sky-900/30 text-sky-300 border border-sky-700/30',
     _default:        'bg-field-800/40 text-field-400 border border-field-700/30',
   },
   severityBadge: {
@@ -152,21 +104,15 @@ const DARK_TK: Tk = {
     mild:     'bg-yellow-900/40 text-yellow-300 border border-yellow-700/40',
     none:     'bg-field-900/40 text-field-400 border border-field-700/40',
   },
-  spreadBadge: {
-    high:   'bg-red-900/30 text-red-400',
-    medium: 'bg-orange-900/30 text-orange-400',
-    low:    'bg-field-900/30 text-field-400',
+  confidenceBadge: {
+    high:   'bg-green-900/30 text-green-300 border border-green-700/30',
+    medium: 'bg-amber-900/30 text-amber-300 border border-amber-700/30',
+    low:    'bg-red-900/30 text-red-300 border border-red-700/30',
   },
-  categoryBadge: 'bg-field-800/60 text-field-400 border border-field-700/30',
-  asWellBg:     'bg-soil-800/60',
-  asWellBorder: 'border-field-800/40',
-  timelineDot:  'bg-field-600',
-  timelineStem: 'bg-field-800/60',
 };
 
 const LIGHT_TK: Tk = {
   card:            'bg-white border border-gray-200 shadow-sm',
-  innerCard:       'bg-white border border-gray-200 shadow-sm',
   divider:         'border-gray-100',
   outerDivider:    'border-gray-200',
   heading:         'text-gray-900',
@@ -174,21 +120,16 @@ const LIGHT_TK: Tk = {
   body:            'text-gray-700',
   muted:           'text-gray-600',
   faint:           'text-gray-400',
-  icon:            'text-gray-400',
   label:           'text-gray-500 uppercase tracking-wide',
   rowHover:        'hover:bg-gray-50 transition-colors',
   btn:             'text-orange-500 hover:text-orange-600',
-  elaborateBorder: 'border-orange-200',
-  invasive:        'text-orange-700 bg-orange-50 border border-orange-200',
-  dotColor:        'bg-gray-400',
-  stemColor:       'bg-gray-200',
+  tileHeaderBg:    'bg-gray-50',
   fmtBadge: {
     granular:        'bg-amber-50 text-amber-700 border border-amber-200',
     liquid:          'bg-blue-50 text-blue-600 border border-blue-200',
     wdg:             'bg-purple-50 text-purple-600 border border-purple-200',
     wettable_powder: 'bg-purple-50 text-purple-600 border border-purple-200',
     sc:              'bg-blue-50 text-blue-600 border border-blue-200',
-    spray_ready:     'bg-sky-50 text-sky-600 border border-sky-200',
     _default:        'bg-gray-100 text-gray-600 border border-gray-200',
   },
   severityBadge: {
@@ -197,59 +138,81 @@ const LIGHT_TK: Tk = {
     mild:     'bg-yellow-50 text-yellow-600 border border-yellow-200',
     none:     'bg-gray-50 text-gray-500 border border-gray-200',
   },
-  spreadBadge: {
-    high:   'bg-red-50 text-red-500',
-    medium: 'bg-orange-50 text-orange-500',
-    low:    'bg-gray-50 text-gray-500',
+  confidenceBadge: {
+    high:   'bg-green-50 text-green-700 border border-green-200',
+    medium: 'bg-amber-50 text-amber-700 border border-amber-200',
+    low:    'bg-red-50 text-red-600 border border-red-200',
   },
-  categoryBadge: 'bg-gray-100 text-gray-600 border border-gray-200',
-  asWellBg:     'bg-white',
-  asWellBorder: 'border-gray-200',
-  timelineDot:  'bg-gray-400',
-  timelineStem: 'bg-gray-200',
 };
 
-// -- Sub-components ------------------------------------------------------------
+// -- Small shared pieces --------------------------------------------------------
 
-function SeverityBadge({ severity, tk }: { severity?: string; tk: Tk }) {
-  const s = (severity ?? 'none').toLowerCase();
-  const style = tk.severityBadge[s] ?? tk.severityBadge.none;
-  const icon =
-    s === 'critical' ? <AlertTriangle size={10} /> :
-    s === 'moderate' ? <ShieldAlert size={10} /> :
-    s === 'mild'     ? <Activity size={10} /> :
-    <CheckCircle size={10} />;
+function Badge({ label, style }: { label: string; style: string }) {
   return (
-    <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wide ${style}`}>
-      {icon} {s}
+    <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold whitespace-nowrap ${style}`}>
+      {label}
     </span>
   );
 }
 
-function ElaborateSub({ title, content, tk }: { title: string; content?: string; tk: Tk }) {
+/** A single tile shell: header (icon+title+badges, always visible) wrapping
+ *  a tight bullet summary, with a bottom "Elaborate" toggle for deep detail. */
+function Tile({
+  icon,
+  title,
+  badges,
+  tk,
+  children,
+  elaborate,
+  elaborateLabel = 'Elaborate for full detail',
+}: {
+  icon: React.ReactNode;
+  title: string;
+  badges?: React.ReactNode;
+  tk: Tk;
+  children: React.ReactNode;
+  elaborate?: React.ReactNode;
+  elaborateLabel?: string;
+}) {
   const [open, setOpen] = useState(false);
-  if (!content) return null;
   return (
-    <div className={`border-t ${tk.divider} first:border-t-0`}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        className={`w-full flex items-center justify-between py-2.5 text-left ${tk.muted} hover:${tk.body} transition text-xs font-medium`}
-      >
-        {title}
-        {open
-          ? <ChevronUp size={12} className={`${tk.faint} shrink-0`} />
-          : <ChevronDown size={12} className={`${tk.faint} shrink-0`} />
-        }
-      </button>
-      {open && (
-        <p className={`pb-3 text-xs ${tk.muted} leading-relaxed`}>{content}</p>
+    <div className={`rounded-2xl overflow-hidden ${tk.card}`}>
+      <div className={`flex items-center justify-between gap-2 px-4 py-3 ${tk.tileHeaderBg} border-b ${tk.divider}`}>
+        <div className="flex items-center gap-2 min-w-0">
+          {icon}
+          <h3 className={`text-sm font-bold ${tk.heading}`}>{title}</h3>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">{badges}</div>
+      </div>
+
+      <div className="px-4 py-3">{children}</div>
+
+      {elaborate && (
+        <div className={`border-t ${tk.divider}`}>
+          <button
+            onClick={() => setOpen(o => !o)}
+            className={`w-full flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold ${tk.btn} transition`}
+          >
+            {open ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+            {open ? 'Show less' : elaborateLabel}
+          </button>
+          {open && <div className="px-4 pb-4">{elaborate}</div>}
+        </div>
       )}
     </div>
   );
 }
 
-function ProductRow({ product, tk, shopLinks }: { product: Product; tk: Tk; shopLinks?: 'homedepot' }) {
-  const [expanded, setExpanded] = useState(false);
+function Bullet({ tk, children }: { tk: Tk; children: React.ReactNode }) {
+  return (
+    <li className={`flex items-start gap-2 text-xs leading-relaxed ${tk.body}`}>
+      <span className={`mt-1.5 w-1 h-1 rounded-full shrink-0 ${tk.faint === 'text-gray-400' ? 'bg-gray-400' : 'bg-field-500'}`} />
+      <span>{children}</span>
+    </li>
+  );
+}
+
+function ProductLine({ product, tk, shopLinks }: { product: Product; tk: Tk; shopLinks?: 'homedepot' }) {
   const fmt = (product.format ?? '').toLowerCase();
   const fmtStyle = tk.fmtBadge[fmt] ?? tk.fmtBadge._default;
   const fmtLabel =
@@ -258,209 +221,66 @@ function ProductRow({ product, tk, shopLinks }: { product: Product; tk: Tk; shop
     fmt === 'wdg'      ? 'WDG'      :
     fmt === 'wettable_powder' ? 'WP' :
     fmt === 'sc'       ? 'SC'       :
-    fmt === 'spray_ready' ? 'RTU'   :
     fmt ? fmt.toUpperCase() : '';
 
   return (
-    <div className={`border-b ${tk.divider} last:border-b-0`}>
-      <button
-        onClick={() => setExpanded(e => !e)}
-        className={`w-full flex items-center justify-between py-2.5 text-left gap-3 ${tk.rowHover}`}
-      >
-        <div className="flex items-center gap-2 min-w-0">
-          {shopLinks === 'homedepot' ? (
-            <a
-              href={hdSearchUrl(product.name)}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className={`text-xs ${tk.subheading} font-medium truncate underline decoration-dotted underline-offset-2 hover:opacity-70`}
-            >
-              {product.name}
-            </a>
-          ) : (
-            <span className={`text-xs ${tk.subheading} font-medium truncate`}>{product.name}</span>
-          )}
-          {fmtLabel && (
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap shrink-0 ${fmtStyle}`}>
-              {fmtLabel}
-            </span>
-          )}
-        </div>
-        {expanded
-          ? <ChevronUp size={12} className={`${tk.faint} shrink-0`} />
-          : <ChevronDown size={12} className={`${tk.faint} shrink-0`} />
-        }
-      </button>
-      {expanded && (
-        <div className="pb-3 space-y-1.5 pl-1">
-          {product.type && (
-            <p className={`text-[10px] ${tk.faint} uppercase tracking-wide mb-1`}>{product.type.replace(/_/g,' ')}</p>
-          )}
-          {product.application_rate && (
-            <p className={`text-xs ${tk.muted}`}>
-              <span className={tk.faint}>Rate:</span> {product.application_rate}
-            </p>
-          )}
-          {product.timing && (
-            <p className={`text-xs ${tk.muted}`}>
-              <span className={tk.faint}>Timing:</span> {product.timing}
-            </p>
-          )}
-          {product.notes && (
-            <p className={`text-xs ${tk.muted} leading-relaxed mt-0.5`}>{product.notes}</p>
-          )}
-          {product.manufacturer && (
-            <p className={`text-[10px] ${tk.faint} mt-0.5`}>
-              <span className={tk.faint}>Mfr:</span> {product.manufacturer}
-            </p>
-          )}
-          {product.equivalent_product && (
-            <div className={`mt-2 pt-2 border-t ${tk.divider}`}>
-              <p className={`text-[10px] ${tk.faint} uppercase tracking-wide font-medium mb-0.5`}>Or equivalent</p>
-              <p className={`text-xs ${tk.muted}`}>
-                {shopLinks === 'homedepot' ? (
-                  <a
-                    href={hdSearchUrl(product.equivalent_product)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline decoration-dotted underline-offset-2 hover:opacity-70"
-                  >
-                    {product.equivalent_product}
-                  </a>
-                ) : product.equivalent_product}
-                {product.equivalent_manufacturer && (
-                  <span className={tk.faint}> ({product.equivalent_manufacturer})</span>
-                )}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+    <li className={`flex items-center justify-between gap-2 py-1.5 border-b ${tk.divider} last:border-b-0`}>
+      <div className="flex items-center gap-2 min-w-0">
+        <span className={`mt-0 w-1 h-1 rounded-full shrink-0 ${tk.faint === 'text-gray-400' ? 'bg-gray-400' : 'bg-field-500'}`} />
+        {shopLinks === 'homedepot' ? (
+          <a
+            href={hdSearchUrl(product.name)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`text-xs ${tk.subheading} font-medium truncate underline decoration-dotted underline-offset-2 hover:opacity-70`}
+          >
+            {product.name}
+          </a>
+        ) : (
+          <span className={`text-xs ${tk.subheading} font-medium truncate`}>{product.name}</span>
+        )}
+      </div>
+      {fmtLabel && <Badge label={fmtLabel} style={fmtStyle} />}
+    </li>
   );
 }
 
-function MechBlock({ icon, title, practice, tk }: { icon: ReactNode; title: string; practice: MechanicalPractice; tk: Tk }) {
+function ProductDetail({ product, tk, shopLinks }: { product: Product; tk: Tk; shopLinks?: 'homedepot' }) {
   return (
-    <div className="flex gap-2.5">
-      <span className={`${tk.icon} mt-0.5 shrink-0`}>{icon}</span>
-      <div className="space-y-0.5">
-        <p className={`text-xs font-medium ${tk.body}`}>{title}</p>
-        {practice.timing   && <p className={`text-xs ${tk.muted}`}>{practice.timing}</p>}
-        {practice.method   && <p className={`text-xs ${tk.muted}`}>{practice.method}</p>}
-        {practice.seed_type && <p className={`text-xs ${tk.muted}`}>Seed: {practice.seed_type}</p>}
-        {practice.rate     && <p className={`text-xs ${tk.muted}`}>Rate: {practice.rate}</p>}
-        {practice.notes    && <p className={`text-xs ${tk.faint} leading-relaxed mt-0.5`}>{practice.notes}</p>}
+    <div className={`py-2 border-b ${tk.divider} last:border-b-0`}>
+      <p className={`text-xs font-semibold ${tk.subheading} mb-1`}>{product.name}</p>
+      <div className="space-y-1">
+        {product.application_rate && (
+          <p className={`text-[11px] ${tk.muted}`}><span className={tk.faint}>Rate:</span> {product.application_rate}</p>
+        )}
+        {product.timing && (
+          <p className={`text-[11px] ${tk.muted}`}><span className={tk.faint}>Timing:</span> {product.timing}</p>
+        )}
+        {product.notes && <p className={`text-[11px] ${tk.muted} leading-relaxed`}>{product.notes}</p>}
+        {product.manufacturer && (
+          <p className={`text-[10px] ${tk.faint}`}>Mfr: {product.manufacturer}</p>
+        )}
+        {product.equivalent_product && (
+          <p className={`text-[10px] ${tk.faint}`}>
+            Or equivalent:{' '}
+            {shopLinks === 'homedepot' ? (
+              <a href={hdSearchUrl(product.equivalent_product)} target="_blank" rel="noopener noreferrer" className="underline decoration-dotted">
+                {product.equivalent_product}
+              </a>
+            ) : product.equivalent_product}
+            {product.equivalent_manufacturer ? ` (${product.equivalent_manufacturer})` : ''}
+          </p>
+        )}
       </div>
     </div>
   );
 }
 
-const CATEGORY_LABEL: Record<string, string> = {
-  herbicide:   'Herbicide',
-  insecticide: 'Insecticide',
-  fungicide:   'Fungicide',
-  fertilizer:  'Fertilizer',
-};
-
-function AsWellSection({ groups, tk, shopLinks }: { groups: AsWellProductGroup[]; tk: Tk; shopLinks?: 'homedepot' }) {
-  const [openIdx, setOpenIdx] = useState<number | null>(null);
-  if (!groups.length) return null;
-
-  return (
-    <div className={`rounded-2xl ${tk.asWellBg} border ${tk.asWellBorder} overflow-hidden`}>
-      <div className={`px-4 pt-3.5 pb-1 flex items-center gap-2 border-b ${tk.divider}`}>
-        <FlaskConical size={13} className={tk.icon} />
-        <span className={`text-xs font-semibold ${tk.label}`}>As Well</span>
-        <span className={`text-[10px] ${tk.faint} ml-0.5`}>additional products to consider</span>
-      </div>
-      {groups.map((group, gi) => {
-        const catLabel = CATEGORY_LABEL[(group.category ?? '').toLowerCase()] ?? (group.category ?? 'Products');
-        const isOpen = openIdx === gi;
-        return (
-          <div key={gi} className={`border-t ${tk.divider}`}>
-            <button
-              onClick={() => setOpenIdx(isOpen ? null : gi)}
-              className={`w-full flex items-center justify-between px-4 py-2.5 text-left ${tk.rowHover}`}
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <span className={`text-xs font-semibold ${tk.body} shrink-0`}>{catLabel}</span>
-                {group.label && (
-                  <span className={`text-[10px] ${tk.faint} truncate`}>{group.label}</span>
-                )}
-              </div>
-              {isOpen
-                ? <ChevronUp size={12} className={`${tk.faint} shrink-0`} />
-                : <ChevronDown size={12} className={`${tk.faint} shrink-0`} />}
-            </button>
-            {isOpen && group.products && group.products.length > 0 && (
-              <div className="px-4 pb-3">
-                {group.products.map((p, pi) => {
-                  const fmt = (p.format ?? '').toLowerCase();
-                  const fmtStyle = tk.fmtBadge[fmt] ?? tk.fmtBadge._default;
-                  const fmtLabel =
-                    fmt === 'granular' ? 'Granular' :
-                    fmt === 'liquid'   ? 'Liquid'   :
-                    fmt === 'wdg'      ? 'WDG'      :
-                    fmt === 'wettable_powder' ? 'WP' :
-                    fmt === 'sc'       ? 'SC'       :
-                    fmt === 'spray_ready' ? 'RTU'   :
-                    fmt ? fmt.toUpperCase() : '';
-                  return (
-                    <div key={pi} className={`border-b ${tk.divider} last:border-b-0 py-2.5`}>
-                      <div className="flex items-center justify-between mb-1">
-                        {shopLinks === 'homedepot' ? (
-                          <a
-                            href={hdSearchUrl(p.name)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`text-xs ${tk.subheading} font-medium underline decoration-dotted underline-offset-2 hover:opacity-70`}
-                          >
-                            {p.name}
-                          </a>
-                        ) : (
-                          <span className={`text-xs ${tk.subheading} font-medium`}>{p.name}</span>
-                        )}
-                        {fmtLabel && (
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full shrink-0 ml-2 ${fmtStyle}`}>
-                            {fmtLabel}
-                          </span>
-                        )}
-                      </div>
-                      {p.manufacturer && <p className={`text-[10px] ${tk.faint}`}>Mfr: {p.manufacturer}</p>}
-                      {p.application_rate && (
-                        <p className={`text-xs ${tk.muted} mt-0.5`}><span className={tk.faint}>Rate:</span> {p.application_rate}</p>
-                      )}
-                      {p.timing && (
-                        <p className={`text-xs ${tk.muted}`}><span className={tk.faint}>Timing:</span> {p.timing}</p>
-                      )}
-                      {p.equivalent_product && (
-                        <p className={`text-xs ${tk.faint} mt-1`}>
-                          <span className={tk.faint}>Or equivalent:</span>{' '}
-                          {shopLinks === 'homedepot' ? (
-                            <a
-                              href={hdSearchUrl(p.equivalent_product)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="underline decoration-dotted underline-offset-2 hover:opacity-70"
-                            >
-                              {p.equivalent_product}
-                            </a>
-                          ) : p.equivalent_product}
-                          {p.equivalent_manufacturer && ` (${p.equivalent_manufacturer})`}
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
+function mechLine(name: string, m?: MechanicalPractice): string | null {
+  if (!m || !m.recommended) return null;
+  const parts = [name];
+  if (m.timing) parts.push(`— ${m.timing}`);
+  return parts.join(' ');
 }
 
 // -- Main Export ---------------------------------------------------------------
@@ -475,15 +295,13 @@ export default function AnalysisResults({
 }: {
   analysis: AnalysisData;
   mode?: 'dark' | 'light';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   secondOpinionData?: Record<string, any> | null;
   secondOpinionLoading?: boolean;
   onSecondOpinion?: () => void;
-  /** 'homedepot' = link product names to Home Depot search (HomeLawn only). Omit for ProLawn. */
   shopLinks?: 'homedepot';
 }) {
   const tk = mode === 'light' ? LIGHT_TK : DARK_TK;
-  const [showElaborate, setShowElaborate] = useState(false);
-  const [showFullPlan, setShowFullPlan] = useState(false);
 
   if (!analysis) return null;
 
@@ -496,319 +314,252 @@ export default function AnalysisResults({
     );
   }
 
-  const diagnosis:         AnalysisData        = analysis.diagnosis        ?? {};
-  const identified:        AnalysisData        = analysis.identified       ?? {};
-  const treatment:         AnalysisData        = analysis.treatment        ?? {};
-  const elaborate:         ElaborateData       = treatment.elaborate       ?? {};
-  const products:          Product[]           = treatment.products        ?? [];
-  const asWellGroups:      AsWellProductGroup[] = (treatment.as_well_products ?? []) as AsWellProductGroup[];
-  const mechanical:        MechanicalPractices = analysis.mechanical_practices ?? {};
-  const timeline:          TimelineStage[]     = analysis.timeline         ?? [];
-  const prevention:        string[]            = analysis.prevention       ?? [];
-  const grassType:         AnalysisData        = analysis.grass_type       ?? {};
-  const locationFactors:   AnalysisData        = analysis.location_factors ?? {};
-  const overviewBullets:   string[]            = analysis.overview_bullets ?? [];
-  const soilProfile:       SoilProfileInfo     = analysis._soil_profile    ?? {};
+  const diagnosis:        AnalysisData      = analysis.diagnosis        ?? {};
+  const identified:       AnalysisData      = analysis.identified       ?? {};
+  const grassType:        AnalysisData      = analysis.grass_type       ?? {};
+  const locationFactors:  AnalysisData      = analysis.location_factors ?? {};
+  const treatment:        AnalysisData      = analysis.treatment        ?? {};
+  const elaborateData:    AnalysisData      = treatment.elaborate       ?? {};
+  const products:         Product[]         = treatment.products        ?? [];
+  const asWellGroups:     AsWellProductGroup[] = treatment.as_well_products ?? [];
+  const culturalPractices: string[]         = treatment.cultural_practices ?? [];
+  const mechanical:       AnalysisData      = analysis.mechanical_practices ?? {};
+  const timeline:         TimelineStage[]   = analysis.timeline         ?? [];
+  const prevention:       string[]          = analysis.prevention       ?? [];
+  const ruledOut:         AnalysisData[]    = analysis.ruled_out        ?? [];
+  const treeRootFactor:   string | undefined = analysis.tree_root_factor;
+  const overviewBullets:  string[]          = analysis.overview_bullets ?? [];
+  const confidence:       string            = (analysis.confidence_level ?? '').toLowerCase();
+  const professionalNeeded = analysis.professional_needed === true;
+  const soilProfile:      AnalysisData | undefined = analysis._soil_profile;
 
-  const invasiveWatch = locationFactors.invasive_watch;
-  const showInvasive  = invasiveWatch && invasiveWatch.toLowerCase() !== 'null' && invasiveWatch.trim();
+  const severity = (diagnosis.severity ?? '').toLowerCase();
+  const severityStyle = tk.severityBadge[severity] ?? tk.severityBadge.none;
+  const confidenceStyle = tk.confidenceBadge[confidence] ?? tk.confidenceBadge.medium;
 
-  const FORMAT_SORT: Record<string, number> = { granular: 0, liquid: 1, wdg: 2, wettable_powder: 2, sc: 2, spray_ready: 3 };
-  const sortedProducts = [...products].sort((a, b) => {
-    const fa = FORMAT_SORT[(a.format ?? '').toLowerCase()] ?? 9;
-    const fb = FORMAT_SORT[(b.format ?? '').toLowerCase()] ?? 9;
-    return fa - fb;
-  });
-
-  const hasElaborate =
-    elaborate.why_it_happens   || elaborate.how_to_apply  ||
-    elaborate.what_to_watch_for || elaborate.common_mistakes || elaborate.long_term_pathway;
-
-  const hasMechanical =
-    mechanical.aeration?.recommended  ||
-    mechanical.dethatching?.recommended ||
-    mechanical.seeding?.recommended;
-
-  const planParts = [
-    timeline.length > 0    && 'Timeline',
-    prevention.length > 0  && 'Prevention',
-    hasMechanical          && 'Practices',
-  ].filter(Boolean).join(' · ');
-
-  const hasFullPlan = timeline.length > 0 || prevention.length > 0 || hasMechanical || soilProfile.label;
+  const primaryProductCount = products.length;
+  const asWellCount = asWellGroups.reduce((n, g) => n + (g.products?.length ?? 0), 0);
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
 
-      {/* -- Issue card ------------------------------------------- */}
-      <div className={`rounded-2xl ${tk.card} overflow-hidden`}>
-        <div className="p-4 space-y-3">
+      {/* Confidence banner — surfaced above tiles so it's never missed */}
+      {confidence && (
+        <div className={`rounded-xl px-3 py-2 flex items-center justify-between gap-2 ${tk.card}`}>
+          <span className={`text-xs font-medium ${tk.muted}`}>
+            Diagnostic confidence
+          </span>
+          <Badge label={confidence.charAt(0).toUpperCase() + confidence.slice(1)} style={confidenceStyle} />
+        </div>
+      )}
 
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <SeverityBadge severity={diagnosis.severity} tk={tk} />
+      {professionalNeeded && (
+        <div className={`rounded-xl px-3 py-2.5 flex items-start gap-2 ${mode === 'light' ? 'bg-red-50 border border-red-200' : 'bg-red-900/20 border border-red-800/40'}`}>
+          <ShieldAlert size={15} className={mode === 'light' ? 'text-red-500 shrink-0 mt-0.5' : 'text-red-400 shrink-0 mt-0.5'} />
+          <p className={`text-xs ${mode === 'light' ? 'text-red-700' : 'text-red-300'}`}>
+            This issue is recommended for evaluation by a licensed professional.
+          </p>
+        </div>
+      )}
 
-              {diagnosis.issue_type && (
-                <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full ${tk.categoryBadge} uppercase tracking-wide font-medium`}>
-                  <Tag size={9} /> {diagnosis.issue_type.replace(/_/g, ' ')}
-                </span>
-              )}
-
-              {diagnosis.spread_risk && diagnosis.spread_risk !== 'none' && tk.spreadBadge[diagnosis.spread_risk] && (
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wide ${tk.spreadBadge[diagnosis.spread_risk]}`}>
-                  ↑ {diagnosis.spread_risk} spread
-                </span>
-              )}
-            </div>
-
-            <h2 className={`text-base font-semibold ${tk.heading} leading-snug`}>
-              {identified.primary ?? 'Lawn Analysis'}
-            </h2>
-
-            {grassType.identified && (
-              <p className={`text-[11px] ${tk.faint} flex items-center gap-1.5`}>
-                <Leaf size={10} className={tk.faint} /> {grassType.identified}
-              </p>
+      {/* ============================= TILE 1 — FINDINGS ============================= */}
+      <Tile
+        icon={<AlertTriangle size={16} className={severity === 'critical' ? 'text-red-500' : severity === 'moderate' ? 'text-orange-500' : tk.faint} />}
+        title="Findings"
+        badges={severity && <Badge label={severity.charAt(0).toUpperCase() + severity.slice(1)} style={severityStyle} />}
+        tk={tk}
+        elaborateLabel="Elaborate on findings"
+        elaborate={
+          <div className="space-y-3">
+            {elaborateData.why_it_happens && (
+              <div>
+                <p className={`text-[10px] font-bold uppercase tracking-wide ${tk.label} mb-1`}>Why it happens</p>
+                <p className={`text-xs ${tk.muted} leading-relaxed`}>{elaborateData.why_it_happens}</p>
+              </div>
             )}
-          </div>
+            {elaborateData.what_to_watch_for && (
+              <div>
+                <p className={`text-[10px] font-bold uppercase tracking-wide ${tk.label} mb-1`}>What to watch for</p>
+                <p className={`text-xs ${tk.muted} leading-relaxed`}>{elaborateData.what_to_watch_for}</p>
+              </div>
+            )}
+            {elaborateData.common_mistakes && (
+              <div>
+                <p className={`text-[10px] font-bold uppercase tracking-wide ${tk.label} mb-1`}>Common mistakes</p>
+                <p className={`text-xs ${tk.muted} leading-relaxed`}>{elaborateData.common_mistakes}</p>
+              </div>
+            )}
+            {elaborateData.long_term_pathway && (
+              <div>
+                <p className={`text-[10px] font-bold uppercase tracking-wide ${tk.label} mb-1`}>Long-term pathway</p>
+                <p className={`text-xs ${tk.muted} leading-relaxed`}>{elaborateData.long_term_pathway}</p>
+              </div>
+            )}
+            {locationFactors.invasive_watch && (
+              <div className={`rounded-lg px-3 py-2 ${mode === 'light' ? 'bg-orange-50 border border-orange-200' : 'bg-orange-900/20 border border-orange-800/30'}`}>
+                <p className={`text-[10px] font-bold uppercase tracking-wide mb-0.5 ${mode === 'light' ? 'text-orange-700' : 'text-orange-300'}`}>Regional invasive watch</p>
+                <p className={`text-xs ${mode === 'light' ? 'text-orange-700' : 'text-orange-300/90'}`}>{locationFactors.invasive_watch}</p>
+              </div>
+            )}
+            {ruledOut.length > 0 && (
+              <div>
+                <p className={`text-[10px] font-bold uppercase tracking-wide ${tk.label} mb-1`}>Other possibilities considered</p>
+                <ul className="space-y-1">
+                  {ruledOut.map((r, i) => (
+                    <li key={i} className={`text-xs ${tk.muted} leading-relaxed`}>
+                      <span className={`font-medium ${tk.subheading}`}>{r.cause ?? r.category ?? 'Alternative'}:</span>{' '}
+                      {r.reason ?? r.why ?? '—'}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-          {overviewBullets.length > 0 && (
-            <ul className="space-y-2">
-              {overviewBullets.slice(0, 4).map((bullet: string, i: number) => (
-                <li key={i} className={`flex items-start gap-2 text-xs ${tk.body} leading-relaxed`}>
-                  <span className={`${tk.faint} mt-0.5 shrink-0 font-bold`}>•</span>
-                  <span>{bullet}</span>
-                </li>
+            {/* Second opinion */}
+            <div className={`pt-2 border-t ${tk.divider}`}>
+              {secondOpinionData ? (
+                <div className={`rounded-lg px-3 py-2 ${mode === 'light' ? 'bg-blue-50 border border-blue-200' : 'bg-blue-900/20 border border-blue-800/30'}`}>
+                  <p className={`text-[10px] font-bold uppercase tracking-wide mb-1 ${mode === 'light' ? 'text-blue-700' : 'text-blue-300'}`}>Second opinion</p>
+                  <p className={`text-xs ${mode === 'light' ? 'text-blue-700' : 'text-blue-300/90'} leading-relaxed`}>
+                    {secondOpinionData.second_opinion_reasoning ?? 'Independent review agrees with the original diagnosis.'}
+                  </p>
+                </div>
+              ) : onSecondOpinion ? (
+                <button
+                  onClick={onSecondOpinion}
+                  disabled={secondOpinionLoading}
+                  className={`w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition ${mode === 'light' ? 'bg-gray-100 hover:bg-gray-200 text-gray-700' : 'bg-field-800/40 hover:bg-field-800/60 text-field-300'} disabled:opacity-50`}
+                >
+                  {secondOpinionLoading ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                  {secondOpinionLoading ? 'Getting second opinion…' : 'Get a second opinion'}
+                </button>
+              ) : null}
+            </div>
+          </div>
+        }
+      >
+        <ul className="space-y-1.5">
+          {identified.primary && (
+            <Bullet tk={tk}><span className={`font-semibold ${tk.subheading}`}>{identified.primary}</span></Bullet>
+          )}
+          {grassType.identified && (
+            <Bullet tk={tk}>Grass type: <span className={tk.subheading}>{grassType.identified}</span></Bullet>
+          )}
+          {diagnosis.cause && <Bullet tk={tk}>{diagnosis.cause}</Bullet>}
+          {treeRootFactor && <Bullet tk={tk}>Tree root factor: {treeRootFactor}</Bullet>}
+          {locationFactors.relevant_notes && <Bullet tk={tk}>{locationFactors.relevant_notes}</Bullet>}
+          {overviewBullets.slice(0, 2).map((b: string, i: number) => (
+            <Bullet key={i} tk={tk}>{b}</Bullet>
+          ))}
+          {diagnosis.spread_risk && diagnosis.spread_risk !== 'none' && (
+            <Bullet tk={tk}>Spread risk: <span className="font-medium">{diagnosis.spread_risk}</span></Bullet>
+          )}
+        </ul>
+      </Tile>
+
+      {/* ======================= TILE 2 — SUGGESTED PRODUCTS ======================= */}
+      {(primaryProductCount > 0 || culturalPractices.length > 0) && (
+        <Tile
+          icon={<FlaskConical size={16} className={tk.faint} />}
+          title="Suggested Products"
+          badges={primaryProductCount > 0 && <span className={`text-[10px] ${tk.faint}`}>{primaryProductCount} item{primaryProductCount === 1 ? '' : 's'}</span>}
+          tk={tk}
+          elaborateLabel="Elaborate on application"
+          elaborate={
+            <div className="space-y-3">
+              {products.map((p, i) => <ProductDetail key={i} product={p} tk={tk} shopLinks={shopLinks} />)}
+              {asWellGroups.map((g, gi) => (
+                <div key={gi}>
+                  {g.label && <p className={`text-[11px] ${tk.faint} italic mb-1`}>As well — {g.label}</p>}
+                  {(g.products ?? []).map((p, i) => <ProductDetail key={i} product={p} tk={tk} shopLinks={shopLinks} />)}
+                </div>
               ))}
-            </ul>
-          )}
-
-          {showInvasive && (
-            <p className={`text-xs rounded-lg px-3 py-2 ${tk.invasive}`}>
-              ⚠ {invasiveWatch}
-            </p>
-          )}
-
-          {hasElaborate && (
-            <div>
-              <button
-                onClick={() => setShowElaborate(e => !e)}
-                className={`flex items-center gap-1.5 text-xs ${tk.btn} transition font-medium py-0.5`}
-              >
-                <FlaskConical size={12} />
-                {showElaborate ? 'Close' : 'Elaborate'}
-                {showElaborate
-                  ? <ChevronUp size={12} className={tk.faint} />
-                  : <ChevronDown size={12} className={tk.faint} />
-                }
-              </button>
-
-              {showElaborate && (
-                <div className={`mt-3 pl-3 border-l-2 ${tk.elaborateBorder}`}>
-                  <ElaborateSub title="Why It Happens"     content={elaborate.why_it_happens}    tk={tk} />
-                  <ElaborateSub title="How To Apply"       content={elaborate.how_to_apply}       tk={tk} />
-                  <ElaborateSub title="What To Watch For"  content={elaborate.what_to_watch_for}  tk={tk} />
-                  <ElaborateSub title="Common Mistakes"    content={elaborate.common_mistakes}    tk={tk} />
-                  <ElaborateSub title="Long-Term Pathway"  content={elaborate.long_term_pathway}  tk={tk} />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* -- Products card ----------------------------------------- */}
-      {sortedProducts.length > 0 && (
-        <div className={`rounded-2xl ${tk.card} overflow-hidden`}>
-          <div className={`px-4 pt-3.5 pb-0.5 flex items-center gap-2 border-b ${tk.divider}`}>
-            <FlaskConical size={13} className={tk.icon} />
-            <span className={`text-xs font-semibold ${tk.label}`}>Products</span>
-            <span className={`text-[10px] ${tk.faint} ml-0.5`}>tap to expand</span>
-          </div>
-          <div className="px-4 pb-2">
-            {sortedProducts.map((p, i) => <ProductRow key={i} product={p} tk={tk} shopLinks={shopLinks} />)}
-          </div>
-        </div>
-      )}
-
-      {/* -- As Well products card --------------------------------- */}
-      {asWellGroups.length > 0 && (
-        <AsWellSection groups={asWellGroups} tk={tk} shopLinks={shopLinks} />
-      )}
-
-      {/* -- See full plan card ----------------------------------- */}
-      {hasFullPlan && (
-        <div className={`rounded-2xl ${tk.card} overflow-hidden`}>
-          <button
-            onClick={() => setShowFullPlan(f => !f)}
-            className={`w-full flex items-center justify-between px-4 py-3.5 ${tk.rowHover}`}
-          >
-            <div className="flex items-center gap-2">
-              <ClipboardList size={14} className={tk.icon} />
-              <span className={`text-sm font-semibold ${tk.body}`}>See full plan</span>
-              {planParts && (
-                <span className={`text-[10px] ${tk.faint}`}>{planParts}</span>
-              )}
-            </div>
-            {showFullPlan
-              ? <ChevronUp size={14} className={tk.faint} />
-              : <ChevronDown size={14} className={tk.faint} />
-            }
-          </button>
-
-          {showFullPlan && (
-            <div className={`px-4 pb-5 pt-1 space-y-5 border-t ${tk.outerDivider}`}>
-
-              {timeline.length > 0 && (
+              {treatment.immediate_actions?.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Calendar size={12} className={tk.icon} />
-                    <span className={`text-xs font-semibold ${tk.label}`}>Timeline</span>
-                  </div>
-                  <div className="space-y-0">
-                    {timeline.map((stage, i) => (
-                      <div key={i} className="flex gap-3">
-                        <div className="flex flex-col items-center pt-1">
-                          <div className={`w-2 h-2 rounded-full ${tk.timelineDot} shrink-0`} />
-                          {i < timeline.length - 1 && (
-                            <div className={`w-px flex-1 ${tk.timelineStem} mt-1 min-h-[20px]`} />
-                          )}
-                        </div>
-                        <div className="pb-4">
-                          {stage.stage && (
-                            <p className={`text-[10px] ${tk.faint} uppercase tracking-wide font-medium leading-none mb-0.5`}>
-                              {stage.stage}
-                            </p>
-                          )}
-                          {stage.title && (
-                            <p className={`text-xs ${tk.body} font-medium`}>{stage.title}</p>
-                          )}
-                          {stage.actions?.map((action, j) => (
-                            <p key={j} className={`text-xs ${tk.muted} mt-0.5 flex items-start gap-1.5`}>
-                              <span className={`${tk.faint} shrink-0 mt-0.5`}>•</span>
-                              {action}
-                            </p>
-                          ))}
-                          {stage.milestone && (
-                            <p className={`mt-1 text-[10px] ${tk.faint} italic`}>✓ {stage.milestone}</p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {prevention.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <ShieldAlert size={12} className={tk.icon} />
-                    <span className={`text-xs font-semibold ${tk.label}`}>Prevention</span>
-                  </div>
-                  <ul className="space-y-1.5">
-                    {prevention.map((item, i) => (
-                      <li key={i} className={`flex items-start gap-2 text-xs ${tk.muted} leading-relaxed`}>
-                        <span className={`${tk.faint} mt-0.5 shrink-0`}>•</span>
-                        {item}
-                      </li>
-                    ))}
+                  <p className={`text-[10px] font-bold uppercase tracking-wide ${tk.label} mb-1`}>Immediate actions</p>
+                  <ul className="space-y-1">
+                    {treatment.immediate_actions.map((a: string, i: number) => <Bullet key={i} tk={tk}>{a}</Bullet>)}
                   </ul>
                 </div>
               )}
-
-              {hasMechanical && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Drill size={12} className={tk.icon} />
-                    <span className={`text-xs font-semibold ${tk.label}`}>Mechanical Practices</span>
-                  </div>
-                  <div className="space-y-4">
-                    {mechanical.aeration?.recommended && (
-                      <MechBlock icon={<Activity size={11} />} title="Aeration" practice={mechanical.aeration} tk={tk} />
-                    )}
-                    {mechanical.dethatching?.recommended && (
-                      <MechBlock icon={<Scissors size={11} />} title="Dethatching" practice={mechanical.dethatching} tk={tk} />
-                    )}
-                    {mechanical.seeding?.recommended && (
-                      <MechBlock icon={<Wheat size={11} />} title="Seeding" practice={mechanical.seeding} tk={tk} />
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {soilProfile.label && (
-                <div className={`pt-3 border-t ${tk.outerDivider}`}>
-                  <p className={`text-[10px] ${tk.faint} uppercase tracking-wide font-medium mb-1.5`}>
-                    Regional Soil Profile
-                  </p>
-                  <p className={`text-xs ${tk.body}`}>{soilProfile.label}</p>
-                  {soilProfile.notes && (
-                    <p className={`text-xs ${tk.muted} mt-0.5 leading-relaxed`}>{soilProfile.notes}</p>
-                  )}
-                  <div className="flex gap-4 mt-1.5">
-                    {soilProfile.fertFrequency && (
-                      <p className={`text-[10px] ${tk.faint}`}>Fert frequency: {soilProfile.fertFrequency}</p>
-                    )}
-                    {soilProfile.drainageClass && (
-                      <p className={`text-[10px] ${tk.faint}`}>Drainage: {soilProfile.drainageClass}</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
             </div>
+          }
+        >
+          <ul>
+            {products.map((p, i) => <ProductLine key={i} product={p} tk={tk} shopLinks={shopLinks} />)}
+          </ul>
+          {asWellCount > 0 && (
+            <p className={`text-[11px] ${tk.faint} italic mt-2`}>
+              As well — {asWellCount} supplementary product{asWellCount === 1 ? '' : 's'} for {asWellGroups.map(g => g.category).filter(Boolean).join(', ')}
+            </p>
           )}
-        </div>
+          {culturalPractices.length > 0 && (
+            <ul className="space-y-1.5 mt-2">
+              {culturalPractices.map((c: string, i: number) => <Bullet key={`cp-${i}`} tk={tk}>{c}</Bullet>)}
+            </ul>
+          )}
+        </Tile>
       )}
 
-      {/* -- Second Opinion --------------------------------------- */}
-      {onSecondOpinion && (
-        <div className="mt-6">
-          {!secondOpinionData && (
-            <button
-              onClick={onSecondOpinion}
-              disabled={secondOpinionLoading}
-              className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border ${tk.outerDivider} ${mode === 'light' ? 'bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900' : 'bg-field-900/40 hover:bg-field-800/60 border-field-700/60 text-field-300 hover:text-field-100'} text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              {secondOpinionLoading ? (
-                <>
-                  <span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  <span>Getting second opinion...</span>
-                </>
-              ) : (
-                <>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                  <span>Get Second Opinion</span>
-                </>
-              )}
-            </button>
-          )}
-
-          {secondOpinionData && (
+      {/* ===================== TILE 3 — TIMELINE / CALENDAR ===================== */}
+      {(timeline.length > 0 || mechanical.aeration || mechanical.dethatching || mechanical.seeding) && (
+        <Tile
+          icon={<Calendar size={16} className={tk.faint} />}
+          title="Timeline"
+          tk={tk}
+          elaborateLabel="Elaborate on schedule"
+          elaborate={
             <div className="space-y-3">
-              {secondOpinionData.second_opinion_reasoning && (
-                <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
-                  <p className="text-[10px] text-amber-500 uppercase tracking-widest font-semibold mb-1.5">
-                    Why Second Opinion Was Selected
-                  </p>
-                  <p className={`text-sm ${mode === 'light' ? 'text-amber-800' : 'text-amber-100/80'} leading-relaxed`}>
-                    {secondOpinionData.second_opinion_reasoning}
-                  </p>
+              {timeline.map((stage, i) => (
+                <div key={i} className={`pb-2 border-b ${tk.divider} last:border-b-0`}>
+                  <p className={`text-xs font-semibold ${tk.subheading}`}>{stage.stage}{stage.title ? ` — ${stage.title}` : ''}</p>
+                  {stage.actions?.map((a, ai) => (
+                    <p key={ai} className={`text-[11px] ${tk.muted} mt-0.5`}>• {a}</p>
+                  ))}
+                  {stage.milestone && <p className={`text-[11px] ${tk.faint} italic mt-1`}>Milestone: {stage.milestone}</p>}
+                </div>
+              ))}
+              {mechanical.aeration?.notes && (
+                <div><p className={`text-[10px] font-bold uppercase tracking-wide ${tk.label} mb-0.5`}>Aeration notes</p><p className={`text-xs ${tk.muted}`}>{mechanical.aeration.notes}</p></div>
+              )}
+              {mechanical.dethatching?.notes && (
+                <div><p className={`text-[10px] font-bold uppercase tracking-wide ${tk.label} mb-0.5`}>Dethatching notes</p><p className={`text-xs ${tk.muted}`}>{mechanical.dethatching.notes}</p></div>
+              )}
+              {mechanical.seeding?.notes && (
+                <div><p className={`text-[10px] font-bold uppercase tracking-wide ${tk.label} mb-0.5`}>Seeding notes</p><p className={`text-xs ${tk.muted}`}>{mechanical.seeding.notes}</p></div>
+              )}
+              {prevention.length > 0 && (
+                <div>
+                  <p className={`text-[10px] font-bold uppercase tracking-wide ${tk.label} mb-1`}>Prevention</p>
+                  <ul className="space-y-1">{prevention.map((p: string, i: number) => <Bullet key={i} tk={tk}>{p}</Bullet>)}</ul>
                 </div>
               )}
-              <div className={`rounded-xl border ${tk.outerDivider} overflow-hidden`}>
-                <div className={`px-4 py-2.5 border-b ${tk.divider} flex items-center gap-2`}>
-                  <span className={`text-[10px] ${tk.faint} uppercase tracking-widest font-semibold`}>Second Opinion Analysis</span>
-                </div>
-                <div className="p-1">
-                  <AnalysisResults analysis={secondOpinionData as AnalysisData} mode={mode} />
-                </div>
-              </div>
+              {analysis.follow_up && (
+                <p className={`text-xs ${tk.muted}`}><span className={`font-semibold ${tk.subheading}`}>Follow up:</span> {analysis.follow_up}</p>
+              )}
+              {soilProfile?.notes && (
+                <p className={`text-[11px] ${tk.faint}`}>Soil profile ({soilProfile.label}): {soilProfile.notes}</p>
+              )}
             </div>
-          )}
-        </div>
+          }
+        >
+          <ul className="space-y-1.5">
+            {timeline.slice(0, 4).map((stage, i) => (
+              <Bullet key={i} tk={tk}>
+                <span className={`font-semibold ${tk.subheading}`}>{stage.stage}</span>
+                {stage.milestone ? ` — ${stage.milestone}` : stage.title ? ` — ${stage.title}` : ''}
+              </Bullet>
+            ))}
+            {[
+              mechLine('Aeration', mechanical.aeration),
+              mechLine('Dethatching', mechanical.dethatching),
+              mechLine('Seeding', mechanical.seeding),
+            ].filter(Boolean).map((line, i) => (
+              <Bullet key={`mech-${i}`} tk={tk}>{line}</Bullet>
+            ))}
+          </ul>
+        </Tile>
       )}
-
     </div>
   );
 }

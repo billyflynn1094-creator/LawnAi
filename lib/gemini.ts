@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { buildSystemPrompt } from "@/lib/prompts";
 
-// ── Lazy initialization ─────────────────────────────────────────────────────────────────────────────────
+// ── Lazy initialization ───────────────────────────────────────────────────────────
 // Do NOT validate GEMINI_API_KEY at module level — a module-level throw causes
 // Vercel to return a raw non-JSON "An error occurred..." response before our
 // route handler's try/catch can intercept it.
@@ -48,12 +48,21 @@ export const geminiFlash = {
 
 /**
  * Convert a base64 image string to the inline data format Gemini expects.
+ *
+ * The client (Camera.tsx) now normalizes every captured/uploaded photo to a
+ * JPEG data URL before it ever reaches this function, regardless of the
+ * original source format or device — so mimeType defaulting to "image/jpeg"
+ * is safe. This function additionally auto-detects the mime type from a
+ * data: URL prefix if one is present, so a raw base64 string is never
+ * mislabeled even if a caller passes something other than JPEG in the future.
  */
 export function imageToGeminiPart(base64: string, mimeType = "image/jpeg") {
+  const dataUrlMatch = base64.match(/^data:(image\/[\w.+-]+);base64,/);
+  const detectedMime = dataUrlMatch?.[1] ?? mimeType;
   return {
     inlineData: {
-      data: base64.replace(/^data:image\/\w+;base64,/, ""),
-      mimeType,
+      data: base64.replace(/^data:image\/[\w.+-]+;base64,/, ""),
+      mimeType: detectedMime,
     },
   };
 }

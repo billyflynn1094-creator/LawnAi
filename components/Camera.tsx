@@ -1,13 +1,77 @@
 'use client';
 
 import { useRef, useState, useCallback, useEffect } from 'react';
-import { Camera, CameraOff, Loader2, RotateCcw, ImagePlus, X } from 'lucide-react';
+import { Camera, CameraOff, Loader2, RotateCcw, ImagePlus, X, AlertCircle } from 'lucide-react';
 
 interface CameraCaptureProps {
   onCapture: (base64: string) => void;
   isAnalyzing: boolean;
   fill?: boolean;
   themeColor?: string;
+}
+
+const MAX_DIM = 2400; // cap long edge to keep memory/upload size sane on older devices
+
+function getScaledDims(w: number, h: number): { w: number; h: number } {
+  if (w <= MAX_DIM && h <= MAX_DIM) return { w, h };
+  const scale = MAX_DIM / Math.max(w, h);
+  return { w: Math.round(w * scale), h: Math.round(h * scale) };
+}
+
+/**
+ * Normalize ANY uploaded image file to a JPEG data URL, regardless of source
+ * format (HEIC, PNG, WEBP, GIF, BMP, AVIF, etc.) or device/OS origin.
+ *
+ * Uses createImageBitmap() first — this decodes based on the actual image
+ * byte content, NOT the file's reported MIME type, which is what makes this
+ * robust against Android share-intents that hand over images with an empty
+ * or generic (application/octet-stream) MIME type. This is exactly the failure
+ * mode behind "iPhone photo shared to Android won't upload" — the file itself
+ * is a valid image, but our old MIME-string check silently rejected it.
+ *
+ * Falls back to an <img> + FileReader decode path for browsers/formats where
+ * createImageBitmap isn't available or fails.
+ */
+async function normalizeToJpeg(file: File): Promise<string> {
+  // -- Attempt 1: createImageBitmap (format-agnostic, decodes actual bytes) --
+  try {
+    const bitmap = await createImageBitmap(file);
+    const { w, h } = getScaledDims(bitmap.width, bitmap.height);
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('canvas-context-unavailable');
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    bitmap.close?.();
+    return canvas.toDataURL('image/jpeg', 0.85);
+  } catch {
+    // fall through to attempt 2
+  }
+
+  // -- Attempt 2: <img> + FileReader decode (fallback for older browsers) --
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      if (!dataUrl) { reject(new Error('read-failed')); return; }
+      const img = new window.Image();
+      img.onload = () => {
+        const { w, h } = getScaledDims(img.naturalWidth || 1280, img.naturalHeight || 960);
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { reject(new Error('canvas-context-unavailable')); return; }
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = () => reject(new Error('decode-failed'));
+      img.src = dataUrl;
+    };
+    reader.onerror = () => reject(new Error('read-failed'));
+    reader.readAsDataURL(file);
+  });
 }
 
 export default function CameraCapture({
@@ -28,6 +92,8 @@ export default function CameraCapture({
 
   // Uploaded photo state — when set, shows in the viewfinder instead of live feed
   const [uploadedPreview, setUploadedPreview] = useState<string | null>(null);
+  const [isProcessingUpload, setIsProcessingUpload] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const startCamera = useCallback(async (facing: 'environment' | 'user') => {
     if (streamRef.current) {
@@ -81,16 +147,23 @@ export default function CameraCapture({
     setFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'));
   }, []);
 
-  const handleUploadFile = useCallback((file: File) => {
-    const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
-    const isHeic = ext === 'heic' || ext === 'heif';
-    if (!file.type.startsWith('image/') && !isHeic) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      if (dataUrl) setUploadedPreview(dataUrl);
-    };
-    reader.readAsDataURL(file);
+  const handleUploadFile = useCallback(async (file: File) => {
+    setUploadError(null);
+    setIsProcessingUpload(true);
+    try {
+      // No MIME-type gatekeeping here on purpose — createImageBitmap decodes
+      // based on real byte content, so we let it attempt ANY selected file
+      // rather than pre-filtering on an unreliable file.type/extension string.
+      const normalizedJpeg = await normalizeToJpeg(file);
+      setUploadedPreview(normalizedJpeg);
+    } catch (err) {
+      console.error('Photo upload normalize failed:', err);
+      setUploadError(
+        'This photo could not be processed. Try taking a new photo with the camera, or re-saving it as a JPEG/PNG before uploading.'
+      );
+    } finally {
+      setIsProcessingUpload(false);
+    }
   }, []);
 
   const handleUploadChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,11 +174,12 @@ export default function CameraCapture({
 
   const clearUpload = useCallback(() => {
     setUploadedPreview(null);
+    setUploadError(null);
   }, []);
 
   const analyzeUpload = useCallback(() => {
     if (!uploadedPreview) return;
-    // Strip data URL prefix to get raw base64
+    // Already normalized to a JPEG data URL — just strip the prefix.
     const base64 = uploadedPreview.includes(',') ? uploadedPreview.split(',')[1] : uploadedPreview;
     onCapture(base64);
   }, [uploadedPreview, onCapture]);
@@ -115,17 +189,24 @@ export default function CameraCapture({
       <div className="w-full rounded-2xl border border-soil-700 bg-soil-900 flex flex-col items-center justify-center gap-3 py-10">
         <CameraOff size={36} className="text-soil-500" />
         <p className="text-sm text-soil-400 text-center px-4">{cameraError ?? 'Camera unavailable.'}</p>
+        {uploadError && (
+          <p className="text-xs text-red-400 text-center px-4 flex items-center gap-1.5">
+            <AlertCircle size={13} className="shrink-0" /> {uploadError}
+          </p>
+        )}
         {/* Still allow uploads even if camera fails */}
         <label
           className="flex items-center gap-2 px-4 py-2 rounded-full text-white text-sm font-semibold cursor-pointer transition"
-          style={{ backgroundColor: themeColor }}
+          style={{ backgroundColor: themeColor, opacity: isProcessingUpload ? 0.6 : 1 }}
         >
-          <ImagePlus size={15} /> Upload a photo
+          {isProcessingUpload ? <Loader2 size={15} className="animate-spin" /> : <ImagePlus size={15} />}
+          {isProcessingUpload ? 'Processing…' : 'Upload a photo'}
           <input
             type="file"
-            accept="image/*,.heic,.heif"
+            accept="image/*"
             className="hidden"
             onChange={handleUploadChange}
+            disabled={isProcessingUpload}
           />
         </label>
       </div>
@@ -134,6 +215,14 @@ export default function CameraCapture({
 
   return (
     <div className={`flex flex-col gap-0 ${fill ? 'h-full' : ''}`.trim()}>
+      {/* Upload error banner */}
+      {uploadError && (
+        <div className="mb-2 px-3 py-2 rounded-lg bg-red-50 border border-red-200 flex items-start gap-2">
+          <AlertCircle size={14} className="text-red-500 shrink-0 mt-0.5" />
+          <p className="text-xs text-red-600 leading-snug">{uploadError}</p>
+        </div>
+      )}
+
       {/* Viewfinder — shows live camera OR uploaded photo */}
       <div className="relative w-full rounded-t-2xl overflow-hidden bg-black" style={{ aspectRatio: '4/3' }}>
 
@@ -156,6 +245,14 @@ export default function CameraCapture({
             alt="Uploaded photo"
             className="absolute inset-0 w-full h-full object-cover"
           />
+        )}
+
+        {/* Processing overlay while normalizing an uploaded photo */}
+        {isProcessingUpload && !uploadedPreview && (
+          <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-2 z-20">
+            <Loader2 size={26} className="text-white animate-spin" />
+            <span className="text-white text-xs font-medium">Processing photo…</span>
+          </div>
         )}
 
         {/* Flash overlay */}
@@ -241,25 +338,28 @@ export default function CameraCapture({
               <Camera size={16} /> Capture
             </button>
 
-            {/* Upload button — opens file picker, no capture attribute */}
+            {/* Upload button — opens file picker, no capture attribute. accept="image/*"
+                is a soft hint to the OS picker only; we do NOT gate on MIME type after
+                selection since that's what caused cross-device upload failures. */}
             <label
               className="flex items-center gap-2 px-4 py-2.5 rounded-full font-semibold text-sm cursor-pointer transition active:scale-95"
               style={{
                 backgroundColor: `${themeColor}20`,
                 color: themeColor,
-                opacity: isAnalyzing ? 0.4 : 1,
-                pointerEvents: isAnalyzing ? 'none' : 'auto',
+                opacity: (isAnalyzing || isProcessingUpload) ? 0.4 : 1,
+                pointerEvents: (isAnalyzing || isProcessingUpload) ? 'none' : 'auto',
               }}
               aria-label="Upload photo"
             >
-              <ImagePlus size={16} /> Upload
+              {isProcessingUpload ? <Loader2 size={16} className="animate-spin" /> : <ImagePlus size={16} />}
+              {isProcessingUpload ? 'Processing…' : 'Upload'}
               <input
                 ref={uploadInputRef}
                 type="file"
-                accept="image/*,.heic,.heif"
+                accept="image/*"
                 className="hidden"
                 onChange={handleUploadChange}
-                disabled={isAnalyzing}
+                disabled={isAnalyzing || isProcessingUpload}
               />
             </label>
           </>
